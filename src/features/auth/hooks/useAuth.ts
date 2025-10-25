@@ -13,6 +13,7 @@ export function useAuth() {
     const initAuth = async () => {
       try {
         const currentUser = await authService.getCurrentUser()
+        
         if (currentUser) {
           const profile = await authService.getUserProfile(currentUser.id)
           setUser({
@@ -24,9 +25,20 @@ export function useAuth() {
           if (profile.organizations) {
             setOrganization(profile.organizations)
           }
+        } else {
+          // No session exists - user is not logged in (this is normal)
+          setUser(null)
+          setOrganization(null)
         }
       } catch (err) {
-        console.error("Auth initialization error:", err)
+        // Only log actual errors, not missing sessions
+        if (err instanceof Error && !err.message.includes("session missing")) {
+          console.error("Auth initialization error:", err)
+          setError(err.message)
+        }
+        // Clear user state on error
+        setUser(null)
+        setOrganization(null)
       } finally {
         setLoading(false)
       }
@@ -39,7 +51,11 @@ export function useAuth() {
     setLoading(true)
     setError(null)
     try {
-      const { user: newUser, organization: newOrg } = await authService.signUp(email, password, organizationName)
+      const { user: newUser, organization: newOrg } = await authService.signUp(
+        email,
+        password,
+        organizationName
+      )
       setUser({
         id: newUser.id,
         email: newUser.email || "",
@@ -82,6 +98,7 @@ export function useAuth() {
 
   const signOut = async () => {
     setLoading(true)
+    setError(null)
     try {
       await authService.signOut()
       setUser(null)

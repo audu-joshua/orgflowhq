@@ -1,6 +1,19 @@
 import { getSupabaseClient } from "@/lib/supabaseClient"
 import type { Role } from "../types"
 
+// Type for role with additional computed fields
+interface RoleWithImages extends Role {
+  role_images: Array<{
+    id: string
+    role_id: string
+    image_url: string
+    display_order: number
+    created_at: string
+  }>
+  applications?: Array<{ count: number }>
+  application_count?: number
+}
+
 export const roleService = {
   async createRole(organizationId: string, roleData: Omit<Role, "id" | "created_at" | "updated_at">) {
     const supabase = getSupabaseClient()
@@ -11,25 +24,42 @@ export const roleService = {
       .select()
       .single()
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error("Error creating role:", error)
+      throw error
+    }
+    return data as Role
   },
 
   async updateRole(roleId: string, roleData: Partial<Role>) {
     const supabase = getSupabaseClient()
 
-    const { data, error } = await supabase.from("roles").update(roleData).eq("id", roleId).select().single()
+    const { data, error } = await supabase
+      .from("roles")
+      .update(roleData)
+      .eq("id", roleId)
+      .select()
+      .single()
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error("Error updating role:", error)
+      throw error
+    }
+    return data as Role
   },
 
   async deleteRole(roleId: string) {
     const supabase = getSupabaseClient()
 
-    const { error } = await supabase.from("roles").delete().eq("id", roleId)
+    const { error } = await supabase
+      .from("roles")
+      .delete()
+      .eq("id", roleId)
 
-    if (error) throw error
+    if (error) {
+      console.error("Error deleting role:", error)
+      throw error
+    }
   },
 
   async getRoleById(roleId: string) {
@@ -37,31 +67,69 @@ export const roleService = {
 
     const { data, error } = await supabase
       .from("roles")
-      .select("*, role_images(*), applications(count)")
+      .select(`
+        *,
+        role_images(*),
+        applications(count)
+      `)
       .eq("id", roleId)
       .single()
 
-    if (error) throw error
-    return data
+    if (error) {
+      console.error("Error fetching role:", error)
+      throw error
+    }
+    return data as RoleWithImages
   },
 
-  async uploadRoleImage(roleId: string, file: File) {
+  async uploadRoleImage(roleId: string, file: File, displayOrder: number = 0) {
     const supabase = getSupabaseClient()
-    const fileName = `${roleId}/${Date.now()}-${file.name}`
+    
+    // Generate unique filename with proper extension
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${roleId}/${Date.now()}_${displayOrder}.${fileExt}`
 
-    const { data, error: uploadError } = await supabase.storage.from("role_images").upload(fileName, file)
+    console.log(`Uploading image: ${fileName}`)
 
-    if (uploadError) throw uploadError
+    // Upload to Supabase Storage (bucket name: role-images with hyphen)
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("role-images")
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
 
-    const { data: urlData } = supabase.storage.from("role_images").getPublicUrl(fileName)
+    if (uploadError) {
+      console.error("Error uploading to storage:", uploadError)
+      throw uploadError
+    }
 
+    console.log("Upload successful:", uploadData)
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("role-images")
+      .getPublicUrl(fileName)
+
+    console.log("Public URL:", publicUrl)
+
+    // Save to role_images table
     const { data: imageData, error: dbError } = await supabase
       .from("role_images")
-      .insert([{ role_id: roleId, image_url: urlData.publicUrl }])
+      .insert([{ 
+        role_id: roleId, 
+        image_url: publicUrl,
+        display_order: displayOrder 
+      }])
       .select()
       .single()
 
-    if (dbError) throw dbError
+    if (dbError) {
+      console.error("Error saving to database:", dbError)
+      throw dbError
+    }
+
+    console.log("Image saved to database:", imageData)
     return imageData
   },
 
@@ -69,14 +137,63 @@ export const roleService = {
     const supabase = getSupabaseClient()
 
     // Extract file path from URL
-    const filePath = imageUrl.split("/").slice(-2).join("/")
+    // URL format: https://[project].supabase.co/storage/v1/object/public/role-images/[roleId]/[filename]
+    const urlParts = imageUrl.split("/role-images/")
+    const filePath = urlParts.length > 1 ? urlParts[1] : null
 
-    const { error: storageError } = await supabase.storage.from("role_images").remove([filePath])
+    if (!filePath) {
+      console.error("Invalid image URL format:", imageUrl)
+      throw new Error("Invalid image URL format")
+    }
 
-    if (storageError) throw storageError
+    console.log("Deleting file:", filePath)
 
-    const { error: dbError } = await supabase.from("role_images").delete().eq("id", imageId)
+    // Delete from storage
+    const { error: storageError } = await supabase.storage
+      .from("role-images")
+      .remove([filePath])
 
-    if (dbError) throw dbError
+    if (storageError) {
+      console.error("Error deleting from storage:", storageError)
+      throw storageError
+    }
+
+    // Delete from database
+    const { error: dbError } = await supabase
+      .from("role_images")
+      .delete()
+      .eq("id", imageId)
+
+    if (dbError) {
+      console.error("Error deleting from database:", dbError)
+      throw dbError
+    }
+
+    console.log("Image deleted successfully")
+  },
+
+  async getRolesByOrganization(organizationId: string): Promise<RoleWithImages[]> {
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from("roles")
+      .select(`
+        *,
+        role_images(*),
+        applications(count)
+      `)
+      .eq("organization_id", organizationId)
+      .order("created_at", { ascending: false })
+
+    if (error) {
+      console.error("Error fetching roles:", error)
+      throw error
+    }
+
+    // Transform the data to include application_count
+    return (data as RoleWithImages[]).map((role) => ({
+      ...role,
+      application_count: role.applications?.[0]?.count || 0
+    }))
   },
 }
