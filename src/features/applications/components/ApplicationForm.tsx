@@ -79,15 +79,15 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
     return (
       <div className="text-center py-8">
         <div className="text-green-600 text-lg font-semibold mb-2">Application submitted successfully!</div>
-        <p className="text-gray-600">Redirecting to dashboard...</p>
+        <p className="text-muted-foreground">Redirecting to dashboard...</p>
       </div>
     )
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
           Full Name
         </label>
         <input
@@ -96,13 +96,13 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
           value={candidateName}
           onChange={(e) => setCandidateName(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="John Doe"
         />
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
           Email
         </label>
         <input
@@ -111,16 +111,16 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
           value={candidateEmail}
           onChange={(e) => setCandidateEmail(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="john@example.com"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Resume (Optional)</label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-          <p className="text-sm text-gray-600 mb-2">Upload your resume (PDF, DOC, DOCX)</p>
+        <label className="block text-sm font-medium text-foreground mb-2">Resume (Optional)</label>
+        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
+          <Upload className="mx-auto mb-2 text-muted-foreground" size={24} />
+          <p className="text-sm text-muted-foreground mb-2">Upload your resume (PDF, DOC, DOCX)</p>
           <input
             type="file"
             accept=".pdf,.doc,.docx"
@@ -130,7 +130,7 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
           />
           <label
             htmlFor="resume-upload"
-            className="text-blue-600 hover:text-blue-700 cursor-pointer text-sm font-medium"
+            className="text-primary hover:text-primary/80 cursor-pointer text-sm font-medium"
           >
             Select file
           </label>
@@ -138,12 +138,16 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
         </div>
       </div>
 
-      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
+          {error}
+        </div>
+      )}
 
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+        className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
       >
         {loading ? "Submitting..." : "Submit Application"}
       </button>

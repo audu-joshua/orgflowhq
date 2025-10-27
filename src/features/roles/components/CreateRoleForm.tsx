@@ -23,56 +23,44 @@ export function CreateRoleForm() {
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
-    
-    console.log("Files selected:", files.length)
-    
+
     if (images.length + files.length > 5) {
       setError("Maximum 5 images allowed")
       return
     }
-    
+
     setError("")
-    
-    // Use FileReader to create previews
+
     const newPreviews: string[] = []
-    
+
     for (const file of files) {
-      console.log("Processing file:", file.name, "Type:", file.type, "Size:", file.size)
-      
       // Validate file type
-      if (!file.type.startsWith('image/')) {
-        console.error("Not an image file:", file.name)
+      if (!file.type.startsWith("image/")) {
         setError(`${file.name} is not a valid image file`)
         continue
       }
-      
+
       const reader = new FileReader()
-      
+
       const preview = await new Promise<string>((resolve, reject) => {
         reader.onload = (event) => {
           const result = event.target?.result as string
-          console.log("Preview created for:", file.name, "Length:", result.length)
           resolve(result)
         }
         reader.onerror = () => {
-          console.error("Failed to read file:", file.name)
           reject(new Error(`Failed to read ${file.name}`))
         }
         reader.readAsDataURL(file)
       })
-      
+
       newPreviews.push(preview)
     }
-    
+
     setImages([...images, ...files])
     setImagePreviews([...imagePreviews, ...newPreviews])
-    
-    console.log("Total images:", images.length + files.length)
-    console.log("Total previews:", imagePreviews.length + newPreviews.length)
   }
 
   const removeImage = (index: number) => {
-    console.log("Removing image at index:", index)
     setImages(images.filter((_, i) => i !== index))
     setImagePreviews(imagePreviews.filter((_, i) => i !== index))
   }
@@ -86,23 +74,9 @@ export function CreateRoleForm() {
       return
     }
 
-    console.log("=== Starting Role Creation ===")
-    console.log("Organization ID:", organization.id)
-    console.log("Number of images:", images.length)
-
     setLoading(true)
 
     try {
-      // Create role - Note: application_count is computed, not stored
-      console.log("Creating role with data:", {
-        title,
-        department,
-        description,
-        location: location || null,
-        employment_type: employmentType,
-        status: "active",
-      })
-      
       const role = await roleService.createRole(organization.id, {
         title,
         department,
@@ -113,28 +87,20 @@ export function CreateRoleForm() {
         organization_id: organization.id,
         created_by: null,
       })
-      console.log("✅ Role created:", role.id)
 
       // Upload images
       if (images.length > 0) {
-        console.log(`Uploading ${images.length} images...`)
-        
         for (let i = 0; i < images.length; i++) {
-          console.log(`Uploading image ${i + 1}/${images.length}:`, images[i].name)
           try {
-            const result = await roleService.uploadRoleImage(role.id, images[i], i)
-            console.log(`✅ Image ${i + 1} uploaded:`, result)
+            await roleService.uploadRoleImage(role.id, images[i], i)
           } catch (imgError) {
-            console.error(`❌ Failed to upload image ${i + 1}:`, imgError)
             // Continue with other images
           }
         }
       }
 
-      console.log("Redirecting to role page...")
       router.push(`/dashboard/roles/${role.id}`)
     } catch (err) {
-      console.error("❌ Failed to create role:", err)
       setError(err instanceof Error ? err.message : "Failed to create role")
     } finally {
       setLoading(false)
@@ -144,7 +110,7 @@ export function CreateRoleForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
           Role Title *
         </label>
         <input
@@ -153,13 +119,13 @@ export function CreateRoleForm() {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="e.g., Senior Developer"
         />
       </div>
 
       <div>
-        <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="department" className="block text-sm font-medium text-foreground mb-1">
           Department *
         </label>
         <input
@@ -168,13 +134,13 @@ export function CreateRoleForm() {
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="e.g., Engineering"
         />
       </div>
 
       <div>
-        <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="location" className="block text-sm font-medium text-foreground mb-1">
           Location
         </label>
         <input
@@ -182,13 +148,13 @@ export function CreateRoleForm() {
           type="text"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="e.g., Remote, New York, Hybrid"
         />
       </div>
 
       <div>
-        <label htmlFor="employmentType" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="employmentType" className="block text-sm font-medium text-foreground mb-1">
           Employment Type *
         </label>
         <select
@@ -196,7 +162,7 @@ export function CreateRoleForm() {
           value={employmentType}
           onChange={(e) => setEmploymentType(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
         >
           <option value="full-time">Full-time</option>
           <option value="part-time">Part-time</option>
@@ -207,7 +173,7 @@ export function CreateRoleForm() {
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
           Description
         </label>
         <textarea
@@ -215,18 +181,16 @@ export function CreateRoleForm() {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
           placeholder="Job description and requirements..."
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-3">
-          Role Images (up to 5)
-        </label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-          <Upload className="mx-auto mb-2 text-gray-400" size={24} />
-          <p className="text-sm text-gray-600 mb-2">Click to select images</p>
+        <label className="block text-sm font-medium text-foreground mb-3">Role Images (up to 5)</label>
+        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
+          <Upload className="mx-auto mb-2 text-muted-foreground" size={24} />
+          <p className="text-sm text-muted-foreground mb-2">Click to select images</p>
           <input
             type="file"
             multiple
@@ -237,32 +201,30 @@ export function CreateRoleForm() {
           />
           <label
             htmlFor="image-upload"
-            className="text-blue-600 hover:text-blue-700 cursor-pointer text-sm font-medium"
+            className="text-primary hover:text-primary/80 cursor-pointer text-sm font-medium"
           >
             Select images
           </label>
         </div>
 
         {imagePreviews.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {imagePreviews.map((preview, index) => (
               <div key={`preview-${index}`} className="relative">
-                <div className="bg-gray-100 rounded-lg overflow-hidden aspect-square">
+                <div className="bg-muted rounded-lg overflow-hidden aspect-square">
                   <img
-                    src={preview}
+                    src={preview || "/placeholder.svg"}
                     alt={`Preview ${index + 1}`}
                     className="w-full h-full object-cover"
-                    onLoad={() => console.log(`✅ Image ${index + 1} displayed`)}
-                    onError={(e) => console.error(`❌ Image ${index + 1} failed to display`)}
                   />
                 </div>
-                <div className="absolute bottom-2 left-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
                   {images[index]?.name}
                 </div>
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-lg"
+                  className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 hover:bg-destructive/90 shadow-lg"
                 >
                   <X size={16} />
                 </button>
@@ -273,7 +235,7 @@ export function CreateRoleForm() {
       </div>
 
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+        <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
           {error}
         </div>
       )}
@@ -282,7 +244,7 @@ export function CreateRoleForm() {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
         >
           {loading ? "Creating..." : "Create Role"}
         </button>
@@ -290,7 +252,7 @@ export function CreateRoleForm() {
           type="button"
           onClick={() => router.back()}
           disabled={loading}
-          className="flex-1 px-4 py-2 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+          className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors font-medium"
         >
           Cancel
         </button>
