@@ -3,32 +3,32 @@ import { Navbar } from "@/components/layout/Navbar"
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-background">
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 py-20 md:py-32">
+      <section className="bg-gradient-to-br from-card via-background to-card py-20 md:py-32">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
-            <div className="inline-block mb-4 px-4 py-2 bg-indigo-900 rounded-full">
-              <span className="text-indigo-300 text-sm font-semibold">Streamline Your Hiring</span>
+            <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
+              <span className="text-primary text-sm font-semibold">Streamline Your Hiring</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
-              Hire the Right Talent, <span className="text-indigo-500">Faster</span>
+            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+              Hire the Right Talent, <span className="text-primary">Faster</span>
             </h1>
-            <p className="text-xl text-slate-300 mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
               Manage job applications, track candidates, and collaborate with your team all in one powerful platform
             </p>
             <div className="flex gap-4 justify-center flex-wrap">
               <Link
                 href="/register"
-                className="px-8 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium"
+                className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
               >
                 Get Started Free
               </Link>
               <Link
                 href="/login"
-                className="px-8 py-3 bg-slate-800 text-indigo-400 border-2 border-indigo-600 rounded-lg hover:bg-slate-700 transition-colors font-medium"
+                className="px-8 py-3 bg-card text-primary border-2 border-primary rounded-lg hover:bg-muted transition-colors font-medium"
               >
                 Sign In
               </Link>
@@ -38,41 +38,41 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-slate-900 border-b border-slate-800">
+      <section className="py-16 bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8">
             <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-500 mb-2">10K+</div>
-              <p className="text-slate-400">Active Users</p>
+              <div className="text-4xl font-bold text-primary mb-2">10K+</div>
+              <p className="text-muted-foreground">Active Users</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-500 mb-2">500K+</div>
-              <p className="text-slate-400">Applications Processed</p>
+              <div className="text-4xl font-bold text-primary mb-2">500K+</div>
+              <p className="text-muted-foreground">Applications Processed</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-500 mb-2">98%</div>
-              <p className="text-slate-400">Satisfaction Rate</p>
+              <div className="text-4xl font-bold text-primary mb-2">98%</div>
+              <p className="text-muted-foreground">Satisfaction Rate</p>
             </div>
             <div className="text-center">
-              <div className="text-4xl font-bold text-indigo-500 mb-2">24/7</div>
-              <p className="text-slate-400">Support Available</p>
+              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
+              <p className="text-muted-foreground">Support Available</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-20 bg-slate-950">
+      <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Powerful Features</h2>
-            <p className="text-xl text-slate-400">Everything you need to manage your hiring process</p>
+            <h2 className="text-4xl font-bold text-foreground mb-4">Powerful Features</h2>
+            <p className="text-xl text-muted-foreground">Everything you need to manage your hiring process</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <div className="bg-slate-900 rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-slate-800">
-              <div className="w-12 h-12 bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-card rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-border">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -81,16 +81,16 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Manage Roles</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Manage Roles</h3>
+              <p className="text-muted-foreground">
                 Create and manage job openings with detailed descriptions, images, and requirements
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-slate-900 rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-slate-800">
-              <div className="w-12 h-12 bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-card rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-border">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -99,16 +99,16 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Track Applications</h3>
-              <p className="text-slate-400">
+              <h3 className="text-lg font-semibold text-foreground mb-2">Track Applications</h3>
+              <p className="text-muted-foreground">
                 Monitor candidate applications through every stage with real-time status updates
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-slate-900 rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-slate-800">
-              <div className="w-12 h-12 bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-card rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-border">
+              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -117,55 +117,57 @@ export default function Home() {
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Team Collaboration</h3>
-              <p className="text-slate-400">Work seamlessly with your team to evaluate and hire the best candidates</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Team Collaboration</h3>
+              <p className="text-muted-foreground">
+                Work seamlessly with your team to evaluate and hire the best candidates
+              </p>
             </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-20 bg-slate-900">
+      <section className="py-20 bg-card">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">How It Works</h2>
-            <p className="text-xl text-slate-400">Get started in three simple steps</p>
+            <h2 className="text-4xl font-bold text-foreground mb-4">How It Works</h2>
+            <p className="text-xl text-muted-foreground">Get started in three simple steps</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                 1
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Create Your Organization</h3>
-              <p className="text-slate-400">Sign up and set up your organization in minutes</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Create Your Organization</h3>
+              <p className="text-muted-foreground">Sign up and set up your organization in minutes</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                 2
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Post Job Roles</h3>
-              <p className="text-slate-400">Create job openings and share them with candidates</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Post Job Roles</h3>
+              <p className="text-muted-foreground">Create job openings and share them with candidates</p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
+              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
                 3
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">Hire Top Talent</h3>
-              <p className="text-slate-400">Review applications and make hiring decisions</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Hire Top Talent</h3>
+              <p className="text-muted-foreground">Review applications and make hiring decisions</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-slate-950">
+      <section className="py-20 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-white mb-4">Loved by Teams</h2>
-            <p className="text-xl text-slate-400">See what our users have to say</p>
+            <h2 className="text-4xl font-bold text-foreground mb-4">Loved by Teams</h2>
+            <p className="text-xl text-muted-foreground">See what our users have to say</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <div className="bg-slate-900 rounded-lg p-8 shadow border border-slate-800">
+            <div className="bg-card rounded-lg p-8 shadow border border-border">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -173,14 +175,14 @@ export default function Home() {
                   </svg>
                 ))}
               </div>
-              <p className="text-slate-300 mb-4">
+              <p className="text-foreground mb-4">
                 "This platform has transformed how we manage our hiring process. Highly recommended!"
               </p>
-              <p className="font-semibold text-white">Sarah Johnson</p>
-              <p className="text-sm text-slate-400">HR Manager, Tech Corp</p>
+              <p className="font-semibold text-foreground">Sarah Johnson</p>
+              <p className="text-sm text-muted-foreground">HR Manager, Tech Corp</p>
             </div>
 
-            <div className="bg-slate-900 rounded-lg p-8 shadow border border-slate-800">
+            <div className="bg-card rounded-lg p-8 shadow border border-border">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -188,14 +190,14 @@ export default function Home() {
                   </svg>
                 ))}
               </div>
-              <p className="text-slate-300 mb-4">
+              <p className="text-foreground mb-4">
                 "The best investment we made for our recruitment team. Saves us hours every week."
               </p>
-              <p className="font-semibold text-white">Michael Chen</p>
-              <p className="text-sm text-slate-400">Founder, StartUp Inc</p>
+              <p className="font-semibold text-foreground">Michael Chen</p>
+              <p className="text-sm text-muted-foreground">Founder, StartUp Inc</p>
             </div>
 
-            <div className="bg-slate-900 rounded-lg p-8 shadow border border-slate-800">
+            <div className="bg-card rounded-lg p-8 shadow border border-border">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
                   <svg key={i} className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
@@ -203,31 +205,33 @@ export default function Home() {
                   </svg>
                 ))}
               </div>
-              <p className="text-slate-300 mb-4">
+              <p className="text-foreground mb-4">
                 "Intuitive interface and excellent customer support. Couldn't ask for more!"
               </p>
-              <p className="font-semibold text-white">Emily Rodriguez</p>
-              <p className="text-sm text-slate-400">Recruiter, Global Solutions</p>
+              <p className="font-semibold text-foreground">Emily Rodriguez</p>
+              <p className="text-sm text-muted-foreground">Recruiter, Global Solutions</p>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-indigo-600">
+      <section className="py-20 bg-primary">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">Ready to Transform Your Hiring?</h2>
-          <p className="text-xl text-indigo-100 mb-8">Join thousands of companies using HR to hire better, faster</p>
+          <h2 className="text-4xl font-bold text-primary-foreground mb-4">Ready to Transform Your Hiring?</h2>
+          <p className="text-xl text-primary-foreground/80 mb-8">
+            Join thousands of companies using HR to hire better, faster
+          </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link
               href="/register"
-              className="px-8 py-3 bg-white text-indigo-600 rounded-lg hover:bg-slate-100 transition-colors font-medium"
+              className="px-8 py-3 bg-primary-foreground text-primary rounded-lg hover:opacity-90 transition-opacity font-medium"
             >
               Start Free Trial
             </Link>
             <Link
               href="/login"
-              className="px-8 py-3 bg-indigo-700 text-white rounded-lg hover:bg-indigo-800 transition-colors font-medium border border-indigo-500"
+              className="px-8 py-3 bg-primary-foreground/20 text-primary-foreground rounded-lg hover:bg-primary-foreground/30 transition-colors font-medium border border-primary-foreground/50"
             >
               Sign In
             </Link>
@@ -236,36 +240,36 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-950 text-slate-400 py-16 border-t border-slate-800">
+      <footer className="bg-card text-muted-foreground py-16 border-t border-border">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">H</span>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-lg">H</span>
                 </div>
-                <span className="font-bold text-white">HR</span>
+                <span className="font-bold text-foreground">HR</span>
               </div>
-              <p className="text-sm text-slate-500">The modern platform for managing your hiring process</p>
+              <p className="text-sm text-muted-foreground">The modern platform for managing your hiring process</p>
             </div>
 
             {/* Product */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <h4 className="font-semibold text-foreground mb-4">Product</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Features
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Pricing
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Security
                   </Link>
                 </li>
@@ -274,20 +278,20 @@ export default function Home() {
 
             {/* Company */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
+              <h4 className="font-semibold text-foreground mb-4">Company</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Blog
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Careers
                   </Link>
                 </li>
@@ -296,20 +300,20 @@ export default function Home() {
 
             {/* Legal */}
             <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <h4 className="font-semibold text-foreground mb-4">Legal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Privacy
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Terms
                   </Link>
                 </li>
                 <li>
-                  <Link href="#" className="hover:text-white transition-colors">
+                  <Link href="#" className="hover:text-foreground transition-colors">
                     Contact
                   </Link>
                 </li>
@@ -318,20 +322,20 @@ export default function Home() {
           </div>
 
           {/* Footer Bottom */}
-          <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-slate-500">© 2025 HR. All rights reserved.</p>
+          <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-sm text-muted-foreground">© 2025 HR. All rights reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8.29 20v-7.21h-2.3V9.25h2.3V7.31c0-2.31 1.41-3.57 3.45-3.57 1.02 0 1.9.08 2.15.11v2.49h-1.52c-1.15 0-1.38.55-1.38 1.37v1.79h2.77l-.29 3.54h-2.48V20" />
                 </svg>
               </Link>
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-7 7-7" />
                 </svg>
               </Link>
-              <Link href="#" className="text-slate-400 hover:text-white transition-colors">
+              <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
                 </svg>
