@@ -69,27 +69,27 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
 
   if (loading) return <LoadingSpinner />
 
-  if (!role) return <div className="text-center py-8 text-gray-600">Role not found</div>
+  if (!role) return <div className="text-center py-8 text-muted-foreground">Role not found</div>
 
   return (
     <div className="space-y-6">
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium"
+        className="flex items-center gap-2 text-primary hover:text-primary/90 font-medium"
       >
         <ArrowLeft size={20} />
         Back
       </button>
 
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="bg-card rounded-lg border border-border p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{role.title}</h1>
-            <p className="text-gray-600 mt-1">{role.department}</p>
+            <h1 className="text-3xl font-bold text-foreground">{role.title}</h1>
+            <p className="text-muted-foreground mt-1">{role.department}</p>
           </div>
           <button
             onClick={handleDeleteRole}
-            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
           >
             <Trash2 size={20} />
             Delete
@@ -98,21 +98,23 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
 
         {role.description && (
           <div className="mb-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Description</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{role.description}</p>
+            <h2 className="text-lg font-semibold text-foreground mb-2">Description</h2>
+            <p className="text-muted-foreground whitespace-pre-wrap">{role.description}</p>
           </div>
         )}
 
-        <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-          <p className="text-sm text-gray-600 mb-2">Public Application Link</p>
+        <div className="mb-6 p-4 bg-primary/10 rounded-lg">
+          <p className="text-sm text-muted-foreground mb-2">Public Application Link</p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 bg-white px-3 py-2 rounded border border-gray-300 text-sm text-gray-900 break-all">
+            <code className="flex-1 bg-background px-3 py-2 rounded border border-input text-sm text-foreground break-all">
               {`${window.location.origin}/apply/${roleId}`}
             </code>
             <button
               onClick={copyPublicLink}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                copied ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                copied
+                  ? "bg-secondary text-secondary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
               }`}
             >
               {copied ? "Copied!" : "Copy"}

@@ -54,7 +54,7 @@ export function DashboardContent() {
     <div className="space-y-8">
       {/* Stats Section */}
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Overview</h2>
+        <h2 className="text-2xl font-bold text-foreground mb-4">Overview</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Total Applications" value={stats.total} />
           <StatCard label="New" value={stats.new} />
@@ -67,10 +67,10 @@ export function DashboardContent() {
       {/* Roles Section */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">Job Roles</h2>
+          <h2 className="text-2xl font-bold text-foreground">Job Roles</h2>
           <button
             onClick={() => router.push("/dashboard/roles/new")}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
           >
             <Plus size={20} />
             Create Role

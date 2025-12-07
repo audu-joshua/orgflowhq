@@ -14,6 +14,7 @@ A production-grade MVP for managing job openings and applications with image upl
 - [What's Left Out](#whats-left-out)
 - [Known Concerns](#known-concerns)
 - [Deployment](#deployment)
+- [TODO / Development Roadmap](#todo--development-roadmap)
 - [Troubleshooting](#troubleshooting)
 
 ## Technologies
@@ -487,6 +488,49 @@ All tables have RLS enabled with policies:
 - **Netlify**: Similar process to Vercel
 - **Self-hosted**: Deploy to your own server with Docker
 - **AWS/GCP/Azure**: Use their deployment services
+
+## TODO / Development Roadmap
+
+### High Priority
+- [ ] **Fix Schema Mismatch**: Update `scripts/01-init-schema.sql` to match the application's expected schema (add `slug` to organizations, `users_organizations` table, additional role fields)
+- [ ] **Implement File Upload Validation**: Add client and server-side validation for file types and sizes
+- [ ] **Add Pagination**: Implement pagination for roles and applications lists to handle large datasets
+- [ ] **Create Storage Buckets**: Ensure `role-images` and `attachments` buckets exist in Supabase
+- [ ] **Fix RLS Policies**: Add missing RLS policies for the advanced schema structure
+
+### Medium Priority
+- [ ] **Add Error Monitoring**: Integrate Sentry or similar for production error tracking
+- [ ] **Implement Image Optimization**: Add image compression/resizing for role images
+- [ ] **Database Indexes**: Add indexes on frequently queried columns (organization_id, role_id, status)
+- [ ] **Add Tests**: Write unit tests for services and components
+- [ ] **Implement Caching**: Add caching layer for frequently accessed data
+
+### Feature Enhancements
+- [ ] **Real-time Updates**: Implement Supabase subscriptions for live application updates
+- [ ] **Email Notifications**: Add email notifications for new applications and status changes
+- [ ] **Advanced Filtering**: Add date range, salary range, and other filters
+- [ ] **Bulk Operations**: Enable bulk status updates and exports
+- [ ] **Team Collaboration**: Support multiple users per organization
+- [ ] **Analytics Dashboard**: Add charts and reports for hiring metrics
+- [ ] **Interview Scheduling**: Build interview scheduling functionality
+- [ ] **Dark/Light Theme Toggle**: Add theme switcher UI
+- [ ] **Internationalization**: Add i18n support for multiple languages
+- [ ] **API Integration**: Build REST API for third-party integrations
+
+### Security & Compliance
+- [ ] **GDPR Compliance**: Add data deletion and export features
+- [ ] **Privacy Policy**: Create privacy policy and terms of service pages
+- [ ] **Data Retention Policies**: Implement automatic data cleanup
+- [ ] **Audit Logging**: Log all user actions for compliance
+- [ ] **Two-Factor Authentication**: Add 2FA support for enhanced security
+- [ ] **Social Login**: Support Google/GitHub OAuth
+
+### Technical Debt
+- [ ] **Code Refactoring**: Review and refactor authentication service for consistency
+- [ ] **Type Safety**: Improve TypeScript definitions across all modules
+- [ ] **Component Documentation**: Add JSDoc comments to all components
+- [ ] **API Documentation**: Create API documentation for services
+- [ ] **Performance Audit**: Run Lighthouse audits and optimize accordingly
 
 ## Troubleshooting
 

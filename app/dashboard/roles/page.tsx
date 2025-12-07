@@ -40,10 +40,10 @@ export default function RolesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Job Roles</h1>
+        <h1 className="text-3xl font-bold text-foreground">Job Roles</h1>
         <button
           onClick={() => router.push("/dashboard/roles/new")}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
         >
           <Plus size={20} />
           Create Role

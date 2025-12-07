@@ -7,13 +7,13 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon }: StatCardProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6">
+    <div className="bg-card rounded-lg border border-border p-6">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-600 mb-1">{label}</p>
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
+          <p className="text-sm text-muted-foreground mb-1">{label}</p>
+          <p className="text-3xl font-bold text-foreground">{value}</p>
         </div>
-        {icon && <div className="text-blue-600">{icon}</div>}
+        {icon && <div className="text-primary">{icon}</div>}
       </div>
     </div>
   )

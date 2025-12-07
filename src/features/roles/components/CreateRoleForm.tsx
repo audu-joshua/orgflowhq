@@ -2,24 +2,37 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, X } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { roleService } from "../services/roleService"
+import { departmentService } from "@/features/departments/services/departmentService"
+import { compressImages } from "@/lib/imageUtils"
+import type { Department } from "@/features/departments/types"
 
 export function CreateRoleForm() {
   const router = useRouter()
   const { organization } = useAppStore()
   const [title, setTitle] = useState("")
   const [department, setDepartment] = useState("")
+  const [departments, setDepartments] = useState<Department[]>([])
   const [description, setDescription] = useState("")
   const [location, setLocation] = useState("")
   const [employmentType, setEmploymentType] = useState("full-time")
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    if (organization) {
+      departmentService.getDepartmentsByOrganization(organization.id)
+        .then(setDepartments)
+        .catch(err => console.error("Failed to load departments:", err))
+    }
+  }, [organization])
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
@@ -30,34 +43,31 @@ export function CreateRoleForm() {
     }
 
     setError("")
+    setCompressing(true)
 
-    const newPreviews: string[] = []
+    try {
+      // Compress all images in parallel
+      const compressedFiles = await compressImages(files)
+      setImages([...images, ...compressedFiles])
 
-    for (const file of files) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        setError(`${file.name} is not a valid image file`)
-        continue
-      }
+      // Generate previews for the compressed images
+      const newPreviews: string[] = await Promise.all(
+        compressedFiles.map(file => {
+          return new Promise<string>((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = (e) => resolve(e.target?.result as string)
+            reader.onerror = () => reject(new Error('Failed to read file'))
+            reader.readAsDataURL(file)
+          })
+        })
+      )
 
-      const reader = new FileReader()
-
-      const preview = await new Promise<string>((resolve, reject) => {
-        reader.onload = (event) => {
-          const result = event.target?.result as string
-          resolve(result)
-        }
-        reader.onerror = () => {
-          reject(new Error(`Failed to read ${file.name}`))
-        }
-        reader.readAsDataURL(file)
-      })
-
-      newPreviews.push(preview)
+      setImagePreviews([...imagePreviews, ...newPreviews])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to process images")
+    } finally {
+      setCompressing(false)
     }
-
-    setImages([...images, ...files])
-    setImagePreviews([...imagePreviews, ...newPreviews])
   }
 
   const removeImage = (index: number) => {
@@ -88,15 +98,13 @@ export function CreateRoleForm() {
         created_by: null,
       })
 
-      // Upload images
+      // Upload all images in parallel for speed
       if (images.length > 0) {
-        for (let i = 0; i < images.length; i++) {
-          try {
-            await roleService.uploadRoleImage(role.id, images[i], i)
-          } catch (imgError) {
-            // Continue with other images
-          }
-        }
+        await Promise.all(
+          images.map((image, i) => 
+            roleService.uploadRoleImage(role.id, image, i)
+          )
+        )
       }
 
       router.push(`/dashboard/roles/${role.id}`)
@@ -128,15 +136,18 @@ export function CreateRoleForm() {
         <label htmlFor="department" className="block text-sm font-medium text-foreground mb-1">
           Department *
         </label>
-        <input
+        <select
           id="department"
-          type="text"
           value={department}
           onChange={(e) => setDepartment(e.target.value)}
           required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="e.g., Engineering"
-        />
+          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <option value="">Select a department</option>
+          {departments.map(dept => (
+            <option key={dept.id} value={dept.name}>{dept.name}</option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -187,21 +198,25 @@ export function CreateRoleForm() {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-3">Role Images (up to 5)</label>
+        <label className="block text-sm font-medium text-foreground mb-3">
+          Role Images (up to 5)
+          {compressing && <span className="text-xs text-muted-foreground ml-2">Compressing...</span>}
+        </label>
         <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
           <Upload className="mx-auto mb-2 text-muted-foreground" size={24} />
-          <p className="text-sm text-muted-foreground mb-2">Click to select images</p>
+          <p className="text-sm text-muted-foreground mb-2">Click to select images (will be compressed)</p>
           <input
             type="file"
             multiple
             accept="image/*"
             onChange={handleImageUpload}
+            disabled={compressing}
             className="hidden"
             id="image-upload"
           />
           <label
             htmlFor="image-upload"
-            className="text-primary hover:text-primary/80 cursor-pointer text-sm font-medium"
+            className={`inline-block text-primary hover:text-primary/80 cursor-pointer text-sm font-medium ${compressing ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
             Select images
           </label>

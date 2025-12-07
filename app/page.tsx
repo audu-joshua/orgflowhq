@@ -7,19 +7,19 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-card via-background to-card py-20 md:py-32">
+      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-card via-background to-card pt-16">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-12">
+          <div className="text-center mb-16">
             <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
               <span className="text-primary text-sm font-semibold">Streamline Your Hiring</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
+            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-8 leading-tight">
               Hire the Right Talent, <span className="text-primary">Faster</span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
               Manage job applications, track candidates, and collaborate with your team all in one powerful platform
             </p>
-            <div className="flex gap-4 justify-center flex-wrap">
+            <div className="flex gap-6 justify-center flex-wrap">
               <Link
                 href="/register"
                 className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
@@ -37,38 +37,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-card border-b border-border">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">10K+</div>
-              <p className="text-muted-foreground">Active Users</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">500K+</div>
-              <p className="text-muted-foreground">Applications Processed</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">98%</div>
-              <p className="text-muted-foreground">Satisfaction Rate</p>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-primary mb-2">24/7</div>
-              <p className="text-muted-foreground">Support Available</p>
-            </div>
-          </div>
-        </div>
-      </section>
+
 
       {/* Features Section */}
-      <section className="py-20 bg-background">
+      <section id="features" className="py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
+          <div className="text-center mb-24">
             <h2 className="text-4xl font-bold text-foreground mb-4">Powerful Features</h2>
             <p className="text-xl text-muted-foreground">Everything you need to manage your hiring process</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12">
             {/* Feature 1 */}
             <div className="bg-card rounded-lg p-8 shadow hover:shadow-lg transition-shadow border border-border">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
@@ -126,47 +104,107 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-card">
+      {/* Pricing Section */}
+      <section id="pricing" className="py-32 bg-card">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">How It Works</h2>
-            <p className="text-xl text-muted-foreground">Get started in three simple steps</p>
+            <h2 className="text-4xl font-bold text-foreground mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-xl text-muted-foreground">Choose the plan that's right for you</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                1
+          <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
+            {/* Free Plan */}
+            <div className="bg-background rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
+              <h3 className="text-2xl font-bold text-foreground mb-2">Free Starter</h3>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-bold text-primary">$0</span>
+                <span className="text-muted-foreground">/month</span>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Create Your Organization</h3>
-              <p className="text-muted-foreground">Sign up and set up your organization in minutes</p>
+              <p className="text-muted-foreground mb-6">Perfect for small teams just getting started.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-2 text-foreground">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Up to 3 Job Postings
+                </li>
+                <li className="flex items-center gap-2 text-foreground">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Basic Candidate Tracking
+                </li>
+                <li className="flex items-center gap-2 text-foreground">
+                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Email Support
+                </li>
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full py-3 text-center bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors font-medium"
+              >
+                Get Started
+              </Link>
             </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                2
+
+            {/* Paid Plan */}
+            <div className="bg-primary text-primary-foreground rounded-2xl p-8 shadow-xl transform scale-105 border-2 border-primary relative overflow-hidden">
+              <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg uppercase tracking-wider">
+                Popular
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Post Job Roles</h3>
-              <p className="text-muted-foreground">Create job openings and share them with candidates</p>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                3
+              <h3 className="text-2xl font-bold mb-2">Pro Growth</h3>
+              <div className="flex items-baseline gap-1 mb-6">
+                <span className="text-4xl font-bold">$10</span>
+                <span className="text-primary-foreground/80">/month</span>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Hire Top Talent</h3>
-              <p className="text-muted-foreground">Review applications and make hiring decisions</p>
+              <p className="text-primary-foreground/80 mb-6">Everything you need to scale your hiring.</p>
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Unlimited Job Postings
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Advanced Analytics
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Priority Support
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Team Collaboration Tools
+                </li>
+              </ul>
+              <Link
+                href="/register"
+                className="block w-full py-3 text-center bg-background text-primary rounded-lg hover:bg-background/90 transition-colors font-bold"
+              >
+                Upgrade Now
+              </Link>
             </div>
           </div>
         </div>
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-20 bg-background">
+      {/* Reviews (Testimonials) Section */}
+      <section id="reviews" className="py-32 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-foreground mb-4">Loved by Teams</h2>
             <p className="text-xl text-muted-foreground">See what our users have to say</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-3 gap-12">
             <div className="bg-card rounded-lg p-8 shadow border border-border">
               <div className="flex gap-1 mb-4">
                 {[...Array(5)].map((_, i) => (
@@ -215,8 +253,43 @@ export default function Home() {
         </div>
       </section>
 
+
+
+      {/* Contact Section */}
+      <section id="contact" className="py-32 bg-background">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="max-w-2xl mx-auto text-center mb-20">
+            <h2 className="text-4xl font-bold text-foreground mb-4">Get in Touch</h2>
+            <p className="text-muted-foreground">Have questions? We'd love to hear from you.</p>
+          </div>
+          <form className="max-w-xl mx-auto space-y-8">
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
+                <input type="text" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="John" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
+                <input type="text" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Doe" />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Email</label>
+              <input type="email" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="john@example.com" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">Message</label>
+              <textarea rows={4} className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="How can we help you?"></textarea>
+            </div>
+            <button type="button" className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:opacity-90 transition-opacity">
+              Send Message
+            </button>
+          </form>
+        </div>
+      </section>
+
       {/* CTA Section */}
-      <section className="py-20 bg-primary">
+      <section className="py-32 bg-primary">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-primary-foreground mb-4">Ready to Transform Your Hiring?</h2>
           <p className="text-xl text-primary-foreground/80 mb-8">
@@ -240,7 +313,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-card text-muted-foreground py-16 border-t border-border">
+      <footer id="about" className="bg-card text-muted-foreground py-16 border-t border-border">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}

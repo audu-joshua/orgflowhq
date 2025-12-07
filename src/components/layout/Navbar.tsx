@@ -4,7 +4,34 @@ import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { useTheme } from "@/providers/ThemeProvider"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { Sun, Moon, X, ArrowRight } from "lucide-react"
+
+import { animate, motion, AnimatePresence } from "framer-motion"
+
+const menuVariants = {
+  hidden: { x: "100%", opacity: 0 },
+  visible: {
+    x: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.4,
+      ease: "easeInOut",
+      staggerChildren: 0.12,
+      delayChildren: 0.2
+    }
+  },
+  exit: {
+    x: "100%",
+    opacity: 0,
+    transition: { duration: 0.3 }
+  }
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, x: 20 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
+}
 
 export function Navbar() {
   const router = useRouter()
@@ -12,161 +39,377 @@ export function Navbar() {
   const { user, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [isOpen, setIsOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
 
   const handleLogout = async () => {
     await signOut()
     router.push("/")
   }
 
-  const isAuthPage = pathname?.startsWith("/(auth)") || pathname?.includes("/login") || pathname?.includes("/register")
-  const isDashboard = pathname?.startsWith("/dashboard")
+  const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
+    e.preventDefault();
+    setIsOpen(false);
+    const element = document.getElementById(id);
+    if (element) {
+      const offset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - offset;
+
+      animate(window.scrollY, offsetPosition, {
+        type: "spring",
+        stiffness: 100,
+        damping: 20,
+        restDelta: 0.001,
+        onUpdate: (latest) => window.scrollTo(0, latest)
+      });
+    }
+  };
+
+  // Desktop-only scroll effect
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 10)
+    handler()
+    window.addEventListener("scroll", handler)
+    return () => window.removeEventListener("scroll", handler)
+  }, [])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
 
   return (
-    <nav className="bg-card shadow-lg border-b border-border">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">H</span>
+    <>
+      <nav
+        className={[
+          "fixed left-0 right-0 z-50 transition-all duration-300 mx-auto rounded-2xl border",
+          scrolled ? "top-4 mt-4 border-border bg-background/80 backdrop-blur-xl shadow-sm" : "top-0 mt-6 border-border/50 bg-background/60 backdrop-blur-md",
+        ].join(" ")}
+        style={{ width: 'calc(100% - 2rem)', maxWidth: '64rem' }}
+      >
+        <div className="px-4">
+          <div className="flex items-center justify-between h-16 md:h-14">
+            {/* Logo */}
+            <div className="flex items-center">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transition-all duration-300">
+                  <span className="text-primary-foreground font-bold text-lg">HR</span>
+                </div>
+                <span className="font-bold text-foreground text-lg hidden sm:inline">HR</span>
+              </Link>
             </div>
-            <span className="font-bold text-foreground hidden sm:inline">HR</span>
-          </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-8">
-            {!user ? (
-              <>
-                <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Home
-                </Link>
-                <Link href="/login" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
-                >
-                  Sign Up
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Dashboard
-                </Link>
-                <Link href="/dashboard/roles" className="text-muted-foreground hover:text-foreground transition-colors">
-                  Roles
-                </Link>
-                <Link
-                  href="/dashboard/applications"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Applications
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
-                >
-                  Logout
-                </button>
-              </>
-            )}
+            {/* Desktop Navigation - Centered */}
+            <nav className="hidden md:flex items-center justify-center flex-1 mx-8">
+              <div className="flex items-center space-x-8">
+                {user ? (
+                  <>
+                    <Link
+                      href="/dashboard"
+                      className={[
+                        "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                        pathname === "/dashboard" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      ].join(" ")}
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard/roles"
+                      className={[
+                        "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                        pathname === "/dashboard/roles" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      ].join(" ")}
+                    >
+                      Roles
+                    </Link>
+                    <Link
+                      href="/dashboard/applications"
+                      className={[
+                        "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                        pathname === "/dashboard/applications" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      ].join(" ")}
+                    >
+                      Applications
+                    </Link>
+                  </>
+                ) : (
 
-            {/* Theme Toggle Button */}
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <svg className="w-5 h-5 text-foreground" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-foreground" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.536l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm5.657-9.193a1 1 0 00-1.414 0l-.707.707A1 1 0 005.05 6.464l.707-.707a1 1 0 001.414-1.414zM3 11a1 1 0 100-2H2a1 1 0 100 2h1z"
-                    clipRule="evenodd"
+                  <>
+                    <Link
+                      href="/#features"
+                      onClick={(e) => scrollToSection(e, "features")}
+                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+                    >
+                      Features
+                    </Link>
+                    <Link
+                      href="/#pricing"
+                      onClick={(e) => scrollToSection(e, "pricing")}
+                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+                    >
+                      Pricing
+                    </Link>
+                    <Link
+                      href="/#reviews"
+                      onClick={(e) => scrollToSection(e, "reviews")}
+                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+                    >
+                      Reviews
+                    </Link>
+                    <Link
+                      href="/#contact"
+                      onClick={(e) => scrollToSection(e, "contact")}
+                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
+                    >
+                      Contact
+                    </Link>
+                  </>
+                )}
+              </div>
+            </nav>
+
+            {/* Right Actions */}
+            <div className="flex items-center gap-3">
+              {/* Theme Toggle */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-lg hover:bg-muted transition-all duration-300 cursor-pointer"
+                aria-label="Toggle theme"
+              >
+                {theme === "dark" ? (
+                  <Moon className="h-5 w-5 text-foreground" />
+                ) : (
+                  <Sun className="h-5 w-5 text-foreground" />
+                )}
+              </button>
+
+              {/* Desktop Auth Buttons */}
+              <div className="hidden md:flex items-center gap-3">
+                {!user ? (
+                  <>
+                    <Link href="/login">
+                      <button className="px-4 py-2 text-sm font-medium text-foreground hover:text-foreground/80 transition-colors cursor-pointer">
+                        Log In
+                      </button>
+                    </Link>
+                    <Link href="/register">
+                      <button className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium text-sm flex items-center gap-2 cursor-pointer">
+                        Get Started
+                        <ArrowRight className="h-4 w-4" />
+                      </button>
+                    </Link>
+                  </>
+                ) : (
+                  <button
+                    onClick={handleLogout}
+                    className="px-6 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity font-medium text-sm cursor-pointer"
+                  >
+                    Logout
+                  </button>
+                )}
+              </div>
+
+              {/* Mobile Hamburger */}
+              <button
+                type="button"
+                className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl hover:bg-muted transition"
+                aria-label="Toggle navigation menu"
+                aria-expanded={isOpen}
+                onClick={() => setIsOpen(!isOpen)}
+              >
+                <span className="relative block h-4 w-5">
+                  <span
+                    className={[
+                      "absolute inset-x-0 top-0 h-0.5 rounded-full transition-all duration-300",
+                      "bg-foreground",
+                      isOpen ? "translate-y-2 rotate-45" : "translate-y-0 rotate-0",
+                    ].join(" ")}
                   />
-                </svg>
-              )}
-            </button>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center gap-2">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-muted transition-colors"
-              aria-label="Toggle theme"
-            >
-              {theme === "dark" ? (
-                <svg className="w-5 h-5 text-foreground" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
-                </svg>
-              ) : (
-                <svg className="w-5 h-5 text-foreground" fill="currentColor" viewBox="0 0 20 20">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.536l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.121-10.607a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zm5.657-9.193a1 1 0 00-1.414 0l-.707.707A1 1 0 005.05 6.464l.707-.707a1 1 0 001.414-1.414zM3 11a1 1 0 100-2H2a1 1 0 100 2h1z"
-                    clipRule="evenodd"
+                  <span
+                    className={[
+                      "absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full transition-all duration-300",
+                      "bg-foreground",
+                      isOpen ? "opacity-0" : "opacity-100",
+                    ].join(" ")}
                   />
-                </svg>
-              )}
-            </button>
-            <button onClick={() => setIsOpen(!isOpen)} className="p-2 rounded-lg hover:bg-muted">
-              <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
-        </div>
+                  <span
+                    className={[
+                      "absolute inset-x-0 bottom-0 h-0.5 rounded-full transition-all duration-300",
+                      "bg-foreground",
+                      isOpen ? "-translate-y-2 -rotate-45" : "translate-y-0 rotate-0",
+                    ].join(" ")}
+                  />
+                </span>
+              </button>
+            </div>
+          </div >
+        </div >
+      </nav >
 
-        {/* Mobile Navigation */}
+      {/* Full-Screen Mobile Menu Overlay */}
+      {/* Full-Screen Mobile Menu Overlay */}
+      <AnimatePresence>
         {isOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            {!user ? (
-              <>
-                <Link href="/" className="block px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg">
-                  Home
-                </Link>
-                <Link href="/login" className="block px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg">
-                  Sign In
-                </Link>
-                <Link href="/register" className="block px-4 py-2 bg-primary text-primary-foreground rounded-lg">
-                  Sign Up
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link href="/dashboard" className="block px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg">
-                  Dashboard
-                </Link>
-                <Link
-                  href="/dashboard/roles"
-                  className="block px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg"
-                >
-                  Roles
-                </Link>
-                <Link
-                  href="/dashboard/applications"
-                  className="block px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg"
-                >
-                  Applications
+          <motion.div
+            variants={menuVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className="md:hidden fixed inset-0 z-[100] bg-background"
+          >
+            <div className="flex flex-col h-full">
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-6 border-b border-border/50">
+                <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <span className="text-primary-foreground font-bold text-lg">HR</span>
+                  </div>
+                  <span className="font-bold text-foreground">HR</span>
                 </Link>
                 <button
-                  onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 bg-destructive text-destructive-foreground rounded-lg"
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-lg hover:bg-muted transition-all duration-300"
+                  aria-label="Close menu"
                 >
-                  Logout
+                  <X className="h-6 w-6 text-foreground" />
                 </button>
-              </>
-            )}
-          </div>
+              </div>
+
+              {/* Mobile Menu Content */}
+              <div className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
+                <div className="space-y-14">
+                  {user ? (
+                    <>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/dashboard"
+                          className="flex items-center gap-6 group"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">01</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Dashboard</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/dashboard/roles"
+                          className="flex items-center gap-6 group"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">02</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Roles</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/dashboard/applications"
+                          className="flex items-center gap-6 group"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">03</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Applications</span>
+                        </Link>
+                      </motion.div>
+                    </>
+                  ) : (
+                    <>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/#features"
+                          className="flex items-center gap-6 group cursor-pointer"
+                          onClick={(e) => scrollToSection(e, "features")}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">01</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Features</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/#pricing"
+                          className="flex items-center gap-6 group cursor-pointer"
+                          onClick={(e) => scrollToSection(e, "pricing")}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">02</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Pricing</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/#reviews"
+                          className="flex items-center gap-6 group cursor-pointer"
+                          onClick={(e) => scrollToSection(e, "reviews")}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">03</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Reviews</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/#contact"
+                          className="flex items-center gap-6 group cursor-pointer"
+                          onClick={(e) => scrollToSection(e, "contact")}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">04</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Contact</span>
+                        </Link>
+                      </motion.div>
+                    </>
+                  )}
+                </div>
+
+                {/* Actions at Bottom */}
+                <div className="mt-auto pt-8 flex flex-col gap-8">
+                  {!user ? (
+                    <>
+                      <motion.div variants={itemVariants}>
+                        <Link href="/login" onClick={() => setIsOpen(false)} className="block w-full">
+                          <button className="w-full py-4 text-lg font-bold text-foreground hover:bg-muted transition-all duration-200 rounded-lg border-2 border-primary cursor-pointer">
+                            Log In
+                          </button>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link href="/register" onClick={() => setIsOpen(false)} className="block w-full">
+                          <button className="w-full bg-primary text-primary-foreground py-4 text-lg font-bold hover:opacity-90 transition-all duration-200 rounded-lg flex items-center justify-center gap-2 cursor-pointer">
+                            Get Started
+                            <ArrowRight className="h-5 w-5" />
+                          </button>
+                        </Link>
+                      </motion.div>
+                    </>
+                  ) : (
+                    <motion.div variants={itemVariants}>
+                      <button
+                        onClick={() => {
+                          handleLogout()
+                          setIsOpen(false)
+                        }}
+                        className="w-full bg-destructive text-destructive-foreground py-4 text-lg font-bold hover:opacity-90 transition-all duration-200 rounded-lg cursor-pointer"
+                      >
+                        Logout
+                      </button>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Menu Footer */}
+              <div className="p-6 border-t border-border/50">
+                <p className="text-sm text-muted-foreground text-center">
+                  © 2024 HR. All rights reserved.
+                </p>
+              </div>
+            </div>
+          </motion.div>
         )}
-      </div>
-    </nav>
+      </AnimatePresence>
+    </>
   )
 }

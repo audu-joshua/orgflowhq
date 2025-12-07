@@ -1,88 +1,123 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { Users } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
+import { roleService } from "@/features/roles/services/roleService"
 import { applicationService } from "../services/applicationService"
-import { ApplicationTable } from "./ApplicationTable"
+import { ApplicationCard } from "./ApplicationCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import type { Application } from "../types"
+import type { Role } from "@/features/roles/types"
 
 export function ApplicationsContent() {
-  const router = useRouter()
   const { organization } = useAppStore()
   const { loading: authLoading } = useAuth()
+  const [roles, setRoles] = useState<(Role & { application_count?: number })[]>([])
+  const [selectedRole, setSelectedRole] = useState<string | null>(null)
   const [applications, setApplications] = useState<(Application & { roles?: { title: string } })[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   useEffect(() => {
     if (authLoading || !organization) return
 
-    const loadApplications = async () => {
+    const loadRoles = async () => {
       try {
-        const data = await applicationService.getApplicationsByOrganization(organization.id)
-        setApplications(data)
+        const data = await roleService.getRolesByOrganization(organization.id)
+        setRoles(data)
       } catch (error) {
-        console.error("Failed to load applications:", error)
+        console.error("Failed to load roles:", error)
       } finally {
         setLoading(false)
       }
     }
 
-    loadApplications()
+    loadRoles()
   }, [organization, authLoading])
 
-  const filteredApplications = applications.filter((app) => {
-    const matchesSearch =
-      app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.candidate_email.toLowerCase().includes(searchTerm.toLowerCase())
+  useEffect(() => {
+    if (!selectedRole || !organization) return
 
-    const matchesStatus = statusFilter === "all" || app.status === statusFilter
+    const loadApplications = async () => {
+      try {
+        const data = await applicationService.getApplicationsByRole(selectedRole)
+        setApplications(data)
+      } catch (error) {
+        console.error("Failed to load applications:", error)
+      }
+    }
 
-    return matchesSearch && matchesStatus
-  })
+    loadApplications()
+  }, [selectedRole, organization])
 
   if (authLoading || loading) return <LoadingSpinner />
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Applications</h1>
-
-      <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Statuses</option>
-            <option value="new">New</option>
-            <option value="shortlisted">Shortlisted</option>
-            <option value="interviewed">Interviewed</option>
-            <option value="hired">Hired</option>
-          </select>
-        </div>
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Applications</h1>
+        <p className="text-muted-foreground mt-1">
+          {selectedRole ? `${applications.length} applicant${applications.length !== 1 ? "s" : ""} for this role` : "Select a role to view applications"}
+        </p>
       </div>
 
-      {filteredApplications.length === 0 ? (
-        <EmptyState
-          title="No applications yet"
-          description="Applications will appear here once candidates apply for your roles"
-        />
+      {!selectedRole ? (
+        <div>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Open Roles</h2>
+          {roles.length === 0 ? (
+            <EmptyState
+              title="No roles yet"
+              description="Create roles to start receiving applications"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {roles.map((role) => (
+                <div
+                  key={role.id}
+                  onClick={() => setSelectedRole(role.id)}
+                  className="bg-card rounded-lg border border-border p-6 cursor-pointer hover:shadow-lg transition-all"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">{role.title}</h3>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Users size={18} />
+                      <span className="text-sm font-medium">{role.application_count || 0}</span>
+                    </div>
+                  </div>
+                  {role.department && (
+                    <p className="text-sm text-muted-foreground mb-2">{role.department}</p>
+                  )}
+                  {role.location && (
+                    <p className="text-xs text-muted-foreground">{role.location}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : (
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <ApplicationTable applications={filteredApplications} />
+        <div className="space-y-4">
+          <button
+            onClick={() => setSelectedRole(null)}
+            className="text-primary hover:text-primary/90 font-medium"
+          >
+            ← Back to Roles
+          </button>
+
+          {applications.length === 0 ? (
+            <EmptyState
+              title="No applications yet"
+              description="Applications will appear here once candidates apply for this role"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {applications.map((application) => (
+                <ApplicationCard key={application.id} application={application} />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
