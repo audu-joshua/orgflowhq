@@ -4,8 +4,9 @@ export interface Role {
   title: string
   description: string | null
   department: string | null
-  location: string | null  // ← Add this
-  employment_type: string | null  // ← Add this
+  location: string | null
+  employment_type: string | null
+  slug: string
   status: 'active' | 'closed' | 'draft'
   created_by: string | null
   created_at: string

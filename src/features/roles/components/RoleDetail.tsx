@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import { roleService } from "../services/roleService"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import type { Role, RoleImage } from "../types"
 
 interface RoleDetailProps {
@@ -13,10 +24,11 @@ interface RoleDetailProps {
 
 export function RoleDetail({ roleId }: RoleDetailProps) {
   const router = useRouter()
-  const [role, setRole] = useState<Role & { role_images?: RoleImage[] }>(null)
+  const [role, setRole] = useState<(Role & { role_images?: RoleImage[] }) | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     const loadRole = async () => {
@@ -39,9 +51,9 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
       setRole((prev) =>
         prev
           ? {
-              ...prev,
-              role_images: prev.role_images?.filter((img) => img.id !== imageId),
-            }
+            ...prev,
+            role_images: prev.role_images?.filter((img) => img.id !== imageId),
+          }
           : null,
       )
     } catch (err) {
@@ -50,18 +62,19 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
   }
 
   const handleDeleteRole = async () => {
-    if (!confirm("Are you sure you want to delete this role?")) return
-
+    setIsDeleting(true)
     try {
       await roleService.deleteRole(roleId)
       router.push("/dashboard/roles")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete role")
+      setIsDeleting(false)
     }
   }
 
   const copyPublicLink = () => {
-    const link = `${window.location.origin}/apply/${roleId}`
+    if (!role) return
+    const link = `${window.location.origin}/apply/${role.slug || role.id}`
     navigator.clipboard.writeText(link)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -87,13 +100,33 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
             <h1 className="text-3xl font-bold text-foreground">{role.title}</h1>
             <p className="text-muted-foreground mt-1">{role.department}</p>
           </div>
-          <button
-            onClick={handleDeleteRole}
-            className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
-          >
-            <Trash2 size={20} />
-            Delete
-          </button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                className="flex items-center gap-2 px-4 py-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                disabled={isDeleting}
+              >
+                <Trash2 size={20} />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete the role
+                  and remove it from our servers.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteRole} className="bg-destructive hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         {role.description && (
@@ -107,15 +140,14 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
           <p className="text-sm text-muted-foreground mb-2">Public Application Link</p>
           <div className="flex items-center gap-2">
             <code className="flex-1 bg-background px-3 py-2 rounded border border-input text-sm text-foreground break-all">
-              {`${window.location.origin}/apply/${roleId}`}
+              {`${window.location.origin}/apply/${role.slug || role.id}`}
             </code>
             <button
               onClick={copyPublicLink}
-              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
-                copied
-                  ? "bg-secondary text-secondary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-              }`}
+              className={`px-3 py-1 rounded text-sm font-medium transition-colors ${copied
+                ? "bg-secondary text-secondary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                }`}
             >
               {copied ? "Copied!" : "Copy"}
             </button>

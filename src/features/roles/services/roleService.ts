@@ -2,7 +2,7 @@ import { getSupabaseClient } from "@/lib/supabaseClient"
 import type { Role } from "../types"
 
 // Type for role with additional computed fields
-interface RoleWithImages extends Role {
+export interface RoleWithImages extends Role {
   role_images: Array<{
     id: string
     role_id: string
@@ -15,12 +15,29 @@ interface RoleWithImages extends Role {
 }
 
 export const roleService = {
-  async createRole(organizationId: string, roleData: Omit<Role, "id" | "created_at" | "updated_at">) {
+  async createRole(organizationId: string, roleData: Omit<Role, "id" | "created_at" | "updated_at" | "slug">) {
     const supabase = getSupabaseClient()
+
+    // Fetch organization name to include in slug
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", organizationId)
+      .single()
+
+    const orgName = org?.name || "job"
+
+    // Generate slug from organization name and title
+    const slug = `${orgName}-${roleData.title}`
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, '')  // Remove special characters except hyphens
+      .replace(/[\s_-]+/g, '-')  // Replace spaces/underscores with hyphens
+      .replace(/^-+|-+$/g, '')   // Trim hyphens
+      .trim();
 
     const { data, error } = await supabase
       .from("roles")
-      .insert([{ ...roleData, organization_id: organizationId }])
+      .insert([{ ...roleData, organization_id: organizationId, slug }])
       .select()
       .single()
 
@@ -34,9 +51,38 @@ export const roleService = {
   async updateRole(roleId: string, roleData: Partial<Role>) {
     const supabase = getSupabaseClient()
 
+    const updates: Partial<Role> = { ...roleData }
+
+    // If title is updated, regenerate slug
+    if (roleData.title) {
+      // Fetch role to get organization_id
+      const { data: existingRole } = await supabase
+        .from("roles")
+        .select("organization_id")
+        .eq("id", roleId)
+        .single()
+
+      if (existingRole) {
+        const { data: org } = await supabase
+          .from("organizations")
+          .select("name")
+          .eq("id", existingRole.organization_id)
+          .single()
+
+        const orgName = org?.name || "job"
+
+        updates.slug = `${orgName}-${roleData.title}`
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/[\s_-]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .trim();
+      }
+    }
+
     const { data, error } = await supabase
       .from("roles")
-      .update(roleData)
+      .update(updates)
       .eq("id", roleId)
       .select()
       .single()
@@ -84,7 +130,7 @@ export const roleService = {
 
   async uploadRoleImage(roleId: string, file: File, displayOrder: number = 0) {
     const supabase = getSupabaseClient()
-    
+
     // Generate unique filename with proper extension
     const fileExt = file.name.split('.').pop()
     const fileName = `${roleId}/${Date.now()}_${displayOrder}.${fileExt}`
@@ -116,10 +162,10 @@ export const roleService = {
     // Save to role_images table
     const { data: imageData, error: dbError } = await supabase
       .from("role_images")
-      .insert([{ 
-        role_id: roleId, 
+      .insert([{
+        role_id: roleId,
         image_url: publicUrl,
-        display_order: displayOrder 
+        display_order: displayOrder
       }])
       .select()
       .single()
@@ -195,5 +241,25 @@ export const roleService = {
       ...role,
       application_count: role.applications?.[0]?.count || 0
     }))
+  },
+
+  async getRoleBySlug(slug: string) {
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from("roles")
+      .select(`
+        *,
+        role_images(*),
+        applications(count)
+      `)
+      .eq("slug", slug)
+      .single()
+
+    if (error) {
+      console.error("Error fetching role by slug:", error)
+      throw error
+    }
+    return data as RoleWithImages
   },
 }

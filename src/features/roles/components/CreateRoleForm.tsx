@@ -9,6 +9,7 @@ import { useAppStore } from "@/store/useAppStore"
 import { roleService } from "../services/roleService"
 import { departmentService } from "@/features/departments/services/departmentService"
 import { compressImages } from "@/lib/imageUtils"
+import { CustomSelect } from "@/components/ui/CustomSelect"
 import type { Department } from "@/features/departments/types"
 
 export function CreateRoleForm() {
@@ -22,6 +23,7 @@ export function CreateRoleForm() {
   const [employmentType, setEmploymentType] = useState("full-time")
   const [images, setImages] = useState<File[]>([])
   const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
   const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState("")
@@ -37,8 +39,8 @@ export function CreateRoleForm() {
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
 
-    if (images.length + files.length > 5) {
-      setError("Maximum 5 images allowed")
+    if (images.length + files.length > 6) {
+      setError("Maximum 6 images allowed")
       return
     }
 
@@ -75,6 +77,42 @@ export function CreateRoleForm() {
     setImagePreviews(imagePreviews.filter((_, i) => i !== index))
   }
 
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index)
+  }
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault()
+
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null)
+      return
+    }
+
+    const newImages = [...images]
+    const newPreviews = [...imagePreviews]
+
+    // Remove dragged items
+    const [draggedImage] = newImages.splice(draggedIndex, 1)
+    const [draggedPreview] = newPreviews.splice(draggedIndex, 1)
+
+    // Insert at new position
+    newImages.splice(dropIndex, 0, draggedImage)
+    newPreviews.splice(dropIndex, 0, draggedPreview)
+
+    setImages(newImages)
+    setImagePreviews(newPreviews)
+    setDraggedIndex(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
@@ -101,7 +139,7 @@ export function CreateRoleForm() {
       // Upload all images in parallel for speed
       if (images.length > 0) {
         await Promise.all(
-          images.map((image, i) => 
+          images.map((image, i) =>
             roleService.uploadRoleImage(role.id, image, i)
           )
         )
@@ -115,72 +153,79 @@ export function CreateRoleForm() {
     }
   }
 
+  const departmentOptions = departments.map(dept => ({
+    value: dept.name,
+    label: dept.name
+  }))
+
+  const employmentTypeOptions = [
+    { value: "full-time", label: "Full-time" },
+    { value: "part-time", label: "Part-time" },
+    { value: "contract", label: "Contract" },
+    { value: "internship", label: "Internship" },
+    { value: "temporary", label: "Temporary" }
+  ]
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
-          Role Title *
-        </label>
-        <input
-          id="title"
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="e.g., Senior Developer"
-        />
-      </div>
+      {/* First Four Fields in Flex Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
+            Role Title *
+          </label>
+          <input
+            id="title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
+            placeholder="e.g., Senior Developer"
+          />
+        </div>
 
-      <div>
-        <label htmlFor="department" className="block text-sm font-medium text-foreground mb-1">
-          Department *
-        </label>
-        <select
-          id="department"
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="">Select a department</option>
-          {departments.map(dept => (
-            <option key={dept.id} value={dept.name}>{dept.name}</option>
-          ))}
-        </select>
-      </div>
+        <div>
+          <label htmlFor="department" className="block text-sm font-medium text-foreground mb-1">
+            Department *
+          </label>
+          <CustomSelect
+            id="department"
+            value={department}
+            onChange={setDepartment}
+            options={departmentOptions}
+            placeholder="Select a department"
+            required
+          />
+        </div>
 
-      <div>
-        <label htmlFor="location" className="block text-sm font-medium text-foreground mb-1">
-          Location
-        </label>
-        <input
-          id="location"
-          type="text"
-          value={location}
-          onChange={(e) => setLocation(e.target.value)}
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="e.g., Remote, New York, Hybrid"
-        />
-      </div>
+        <div>
+          <label htmlFor="location" className="block text-sm font-medium text-foreground mb-1">
+            Location
+          </label>
+          <input
+            id="location"
+            type="text"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
+            placeholder="e.g., Remote, New York, Hybrid"
+          />
+        </div>
 
-      <div>
-        <label htmlFor="employmentType" className="block text-sm font-medium text-foreground mb-1">
-          Employment Type *
-        </label>
-        <select
-          id="employmentType"
-          value={employmentType}
-          onChange={(e) => setEmploymentType(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-        >
-          <option value="full-time">Full-time</option>
-          <option value="part-time">Part-time</option>
-          <option value="contract">Contract</option>
-          <option value="internship">Internship</option>
-          <option value="temporary">Temporary</option>
-        </select>
+        <div>
+          <label htmlFor="employmentType" className="block text-sm font-medium text-foreground mb-1">
+            Employment Type *
+          </label>
+          <CustomSelect
+            id="employmentType"
+            value={employmentType}
+            onChange={setEmploymentType}
+            options={employmentTypeOptions}
+            placeholder="Select employment type"
+            required
+          />
+        </div>
       </div>
 
       <div>
@@ -199,7 +244,7 @@ export function CreateRoleForm() {
 
       <div>
         <label className="block text-sm font-medium text-foreground mb-3">
-          Role Images (up to 5)
+          Role Images (up to 6)
           {compressing && <span className="text-xs text-muted-foreground ml-2">Compressing...</span>}
         </label>
         <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
@@ -223,29 +268,44 @@ export function CreateRoleForm() {
         </div>
 
         {imagePreviews.length > 0 && (
-          <div className="mt-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {imagePreviews.map((preview, index) => (
-              <div key={`preview-${index}`} className="relative">
-                <div className="bg-muted rounded-lg overflow-hidden aspect-square">
-                  <img
-                    src={preview || "/placeholder.svg"}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="absolute bottom-2 left-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                  {images[index]?.name}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeImage(index)}
-                  className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1 hover:bg-destructive/90 shadow-lg"
+          <>
+            <div className="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+              {imagePreviews.map((preview, index) => (
+                <div
+                  key={`preview-${index}`}
+                  className={`relative group ${draggedIndex === index ? 'opacity-50' : ''}`}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDrop={(e) => handleDrop(e, index)}
+                  onDragEnd={handleDragEnd}
                 >
-                  <X size={16} />
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div className="bg-muted rounded-lg overflow-hidden aspect-square relative">
+                    <img
+                      src={preview || "/placeholder.svg"}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover cursor-move hover:opacity-90 transition-opacity"
+                    />
+                    {index === 0 && (
+                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded font-medium">
+                        Cover
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1.5 hover:bg-destructive/90 shadow-lg cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              💡 <strong>Tip:</strong> Drag and drop to reorder images. The first image will be used as the cover image when sharing this role.
+            </p>
+          </>
         )}
       </div>
 
@@ -259,7 +319,7 @@ export function CreateRoleForm() {
         <button
           type="submit"
           disabled={loading}
-          className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+          className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium cursor-pointer"
         >
           {loading ? "Creating..." : "Create Role"}
         </button>
@@ -267,7 +327,7 @@ export function CreateRoleForm() {
           type="button"
           onClick={() => router.back()}
           disabled={loading}
-          className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors font-medium"
+          className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors font-medium cursor-pointer"
         >
           Cancel
         </button>

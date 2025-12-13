@@ -7,17 +7,49 @@ interface CardProps {
 }
 
 export function Card({ children, className }: CardProps) {
-  return <div className={cn("bg-white rounded-lg border border-gray-200 shadow-sm", className)}>{children}</div>
+  return (
+    <div className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)}>
+      {children}
+    </div>
+  )
 }
 
 export function CardHeader({ children, className }: CardProps) {
-  return <div className={cn("px-6 py-4 border-b border-gray-200", className)}>{children}</div>
+  return (
+    <div className={cn("flex flex-col space-y-1.5 p-6", className)}>
+      {children}
+    </div>
+  )
+}
+
+export function CardTitle({ children, className }: CardProps) {
+  return (
+    <h3 className={cn("font-semibold leading-none tracking-tight", className)}>
+      {children}
+    </h3>
+  )
+}
+
+export function CardDescription({ children, className }: CardProps) {
+  return (
+    <p className={cn("text-sm text-muted-foreground", className)}>
+      {children}
+    </p>
+  )
 }
 
 export function CardContent({ children, className }: CardProps) {
-  return <div className={cn("px-6 py-4", className)}>{children}</div>
+  return (
+    <div className={cn("p-6 pt-0", className)}>
+      {children}
+    </div>
+  )
 }
 
 export function CardFooter({ children, className }: CardProps) {
-  return <div className={cn("px-6 py-4 border-t border-gray-200 bg-gray-50", className)}>{children}</div>
+  return (
+    <div className={cn("flex items-center p-6 pt-0", className)}>
+      {children}
+    </div>
+  )
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Briefcase, FileText, Building, Users, LogOut, Sun, Moon } from "lucide-react"
+import { LayoutDashboard, Briefcase, FileText, Building, Users, LogOut, Sun, Moon, Settings } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useTheme } from "@/providers/ThemeProvider"
 import { getSupabaseClient } from "@/lib/supabaseClient"
@@ -13,6 +13,7 @@ const navItems = [
   { href: "/dashboard/departments", label: "Departments", icon: Building },
   { href: "/dashboard/employees", label: "Employees", icon: Users },
   { href: "/dashboard/applications", label: "Applications", icon: FileText },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ]
 
 export function Sidebar() {
@@ -35,7 +36,7 @@ export function Sidebar() {
           </div>
           <span className="font-bold text-sidebar-foreground">HR</span>
         </div>
-        <p className="text-sm text-sidebar-foreground/80">{organization?.name || "AMS"}</p>
+        <p className="text-sm text-sidebar-foreground/80">Simplify Hr</p>
       </div>
 
       <nav className="flex-1 p-4 space-y-2">
@@ -46,11 +47,10 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                isActive
-                  ? "bg-sidebar-primary/20 text-sidebar-primary font-semibold border-l-4 border-sidebar-primary"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent px-4"
-              }`}
+              className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${isActive
+                ? "bg-sidebar-primary/20 text-sidebar-primary font-semibold border-l-4 border-sidebar-primary"
+                : "text-sidebar-foreground hover:bg-sidebar-accent px-4"
+                }`}
             >
               <Icon size={20} />
               <span>{item.label}</span>

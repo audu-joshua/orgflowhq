@@ -1,10 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
+import Link from "next/link"
+import { Loader2 } from "lucide-react"
 
 export function LoginForm() {
   const router = useRouter()
@@ -25,51 +26,86 @@ export function LoginForm() {
     }
   }
 
+  const handleSocialLogin = (provider: string) => {
+    // Placeholder for social login implementation
+    console.log(`Login with ${provider}`)
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="you@example.com"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1">
-          Password
-        </label>
-        <input
-          id="password"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="••••••••"
-        />
-      </div>
-
-      {(formError || error) && (
-        <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
-          {formError || error}
+    <div className="space-y-6">
+      {/* Email/Password Form */}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
+            placeholder="batukra312@||"
+          />
         </div>
-      )}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 transition-colors font-medium"
-      >
-        {loading ? "Signing in..." : "Sign In"}
-      </button>
-    </form>
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
+            placeholder="Enter your Password"
+          />
+        </div>
+
+        <div className="flex justify-end">
+          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+            Forget Password?
+          </Link>
+        </div>
+
+        {(formError || error) && (
+          <div className="p-3 bg-destructive/10 border border-destructive rounded-xl text-destructive text-sm">
+            {formError || error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full px-4 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-xl disabled:opacity-50 transition-all font-semibold text-lg cursor-pointer flex items-center justify-center gap-2"
+        >
+          {loading && <Loader2 className="w-5 h-5 animate-spin" />}
+          {loading ? "Signing in..." : "Login"}
+        </button>
+      </form>
+
+      {/* Footer Links */}
+      <div className="text-center space-y-4">
+        <p className="text-muted-foreground text-sm">
+          Don't have an account?{" "}
+          <Link href="/register" className="text-primary hover:underline font-medium">
+            Sign up
+          </Link>
+        </p>
+        <Link href="/" className="block text-muted-foreground hover:text-foreground text-sm">
+          Back to home
+        </Link>
+      </div>
+
+      {/* Copyright */}
+      <div className="pt-6 border-t border-border">
+        <p className="text-center text-xs text-muted-foreground">
+          ©2025 HR All Right Reserved
+        </p>
+      </div>
+    </div>
   )
 }
