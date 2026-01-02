@@ -41,9 +41,45 @@ export default async function ApplyPage({ params }: { params: Promise<{ slug: st
 
   const { data: org } = await supabase
     .from("organizations")
-    .select("name")
+    .select("name, logo_url")
     .eq("id", role.organization_id)
     .single()
 
-  return <ApplicationPageContent role={role as RoleWithImages} organizationName={org?.name || ""} />
+  if (role.status === 'closed') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-8 animate-in fade-in zoom-in duration-500">
+          {org?.logo_url && (
+            <img src={org.logo_url} alt={org.name} className="h-16 mx-auto object-contain" />
+          )}
+          <div className="space-y-4">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-destructive/10 text-destructive text-sm font-bold uppercase tracking-widest">
+              Applications Closed
+            </div>
+            <h1 className="text-4xl font-bold text-foreground">{role.title}</h1>
+            <p className="text-muted-foreground text-lg">
+              Thank you for your interest! Unfortunately, we are no longer accepting new applications for this position at {org?.name || 'this time'}.
+            </p>
+          </div>
+          <div className="pt-8 border-t border-border">
+            <a
+              href="/"
+              className="inline-flex items-center gap-2 text-primary font-bold hover:underline"
+            >
+              View other opportunities
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <ApplicationPageContent
+      role={role as RoleWithImages}
+      organizationName={org?.name || ""}
+      organizationLogo={org?.logo_url || ""}
+      organizationId={role.organization_id}
+    />
+  )
 }

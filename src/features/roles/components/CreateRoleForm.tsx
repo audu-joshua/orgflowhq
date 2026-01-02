@@ -4,12 +4,13 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Upload, X } from "lucide-react"
+import { Upload, X, Eye, RefreshCw } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { roleService } from "../services/roleService"
 import { departmentService } from "@/features/departments/services/departmentService"
-import { compressImages } from "@/lib/imageUtils"
+import { compressImages, compressImage } from "@/lib/imageUtils"
 import { CustomSelect } from "@/components/ui/CustomSelect"
+import { Modal } from "@/components/ui/modal"
 import type { Department } from "@/features/departments/types"
 
 export function CreateRoleForm() {
@@ -27,6 +28,8 @@ export function CreateRoleForm() {
   const [loading, setLoading] = useState(false)
   const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState("")
+  const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null)
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (organization) {
@@ -69,6 +72,37 @@ export function CreateRoleForm() {
       setError(err instanceof Error ? err.message : "Failed to process images")
     } finally {
       setCompressing(false)
+      // Reset input value so the same file can be selected again if needed
+      e.target.value = ""
+    }
+  }
+
+  const handleImageReplace = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || replacingIndex === null) return
+
+    setError("")
+    setCompressing(true)
+
+    try {
+      const compressedFile = await compressImage(file)
+      const newImages = [...images]
+      newImages[replacingIndex] = compressedFile
+      setImages(newImages)
+
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const newPreviews = [...imagePreviews]
+        newPreviews[replacingIndex] = e.target?.result as string
+        setImagePreviews(newPreviews)
+      }
+      reader.readAsDataURL(compressedFile)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to replace image")
+    } finally {
+      setCompressing(false)
+      setReplacingIndex(null)
+      e.target.value = ""
     }
   }
 
@@ -280,14 +314,42 @@ export function CreateRoleForm() {
                   onDrop={(e) => handleDrop(e, index)}
                   onDragEnd={handleDragEnd}
                 >
-                  <div className="bg-muted rounded-lg overflow-hidden aspect-square relative">
+                  <div className="bg-muted rounded-lg overflow-hidden aspect-square relative shadow-sm border border-border">
                     <img
                       src={preview || "/placeholder.svg"}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover cursor-move hover:opacity-90 transition-opacity"
+                      className="w-full h-full object-cover cursor-move"
                     />
+
+                    {/* Top sliding overlay */}
+                    <div className="absolute top-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white py-2 flex justify-center items-center transform -translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-10">
+                      <button
+                        type="button"
+                        onClick={() => setViewingImageIndex(index)}
+                        className="flex items-center gap-1.5 text-xs font-medium hover:text-primary transition-colors px-3 py-1 bg-white/10 rounded-md"
+                      >
+                        <Eye size={12} />
+                        View
+                      </button>
+                    </div>
+
+                    {/* Bottom sliding overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 bg-black/60 backdrop-blur-sm text-white py-2 flex justify-center items-center transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-in-out z-10">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplacingIndex(index)
+                          document.getElementById('image-replace')?.click()
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-medium hover:text-primary transition-colors px-3 py-1 bg-white/10 rounded-md"
+                      >
+                        <RefreshCw size={12} />
+                        Change
+                      </button>
+                    </div>
+
                     {index === 0 && (
-                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded font-medium">
+                      <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded font-bold shadow-md z-20 uppercase tracking-wider">
                         Cover
                       </div>
                     )}
@@ -295,7 +357,7 @@ export function CreateRoleForm() {
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
-                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1.5 hover:bg-destructive/90 shadow-lg cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-1.5 hover:bg-destructive/90 shadow-lg cursor-pointer opacity-0 group-hover:opacity-100 transition-all duration-200 z-30"
                   >
                     <X size={14} />
                   </button>
@@ -303,11 +365,49 @@ export function CreateRoleForm() {
               ))}
             </div>
             <p className="mt-3 text-xs text-muted-foreground">
-              💡 <strong>Tip:</strong> Drag and drop to reorder images. The first image will be used as the cover image when sharing this role.
+              💡 <strong>Tip:</strong> Drag and drop to reorder images. Hover over an image to <strong>View</strong> enlarged or <strong>Change</strong> it. The first image is the cover.
             </p>
+            {/* Hidden input for image replacement */}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="image-replace"
+              onChange={handleImageReplace}
+              disabled={compressing}
+            />
           </>
         )}
       </div>
+
+      {/* Image Preview Modal */}
+      <Modal
+        isOpen={viewingImageIndex !== null}
+        onClose={() => setViewingImageIndex(null)}
+        title="Image Preview"
+        maxWidth="max-w-3xl"
+      >
+        <div className="flex flex-col">
+          <div className="relative w-full bg-muted flex items-center justify-center min-h-[300px] max-h-[70vh] overflow-hidden">
+            {viewingImageIndex !== null && (
+              <img
+                src={imagePreviews[viewingImageIndex]}
+                alt="Enlarged preview"
+                className="max-w-full max-h-[70vh] object-contain shadow-sm"
+              />
+            )}
+          </div>
+          <div className="p-4 border-t border-border flex justify-end bg-card">
+            <button
+              type="button"
+              onClick={() => setViewingImageIndex(null)}
+              className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       {error && (
         <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">

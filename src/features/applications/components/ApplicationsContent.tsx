@@ -73,27 +73,34 @@ export function ApplicationsContent() {
             />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {roles.map((role) => (
-                <div
-                  key={role.id}
-                  onClick={() => setSelectedRole(role.id)}
-                  className="bg-card rounded-lg border border-border p-6 cursor-pointer hover:shadow-lg transition-all"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">{role.title}</h3>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users size={18} />
-                      <span className="text-sm font-medium">{role.application_count || 0}</span>
+              {roles.map((role) => {
+                const isClosed = role.status === 'closed'
+                return (
+                  <div
+                    key={role.id}
+                    onClick={() => setSelectedRole(role.id)}
+                    className={`bg-card rounded-lg border border-border p-6 cursor-pointer hover:shadow-lg transition-all relative group ${isClosed ? 'opacity-75 grayscale-[0.5]' : ''}`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">{role.title}</h3>
+                        {role.department && (
+                          <p className="text-sm text-muted-foreground">{role.department}</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Users size={16} />
+                          <span className="text-sm font-medium">{role.application_count || 0}</span>
+                        </div>
+                      </div>
                     </div>
+                    {role.location && (
+                      <p className="text-xs text-muted-foreground mt-2">{role.location}</p>
+                    )}
                   </div>
-                  {role.department && (
-                    <p className="text-sm text-muted-foreground mb-2">{role.department}</p>
-                  )}
-                  {role.location && (
-                    <p className="text-xs text-muted-foreground">{role.location}</p>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

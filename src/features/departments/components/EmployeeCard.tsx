@@ -1,10 +1,12 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Phone, Trash2 } from "lucide-react"
+import { Mail, Phone, Calendar, User, Trash2, Edit2 } from "lucide-react"
 import { EmployeeModal } from "./EmployeeModal"
 import { DeleteConfirmModal } from "./DeleteConfirmModal"
+import { EditEmployeeModal } from "./EditEmployeeModal"
 import { departmentService } from "../services/departmentService"
+import { formatDate } from "@/lib/utils"
 import type { Employee } from "../types"
 
 interface EmployeeCardProps {
@@ -14,6 +16,7 @@ interface EmployeeCardProps {
 
 export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -21,6 +24,19 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
     if (employee.full_name) return employee.full_name[0].toUpperCase()
     if (employee.email) return employee.email[0].toUpperCase()
     return "E"
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-green-500/10 text-green-600 dark:text-green-400"
+      case "inactive":
+        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+      case "terminated":
+        return "bg-destructive/10 text-destructive"
+      default:
+        return "bg-muted text-muted-foreground"
+    }
   }
 
   const handleDelete = async () => {
@@ -40,68 +56,109 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className="group relative aspect-square bg-card rounded-lg border border-border overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-300"
+        className="bg-card rounded-xl border border-border overflow-hidden cursor-pointer hover:shadow-lg transition-all group relative"
       >
-        {/* Image or Initial */}
-        <div className="h-[calc(100%-60px)] overflow-hidden">
+        {/* Top Image Section */}
+        <div className="relative h-44 overflow-hidden">
           {employee.profile_image_url ? (
             <img
               src={employee.profile_image_url}
               alt={employee.full_name || "Employee"}
-              className="w-full h-full object-cover"
+              className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${employee.status === 'inactive' ? 'grayscale' : ''} ${employee.status === 'terminated' ? 'grayscale contrast-125' : ''}`}
             />
           ) : (
-            <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold text-5xl">{getInitial()}</span>
+            <div className={`w-full h-full bg-primary/10 flex items-center justify-center ${employee.status === 'inactive' ? 'grayscale' : ''} ${employee.status === 'terminated' ? 'bg-destructive/10' : ''}`}>
+              <span className={`text-primary font-bold text-5xl ${employee.status === 'terminated' ? 'text-destructive' : ''}`}>{getInitial()}</span>
             </div>
           )}
-        </div>
-        
-        {/* Name at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 bg-card/95 backdrop-blur-sm p-3 border-t border-border">
-          <h3 className="font-semibold text-foreground truncate text-sm">{employee.full_name || "No name"}</h3>
-          {employee.position && (
-            <p className="text-muted-foreground truncate text-xs">{employee.position}</p>
+
+          {/* Terminated Overlay */}
+          {employee.status === 'terminated' && (
+            <div className="absolute inset-0 bg-destructive/20 mix-blend-multiply" />
           )}
+
+          {/* Status Badge */}
+          <div className="absolute top-3 right-3">
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white/10 backdrop-blur-md ${getStatusColor(employee.status)}`}>
+              {employee.status}
+            </span>
+          </div>
         </div>
-        
-        {/* Dark overlay on hover with details */}
-        <div className="absolute inset-0 bg-black/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center px-4">
-          <h3 className="text-lg font-semibold text-white mb-1 text-center">{employee.full_name || "No name"}</h3>
-          {employee.position && (
-            <p className="text-white/80 text-sm mb-4 text-center">{employee.position}</p>
-          )}
-          <div className="space-y-2 text-center">
-            {employee.email && (
-              <div className="flex items-center justify-center gap-2 text-white">
-                <Mail size={12} />
-                <span className="text-[10px]">{employee.email}</span>
+
+        {/* Content Section */}
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-bold text-foreground truncate text-base group-hover:text-primary transition-colors">
+              {employee.full_name || "No name"}
+            </h3>
+            {employee.position && (
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
+                {employee.position}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5 border-t border-border pt-3">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Mail size={12} className="shrink-0" />
+              <span className="truncate">{employee.email}</span>
+            </div>
+            {employee.phone && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone size={12} className="shrink-0" />
+                <span>{employee.phone}</span>
               </div>
             )}
-            {employee.phone && (
-              <div className="flex items-center justify-center gap-2 text-white">
-                <Phone size={12} />
-                <span className="text-[10px]">{employee.phone}</span>
+            {employee.hire_date && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+                <Calendar size={12} className="shrink-0" />
+                <span>Hired {formatDate(employee.hire_date)}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Delete button */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            setIsDeleteModalOpen(true)
-          }}
-          className="absolute top-2 right-2 text-white hover:bg-white/20 p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 backdrop-blur-sm"
-          title="Delete employee"
-        >
-          <Trash2 size={18} />
-        </button>
+        {/* Quick Actions (Hover Overlay) */}
+        <div className="absolute top-3 left-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setIsEditModalOpen(true)
+            }}
+            className="p-2 rounded-full bg-background/80 text-foreground hover:text-primary border border-border/50 backdrop-blur-sm shadow-sm transition-colors"
+            title="Edit details"
+          >
+            <Edit2 size={14} />
+          </button>
+          {employee.system_role !== 'owner' && employee.position?.toLowerCase() !== 'owner' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsDeleteModalOpen(true)
+              }}
+              className="p-2 rounded-full bg-destructive/10 text-destructive hover:bg-destructive/20 border border-destructive/20 backdrop-blur-sm shadow-sm transition-colors"
+              title="Delete employee"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <EmployeeModal employee={employee} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onDeleted={onDeleted} />
-      
+      <EmployeeModal
+        employee={employee}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onDeleted={onDeleted}
+      />
+
+      <EditEmployeeModal
+        employee={employee}
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        onSuccess={onDeleted!}
+      />
+
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onClose={() => setIsDeleteModalOpen(false)}
@@ -112,4 +169,3 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
     </>
   )
 }
-

@@ -9,6 +9,7 @@ interface CustomSelectProps {
     options: { value: string; label: string }[]
     placeholder?: string
     required?: boolean
+    disabled?: boolean
     id?: string
 }
 
@@ -18,6 +19,7 @@ export function CustomSelect({
     options,
     placeholder = "Select an option",
     required = false,
+    disabled = false,
     id
 }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -41,8 +43,9 @@ export function CustomSelect({
             <button
                 type="button"
                 id={id}
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-between cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => !disabled && setIsOpen(!isOpen)}
+                disabled={disabled}
+                className={`w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-between transition-colors ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : "cursor-pointer hover:bg-muted/50"}`}
             >
                 <span className={selectedOption ? "text-foreground" : "text-muted-foreground"}>
                     {selectedOption ? selectedOption.label : placeholder}

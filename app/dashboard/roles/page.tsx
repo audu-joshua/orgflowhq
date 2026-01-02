@@ -10,12 +10,13 @@ import { RoleCard } from "@/features/dashboard/components/RoleCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import type { Role } from "@/features/roles/types"
+import { MigrationHelper } from "@/components/admin/MigrationHelper"
 
 export default function RolesPage() {
   const router = useRouter()
   const { organization } = useAppStore()
   const { loading: authLoading } = useAuth()
-  const [roles, setRoles] = useState<Role[]>([])
+  const [roles, setRoles] = useState<(Role & { application_count?: number })[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -49,6 +50,8 @@ export default function RolesPage() {
           Create Role
         </button>
       </div>
+
+      <MigrationHelper />
 
       {roles.length === 0 ? (
         <EmptyState

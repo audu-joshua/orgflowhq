@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Mail, Phone, FileText, Calendar } from "lucide-react"
+import { Mail, Phone, FileText, Calendar, User } from "lucide-react"
 import { ApplicantDetailsModal } from "./ApplicantDetailsModal"
 import { formatDate } from "@/lib/utils"
 import type { Application } from "../types"
@@ -14,7 +14,7 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const getInitial = () => {
-    if (application.candidate_name) return application.candidate_name[0].toUpperCase()
+    if (application.applicant_name) return application.applicant_name[0].toUpperCase()
     return "A"
   }
 
@@ -37,31 +37,52 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     <>
       <div
         onClick={() => setIsModalOpen(true)}
-        className="bg-card rounded-lg border border-border overflow-hidden cursor-pointer hover:shadow-lg transition-all"
+        className="bg-card rounded-lg border border-border overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
       >
-        {application.passport_photo_url ? (
-          <img
-            src={application.passport_photo_url}
-            alt={application.candidate_name}
-            className="w-full h-64 object-cover"
-          />
-        ) : (
-          <div className="w-full h-64 bg-primary/10 flex items-center justify-center">
-            <span className="text-primary font-bold text-6xl">{getInitial()}</span>
-          </div>
-        )}
-        
-        <div className="p-4 space-y-2">
-          <h3 className="font-semibold text-foreground">{application.candidate_name}</h3>
-          <p className="text-sm text-muted-foreground truncate">{application.candidate_email}</p>
-          {application.roles?.title && (
-            <p className="text-xs text-muted-foreground">Role: {application.roles.title}</p>
+        <div className="relative h-44">
+          {application.applicant_passport ? (
+            <img
+              src={application.applicant_passport}
+              alt={application.applicant_name}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+          ) : (
+            <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+              <span className="text-primary font-bold text-5xl">{getInitial()}</span>
+            </div>
           )}
-          <div className="flex items-center justify-between pt-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(application.status)}`}>
-              {application.status.charAt(0).toUpperCase() + application.status.slice(1)}
+          <div className="absolute top-3 right-3 text-right">
+            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusColor(application.status)}`}>
+              {application.status}
             </span>
-            <span className="text-xs text-muted-foreground">{formatDate(application.created_at)}</span>
+          </div>
+        </div>
+
+        <div className="p-4 space-y-3">
+          <div>
+            <h3 className="font-bold text-foreground truncate">{application.applicant_name}</h3>
+            {application.roles?.title && (
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
+                {application.roles.title}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Mail size={12} />
+              <span className="truncate">{application.applicant_email}</span>
+            </div>
+            {application.applicant_phone && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Phone size={12} />
+                <span>{application.applicant_phone}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+              <Calendar size={12} />
+              <span>Applied {formatDate(application.created_at)}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -74,4 +95,3 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
     </>
   )
 }
-

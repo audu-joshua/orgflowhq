@@ -1,8 +1,9 @@
 "use client"
 
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus } from "lucide-react"
+import { Plus, Users, FileText, CheckCircle, Clock, Briefcase, TrendingUp } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { dashboardService } from "../services/dashboardService"
@@ -11,13 +12,15 @@ import { StatCard } from "./StatCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import type { Role } from "@/features/roles/types"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 
 export function DashboardContent() {
   const router = useRouter()
   const { user, organization } = useAppStore()
   const { loading: authLoading } = useAuth()
-  const [roles, setRoles] = useState<Role[]>([])
+  const [roles, setRoles] = useState<(Role & { application_count?: number })[]>([])
   const [stats, setStats] = useState({ total: 0, new: 0, shortlisted: 0, interviewed: 0, hired: 0 })
+  const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,14 +31,21 @@ export function DashboardContent() {
       return
     }
 
+    if (user.role === "finance") {
+      router.push("/dashboard/timesheets")
+      return
+    }
+
     const loadData = async () => {
       try {
-        const [rolesData, statsData] = await Promise.all([
+        const [rolesData, statsData, chartHistory] = await Promise.all([
           dashboardService.getRoles(organization.id),
           dashboardService.getApplicationStats(organization.id),
+          dashboardService.getApplicationsOverTime(organization.id)
         ])
         setRoles(rolesData)
         setStats(statsData)
+        setChartData(chartHistory)
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
       } finally {
@@ -50,31 +60,168 @@ export function DashboardContent() {
     return <LoadingSpinner />
   }
 
+
+
+  const funnelData = [
+    { name: 'New', value: stats.new },
+    { name: 'Shortlisted', value: stats.shortlisted },
+    { name: 'Interview', value: stats.interviewed },
+    { name: 'Hired', value: stats.hired },
+  ]
+
   return (
-    <div className="space-y-8">
-      {/* Stats Section */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground mb-4">Overview</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <StatCard label="Total Applications" value={stats.total} />
-          <StatCard label="New" value={stats.new} />
-          <StatCard label="Shortlisted" value={stats.shortlisted} />
-          <StatCard label="Interviewed" value={stats.interviewed} />
-          <StatCard label="Hired" value={stats.hired} />
+    <div className="space-y-8 animate-in fade-in duration-500">
+
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back, here's what's happening today.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => router.push("/dashboard/roles/new")}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 font-medium"
+          >
+            <Plus size={18} />
+            <span>Create New Role</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          label="Total Applications"
+          value={stats.total}
+          icon={FileText}
+          variant="solid"
+          index={0}
+          trend={{ value: 12, positive: true }}
+        />
+        <StatCard
+          label="In Review"
+          value={stats.new + stats.shortlisted}
+          icon={Users}
+          variant="subtle"
+          index={1}
+        />
+        <StatCard
+          label="Interviews Scheduled"
+          value={stats.interviewed}
+          icon={Clock}
+          variant="subtle"
+          index={2}
+        />
+        <StatCard
+          label="Hired Candidates"
+          value={stats.hired}
+          icon={CheckCircle}
+          variant="subtle"
+          index={3}
+          trend={{ value: 5, positive: true }}
+        />
+      </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[400px]">
+
+        {/* Main Chart */}
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Application Trends</h3>
+              <p className="text-sm text-muted-foreground">Applications received over time</p>
+            </div>
+            <div className="p-2 bg-muted/50 rounded-lg">
+              <TrendingUp size={20} className="text-muted-foreground" />
+            </div>
+          </div>
+          <div className="flex-1 w-full min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorHired" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="name"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                  dy={10}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                />
+                <Tooltip
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                  itemStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Area
+                  type="natural"
+                  dataKey="applications"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorApps)"
+                  name="Applications"
+                />
+                <Area
+                  type="natural"
+                  dataKey="hired"
+                  stroke="#22c55e"
+                  strokeWidth={3}
+                  fillOpacity={1}
+                  fill="url(#colorHired)"
+                  name="Hired"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Funnel/Side Chart */}
+        <div className="bg-card border border-border rounded-xl p-6 shadow-sm flex flex-col">
+          <h3 className="text-lg font-bold text-foreground mb-6">Recruitment Funnel</h3>
+          <div className="flex-1 w-full min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={funnelData} layout="vertical" margin={{ left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="hsl(var(--border))" />
+                <XAxis type="number" hide />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  width={80}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12, fontWeight: 500 }}
+                />
+                <Tooltip
+                  cursor={{ fill: 'transparent' }}
+                  contentStyle={{ backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))', borderRadius: '8px' }}
+                />
+                <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={32} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
       {/* Roles Section */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-foreground">Job Roles</h2>
-          <button
-            onClick={() => router.push("/dashboard/roles/new")}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors font-medium"
-          >
-            <Plus size={20} />
-            Create Role
-          </button>
+        <div className="flex items-center gap-2 mb-6">
+          <Briefcase className="text-primary" size={24} />
+          <h2 className="text-xl font-bold text-foreground">Active Job Roles</h2>
         </div>
 
         {roles.length === 0 ? (
@@ -91,6 +238,17 @@ export function DashboardContent() {
             {roles.map((role) => (
               <RoleCard key={role.id} role={role} />
             ))}
+
+            {/* 'Add New' Card */}
+            <button
+              onClick={() => router.push("/dashboard/roles/new")}
+              className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center gap-4 hover:border-primary/50 hover:bg-primary/5 transition-all group min-h-[200px]"
+            >
+              <div className="p-4 bg-muted/50 rounded-full group-hover:bg-primary/10 transition-colors">
+                <Plus size={32} className="text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+              <span className="font-medium text-muted-foreground group-hover:text-primary transition-colors">Create New Role</span>
+            </button>
           </div>
         )}
       </div>

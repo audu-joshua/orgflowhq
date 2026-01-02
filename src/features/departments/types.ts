@@ -20,7 +20,7 @@ export interface Employee {
   hire_date: string | null
   profile_image_url: string | null
   status: 'active' | 'inactive' | 'terminated'
+  system_role?: string | null
   created_at: string
   updated_at: string
 }
-

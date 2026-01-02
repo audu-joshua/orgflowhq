@@ -7,13 +7,13 @@ import { authService } from "../services/authService"
 export function useAuth() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user, setUser, organization, setOrganization } = useAppStore()
+  const { user, setUser, organization, setOrganization, setInitialized } = useAppStore()
 
   useEffect(() => {
     const initAuth = async () => {
       try {
         const currentUser = await authService.getCurrentUser()
-        
+
         if (currentUser) {
           const profile = await authService.getUserProfile(currentUser.id)
           setUser({
@@ -21,6 +21,9 @@ export function useAuth() {
             email: profile.email,
             organization_id: profile.organization_id,
             created_at: profile.created_at,
+            role: profile.role,
+            full_name: profile.full_name,
+            profile_image_url: profile.profile_image_url,
           })
           if (profile.organizations) {
             setOrganization(profile.organizations)
@@ -40,12 +43,13 @@ export function useAuth() {
         setUser(null)
         setOrganization(null)
       } finally {
+        setInitialized(true)
         setLoading(false)
       }
     }
 
     initAuth()
-  }, [setUser, setOrganization])
+  }, [setUser, setOrganization, setInitialized])
 
   const signUp = async (email: string, password: string, organizationName: string) => {
     setLoading(true)
@@ -56,11 +60,13 @@ export function useAuth() {
         password,
         organizationName
       )
+      // For signUp, the user who signs up is automatically an 'owner'
       setUser({
         id: newUser.id,
         email: newUser.email || "",
         organization_id: newOrg.id,
         created_at: new Date().toISOString(),
+        role: "owner",
       })
       setOrganization(newOrg)
     } catch (err) {
@@ -83,10 +89,14 @@ export function useAuth() {
         email: profile.email,
         organization_id: profile.organization_id,
         created_at: profile.created_at,
+        role: profile.role,
+        full_name: profile.full_name,
+        profile_image_url: profile.profile_image_url,
       })
       if (profile.organizations) {
         setOrganization(profile.organizations)
       }
+      return profile
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign in failed"
       setError(message)

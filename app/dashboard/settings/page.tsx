@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useAppStore } from "@/store/useAppStore"
 import { getSupabaseClient } from "@/lib/supabaseClient"
-import { Loader2, Upload, Camera, Building2 } from "lucide-react"
+import { Loader2, Upload, Camera, Building2, Copy, Check, ExternalLink } from "lucide-react"
 import type { Organization } from "@/features/organization/types"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -16,6 +16,7 @@ export default function SettingsPage() {
     const [logo, setLogo] = useState<File | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
+    const [isCopied, setIsCopied] = useState(false)
 
     // Initial data load
     useEffect(() => {
@@ -117,18 +118,9 @@ export default function SettingsPage() {
 
             console.log("Updating organization with:", updateData)
 
-            // Update organization
-            const { data, error } = await supabase
-                .from("organizations")
-                .update(updateData)
-                .eq("id", organization.id)
-                .select()
-                .single()
-
-            if (error) {
-                console.error("Database update error:", error)
-                throw new Error(`Database error: ${error.message}`)
-            }
+            // Update organization via service to handle slug logic
+            const { organizationService } = await import("@/features/organization/services/organizationService")
+            const data = await organizationService.updateOrganization(organization.id, updateData)
 
             // Update local state
             setOrganization({
@@ -255,6 +247,53 @@ export default function SettingsPage() {
                                     minLength={2}
                                     maxLength={50}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Clock Portal Link Section (New) */}
+                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium leading-none">Clock Portal Link</label>
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                    Share this link with your employees so they can clock in and out.
+                                </p>
+                            </div>
+                            <div className="max-w-md space-y-3">
+                                <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-muted/40 border border-border rounded-lg px-3 py-2.5 font-mono text-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                                        {`${typeof window !== 'undefined' ? window.location.origin : ''}/org/${organization.slug}/clock`}
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="shrink-0 h-10 w-10"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/org/${organization.slug}/clock`;
+                                            navigator.clipboard.writeText(url);
+                                            setIsCopied(true);
+                                            toast.success("Login URL copied to clipboard!");
+                                            setTimeout(() => setIsCopied(false), 2000);
+                                        }}
+                                    >
+                                        {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon"
+                                        className="shrink-0 h-10 w-10 text-primary hover:text-primary"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/org/${organization.slug}/clock`;
+                                            window.open(url, '_blank');
+                                        }}
+                                    >
+                                        <ExternalLink className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground italic">
+                                    Employees will need after their Email and unique Employee ID to login here.
+                                </p>
                             </div>
                         </div>
 

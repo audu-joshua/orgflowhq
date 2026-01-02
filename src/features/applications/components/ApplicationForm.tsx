@@ -1,34 +1,46 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Upload } from "lucide-react"
-import { useAppStore } from "@/store/useAppStore"
+import { Upload, Phone, User, Mail, FileText, Camera } from "lucide-react"
 import { applicationService } from "../services/applicationService"
+import { compressImage } from "@/lib/imageUtils"
+import type { Application } from "../types"
 
 interface ApplicationFormProps {
   roleId: string
+  organizationId: string
 }
 
-export function ApplicationForm({ roleId }: ApplicationFormProps) {
+export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps) {
   const router = useRouter()
-  const { organization } = useAppStore()
-  const [candidateName, setCandidateName] = useState("")
-  const [candidateEmail, setCandidateEmail] = useState("")
-  const [coverLetter, setCoverLetter] = useState("")
+  const [applicantName, setApplicantName] = useState("")
+  const [applicantEmail, setApplicantEmail] = useState("")
+  const [applicantPhone, setApplicantPhone] = useState("")
+  const [coverLetter, setCoverLetter] = useState<File | null>(null)
   const [resume, setResume] = useState<File | null>(null)
   const [passportPhoto, setPassportPhoto] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
+  const [compressing, setCompressing] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+
+  // Redirect on success
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => {
+        router.push("/")
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [success, router])
 
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setError("File size must be less than 5MB")
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Resume must be less than 10MB")
         return
       }
       setResume(file)
@@ -36,15 +48,42 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
     }
   }
 
-  const handlePassportUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverLetterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        setError("Passport photo must be less than 2MB")
+      if (file.size > 10 * 1024 * 1024) {
+        setError("Cover letter must be less than 10MB")
         return
       }
-      setPassportPhoto(file)
+      setCoverLetter(file)
       setError("")
+    }
+  }
+
+  const handlePassportUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Passport photo must be less than 5MB")
+        return
+      }
+
+      setCompressing(true)
+      try {
+        const compressedFile = await compressImage(file, {
+          maxWidth: 800,
+          maxHeight: 800,
+          quality: 0.8,
+          format: 'jpeg'
+        })
+        setPassportPhoto(compressedFile)
+        setError("")
+      } catch (err) {
+        console.error("Compression error:", err)
+        setError("Failed to process image")
+      } finally {
+        setCompressing(false)
+      }
     }
   }
 
@@ -52,47 +91,58 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
     e.preventDefault()
     setError("")
 
-    if (!organization) {
-      setError("Organization not found")
+    if (!resume) {
+      setError("Please upload your resume")
+      return
+    }
+
+    if (!coverLetter) {
+      setError("Please upload your cover letter")
+      return
+    }
+
+    if (!passportPhoto) {
+      setError("Please upload your passport photo")
       return
     }
 
     setLoading(true)
 
     try {
-      let resumeUrl: string | undefined
+      // Parallel uploads to save time
+      const [resumeUrl, coverLetterUrl, passportUrl] = await Promise.all([
+        applicationService.uploadResume("resumes", resume),
+        applicationService.uploadResume("cover-letters", coverLetter),
+        applicationService.uploadResume("passports", passportPhoto)
+      ])
 
-      if (resume) {
-        resumeUrl = await applicationService.uploadResume("temp", resume)
-      }
-
-      let passportPhotoUrl: string | undefined
-      if (passportPhoto) {
-        passportPhotoUrl = await applicationService.uploadResume("temp", passportPhoto)
-      }
-
-      await applicationService.createApplication(organization.id, {
+      const applicationData: Omit<Application, "id" | "created_at" | "updated_at" | "organization_id"> = {
         role_id: roleId,
-        candidate_name: candidateName,
-        candidate_email: candidateEmail,
+        applicant_name: applicantName,
+        applicant_email: applicantEmail,
+        applicant_phone: applicantPhone,
         resume_url: resumeUrl,
-        cover_letter: coverLetter || null,
-        passport_photo_url: passportPhotoUrl,
-        status: "new",
-      })
+        cover_letter: coverLetterUrl || null,
+        applicant_passport: passportUrl || null,
+        status: "new"
+      }
+
+      await applicationService.createApplication(organizationId, applicationData)
 
       setSuccess(true)
-      setCandidateName("")
-      setCandidateEmail("")
-      setCoverLetter("")
+      setApplicantName("")
+      setApplicantEmail("")
+      setApplicantPhone("")
+      setCoverLetter(null)
       setResume(null)
       setPassportPhoto(null)
-
-      setTimeout(() => {
-        router.push("/dashboard/applications")
-      }, 2000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit application")
+      console.error("Submission error:", err)
+      if (err instanceof Error && err.message.includes("RLS policy")) {
+        setError("Database access denied. Please contact support to fix table permissions.")
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to submit application")
+      }
     } finally {
       setLoading(false)
     }
@@ -100,105 +150,185 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
 
   if (success) {
     return (
-      <div className="text-center py-8">
-        <div className="text-green-600 text-lg font-semibold mb-2">Application submitted successfully!</div>
-        <p className="text-muted-foreground">Redirecting to dashboard...</p>
+      <div className="relative overflow-hidden bg-muted/30 rounded-lg border border-border animate-in fade-in zoom-in duration-300">
+        <div className="text-center py-12 px-6">
+          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Upload className="text-primary" size={32} />
+          </div>
+          <div className="text-foreground text-2xl font-bold mb-2">Application Received!</div>
+          <p className="text-muted-foreground max-w-sm mx-auto">
+            Thank you for applying. Your application has been submitted successfully and the team will review it soon.
+          </p>
+          <p className="text-xs text-muted-foreground mt-4 animate-pulse">Redirecting to home...</p>
+        </div>
+        {/* Depleting progress bar at the bottom */}
+        <div className="absolute bottom-0 left-0 h-1.5 w-full bg-muted">
+          <div
+            className="h-full bg-primary transition-all duration-[3000ms] ease-linear"
+            style={{
+              width: "100%",
+              animation: "deplete 3s linear forwards"
+            }}
+          />
+        </div>
+        <style jsx>{`
+          @keyframes deplete {
+            from { width: 100%; }
+            to { width: 0%; }
+          }
+        `}</style>
       </div>
     )
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div>
-        <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
-          Full Name
-        </label>
-        <input
-          id="name"
-          type="text"
-          value={candidateName}
-          onChange={(e) => setCandidateName(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="John Doe"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          value={candidateEmail}
-          onChange={(e) => setCandidateEmail(e.target.value)}
-          required
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground"
-          placeholder="john@example.com"
-        />
-      </div>
-
-      <div>
-        <label htmlFor="coverLetter" className="block text-sm font-medium text-foreground mb-1">
-          Cover Letter
-        </label>
-        <textarea
-          id="coverLetter"
-          value={coverLetter}
-          onChange={(e) => setCoverLetter(e.target.value)}
-          rows={6}
-          className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground resize-none"
-          placeholder="Tell us why you're interested in this position..."
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-foreground mb-2">Passport Photo</label>
-        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
-          <Upload className="mx-auto mb-2 text-muted-foreground" size={24} />
-          <p className="text-sm text-muted-foreground mb-2">Upload your passport photo (JPG, PNG - Max 2MB)</p>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePassportUpload}
-            className="hidden"
-            id="passport-upload"
-          />
-          <label
-            htmlFor="passport-upload"
-            className="text-primary hover:text-primary/80 cursor-pointer text-sm font-medium"
-          >
-            Select photo
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label htmlFor="name" className="block text-sm font-medium text-foreground mb-1">
+            <span className="flex items-center gap-2">
+              <User size={14} className="text-muted-foreground" />
+              Full Name *
+            </span>
           </label>
-          {passportPhoto && <p className="text-sm text-green-600 mt-2">✓ {passportPhoto.name}</p>}
+          <input
+            id="name"
+            type="text"
+            value={applicantName}
+            onChange={(e) => setApplicantName(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground transition-all"
+            placeholder="John Doe"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1">
+            <span className="flex items-center gap-2">
+              <Mail size={14} className="text-muted-foreground" />
+              Email *
+            </span>
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={applicantEmail}
+            onChange={(e) => setApplicantEmail(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground transition-all"
+            placeholder="john@example.com"
+          />
+        </div>
+
+        <div className="md:col-span-2">
+          <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-1">
+            <span className="flex items-center gap-2">
+              <Phone size={14} className="text-muted-foreground" />
+              Phone Number *
+            </span>
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            value={applicantPhone}
+            onChange={(e) => setApplicantPhone(e.target.value)}
+            required
+            className="w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary placeholder:text-muted-foreground transition-all"
+            placeholder="+1 234 567 890"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            <span className="flex items-center gap-2">
+              <Camera size={14} className="text-muted-foreground" />
+              Passport Photo *
+            </span>
+          </label>
+          <div className="group relative border-2 border-dashed border-border rounded-xl p-6 text-center bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer h-[160px] flex flex-col items-center justify-center">
+            {compressing ? (
+              <span className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handlePassportUpload}
+                  className="hidden"
+                  id="passport-upload"
+                />
+                <Camera className="mb-2 text-muted-foreground group-hover:text-primary transition-colors" size={24} />
+                <label
+                  htmlFor="passport-upload"
+                  className="text-xs font-medium text-foreground mb-1 truncate px-2 w-full cursor-pointer"
+                >
+                  {passportPhoto ? passportPhoto.name : "Upload Photo"}
+                </label>
+                <p className="text-[10px] text-muted-foreground">JPG, PNG (Max 5MB)</p>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            <span className="flex items-center gap-2">
+              <FileText size={14} className="text-muted-foreground" />
+              Cover Letter *
+            </span>
+          </label>
+          <div className="group relative border-2 border-dashed border-border rounded-xl p-6 text-center bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer h-[160px] flex flex-col items-center justify-center">
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,image/*"
+              onChange={handleCoverLetterUpload}
+              className="absolute inset-0 opacity-0 cursor-pointer"
+              id="cover-letter-upload"
+              required
+            />
+            <Upload className="mb-2 text-muted-foreground group-hover:text-primary transition-colors" size={24} />
+            <p className="text-xs font-medium text-foreground mb-1 truncate px-2 w-full">
+              {coverLetter ? coverLetter.name : "Upload Cover Letter"}
+            </p>
+            <p className="text-[10px] text-muted-foreground">PDF, DOC, DOCX, or Image (Max 5MB)</p>
+          </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-foreground mb-2">Resume (Optional)</label>
-        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center bg-muted/50">
-          <Upload className="mx-auto mb-2 text-muted-foreground" size={24} />
-          <p className="text-sm text-muted-foreground mb-2">Upload your resume (PDF, DOC, DOCX)</p>
+        <label className="block text-sm font-medium text-foreground mb-2">
+          <span className="flex items-center gap-2">
+            <Upload size={14} className="text-muted-foreground" />
+            Resume *
+          </span>
+        </label>
+        <div className="group relative border-2 border-dashed border-border rounded-xl p-8 text-center bg-muted/30 hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer">
           <input
             type="file"
             accept=".pdf,.doc,.docx"
             onChange={handleResumeUpload}
-            className="hidden"
+            className="absolute inset-0 opacity-0 cursor-pointer"
             id="resume-upload"
+            required
           />
-          <label
-            htmlFor="resume-upload"
-            className="text-primary hover:text-primary/80 cursor-pointer text-sm font-medium"
-          >
-            Select file
-          </label>
-          {resume && <p className="text-sm text-green-600 mt-2">✓ {resume.name}</p>}
+          <Upload className="mx-auto mb-3 text-muted-foreground group-hover:text-primary transition-colors" size={28} />
+          <p className="text-sm font-medium text-foreground mb-1">
+            {resume ? resume.name : "Click to upload resume"}
+          </p>
+          <p className="text-xs text-muted-foreground">PDF, DOC, or DOCX (Max 5MB)</p>
+          {resume && (
+            <div className="mt-2 text-xs text-green-600 font-semibold flex items-center justify-center gap-1">
+              <span className="w-1.5 h-1.5 bg-green-600 rounded-full" />
+              File selected
+            </div>
+          )}
         </div>
       </div>
 
       {error && (
-        <div className="p-3 bg-destructive/10 border border-destructive rounded-lg text-destructive text-sm">
+        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm font-medium animate-in fade-in slide-in-from-top-2">
           {error}
         </div>
       )}
@@ -206,9 +336,11 @@ export function ApplicationForm({ roleId }: ApplicationFormProps) {
       <button
         type="submit"
         disabled={loading}
-        className="w-full px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors font-medium"
+        className="w-full px-6 py-4 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 disabled:opacity-50 transition-all font-bold text-lg shadow-lg hover:shadow-primary/20 active:scale-[0.99] flex items-center justify-center"
       >
-        {loading ? "Submitting..." : "Submit Application"}
+        {loading ? (
+          <span className="w-6 h-6 border-3 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+        ) : "Submit Application"}
       </button>
     </form>
   )

@@ -5,23 +5,23 @@
 
 :root {
   /* Light Mode - Teal & Coral Theme */
-  --background: #F7F9FA;
-  --foreground: #1F2937;
-  --card: #F2F4F5;
-  --card-foreground: #1F2937;
+  --background: #F3F5F7;
+  --foreground: #111827;
+  --card: #E8EBED;
+  --card-foreground: #111827;
   --popover: #FFFFFF;
-  --popover-foreground: #1F2937;
+  --popover-foreground: #111827;
   --primary: #0FADAA;
   --primary-foreground: #FFFFFF;
-  --secondary: #F2F4F5;
-  --secondary-foreground: #1F2937;
-  --muted: #E1E5E9;
-  --muted-foreground: #6B7280;
+  --secondary: #E8EBED;
+  --secondary-foreground: #111827;
+  --muted: #D1D5DB;
+  --muted-foreground: #4B5563;
   --accent: #F26B5B;
   --accent-foreground: #FFFFFF;
   --destructive: #F26B5B;
   --destructive-foreground: #FFFFFF;
-  --border: #E1E5E9;
+  --border: #CED4DA;
   --input: #FFFFFF;
   --ring: #0FADAA;
   --chart-1: #0FADAA;

@@ -8,9 +8,16 @@ import type { RoleWithImages } from "@/features/roles/services/roleService"
 interface ApplicationPageContentProps {
   role: RoleWithImages
   organizationName: string
+  organizationLogo?: string
+  organizationId: string
 }
 
-export function ApplicationPageContent({ role, organizationName }: ApplicationPageContentProps) {
+export function ApplicationPageContent({
+  role,
+  organizationName,
+  organizationLogo,
+  organizationId
+}: ApplicationPageContentProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
@@ -51,12 +58,24 @@ export function ApplicationPageContent({ role, organizationName }: ApplicationPa
       {/* Header with Logo and Company Name */}
       <div className="bg-card border-b border-border px-6 py-4 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
-          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-bold text-2xl">H</span>
-          </div>
-          <div className="text-right min-w-0">
-            <h2 className="text-lg font-bold text-foreground truncate">{organizationName || "Company"}</h2>
-            <p className="text-sm text-muted-foreground truncate">Application Portal</p>
+          <div className="flex items-center gap-4 shrink-0">
+            {organizationLogo ? (
+              <img
+                src={organizationLogo}
+                alt={organizationName}
+                className="w-12 h-12 object-contain rounded-lg border border-border bg-white"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center shrink-0">
+                <span className="text-primary-foreground font-bold text-2xl">
+                  {organizationName?.[0] || 'H'}
+                </span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <h2 className="text-lg font-bold text-foreground truncate">{organizationName || "Company"}</h2>
+              <p className="text-sm text-muted-foreground truncate">Application Portal</p>
+            </div>
           </div>
         </div>
       </div>
@@ -130,7 +149,7 @@ export function ApplicationPageContent({ role, organizationName }: ApplicationPa
             </div>
           )}
 
-          <ApplicationForm roleId={role.id} />
+          <ApplicationForm roleId={role.id} organizationId={organizationId} />
         </div>
       </div>
 

@@ -19,8 +19,26 @@ export function LoginForm() {
     setFormError("")
 
     try {
-      await signIn(email, password)
-      router.push("/dashboard")
+      const profile = await signIn(email, password)
+
+      if (!profile) {
+        throw new Error("Could not fetch user profile")
+      }
+
+      // Check for privileged roles
+      const privilegedRoles = ["owner", "admin", "hr", "manager", "finance"]
+
+      if (privilegedRoles.includes(profile.role)) {
+        router.push("/dashboard")
+      } else if (profile.organizations?.slug) {
+        // If employee or other role, redirect to clock (or block)
+        // The requirement says "employee-only -> redirect to clock page"
+        router.push(`/org/${profile.organizations.slug}/clock`)
+      } else {
+        // Formatting/fallback
+        setFormError("Access Denied: You do not have permission to access the dashboard.")
+        // Ideally sign out here to prevent stuck session
+      }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Login failed")
     }

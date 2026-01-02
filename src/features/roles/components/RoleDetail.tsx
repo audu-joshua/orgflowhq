@@ -4,7 +4,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Trash2 } from "lucide-react"
 import { roleService } from "../services/roleService"
+import { applicationService } from "@/features/applications/services/applicationService"
+import { ApplicationCard } from "@/features/applications/components/ApplicationCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
+import type { Application } from "@/features/applications/types"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,24 +28,29 @@ interface RoleDetailProps {
 export function RoleDetail({ roleId }: RoleDetailProps) {
   const router = useRouter()
   const [role, setRole] = useState<(Role & { role_images?: RoleImage[] }) | null>(null)
+  const [applications, setApplications] = useState<Application[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [copied, setCopied] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    const loadRole = async () => {
+    const loadData = async () => {
       try {
-        const data = await roleService.getRoleById(roleId)
-        setRole(data)
+        const [roleData, applicantsData] = await Promise.all([
+          roleService.getRoleById(roleId),
+          applicationService.getApplicationsByRole(roleId)
+        ])
+        setRole(roleData)
+        setApplications(applicantsData)
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load role")
+        setError(err instanceof Error ? err.message : "Failed to load role details")
       } finally {
         setLoading(false)
       }
     }
 
-    loadRole()
+    loadData()
   }, [roleId])
 
   const handleDeleteImage = async (imageId: string, imageUrl: string) => {
@@ -153,6 +161,28 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Applicants Section */}
+      <div className="space-y-4">
+        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          Applicants
+          <span className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-sm font-bold">
+            {applications.length}
+          </span>
+        </h2>
+
+        {applications.length === 0 ? (
+          <div className="bg-muted/30 border border-dashed border-border rounded-xl p-12 text-center">
+            <p className="text-muted-foreground">No applications received yet for this role.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {applications.map((application) => (
+              <ApplicationCard key={application.id} application={application} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

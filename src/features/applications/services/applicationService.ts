@@ -4,18 +4,16 @@ import type { Application } from "../types"
 export const applicationService = {
   async createApplication(
     organizationId: string,
-    applicationData: Omit<Application, "id" | "created_at" | "updated_at">,
+    applicationData: Omit<Application, "id" | "created_at" | "updated_at" | "organization_id">,
   ) {
     const supabase = getSupabaseClient()
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("applications")
       .insert([{ ...applicationData, organization_id: organizationId, status: "new" }])
-      .select()
-      .single()
 
     if (error) throw error
-    return data
+    return true
   },
 
   async getApplicationsByRole(roleId: string) {
@@ -66,15 +64,19 @@ export const applicationService = {
     if (error) throw error
   },
 
-  async uploadResume(applicationId: string, file: File) {
+  async uploadResume(folder: string, file: File) {
     const supabase = getSupabaseClient()
-    const fileName = `${applicationId}/${Date.now()}-${file.name}`
+    const fileName = `${folder}/${Date.now()}-${file.name}`
 
-    const { data, error: uploadError } = await supabase.storage.from("attachments").upload(fileName, file)
+    // Ensure the 'applications' bucket is created in Supabase Storage with public access
+    const { data, error: uploadError } = await supabase.storage.from("applications").upload(fileName, file)
 
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      console.error("Storage upload error:", uploadError)
+      throw uploadError
+    }
 
-    const { data: urlData } = supabase.storage.from("attachments").getPublicUrl(fileName)
+    const { data: urlData } = supabase.storage.from("applications").getPublicUrl(fileName)
 
     return urlData.publicUrl
   },
