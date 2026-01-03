@@ -318,13 +318,11 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8 mb-12">
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">H</span>
-                </div>
-                <span className="font-bold text-foreground">HR</span>
+              <div className="flex items-center gap-1 mb-4">
+                <img src="/logo.png" alt="OrgFlow" className="h-10 w-auto object-contain" />
+                <span className="font-bold text-foreground text-xl tracking-tight -ml-1.5">rgFlow</span>
               </div>
-              <p className="text-sm text-muted-foreground">The modern platform for managing your hiring process</p>
+              <p className="text-sm text-muted-foreground">The modern platform for managing your workforce and team coordination</p>
             </div>
 
             {/* Product */}
@@ -396,7 +394,7 @@ export default function Home() {
 
           {/* Footer Bottom */}
           <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-muted-foreground">© 2025 HR. All rights reserved.</p>
+            <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} OrgFlow. All rights reserved.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
               <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

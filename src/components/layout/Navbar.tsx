@@ -98,11 +98,9 @@ export function Navbar() {
           <div className="flex items-center justify-between h-16 md:h-14">
             {/* Logo */}
             <div className="flex items-center">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center transition-all duration-300">
-                  <span className="text-primary-foreground font-bold text-lg">HR</span>
-                </div>
-                <span className="font-bold text-foreground text-lg hidden sm:inline">HR</span>
+              <Link href="/" className="flex items-center gap-1 group">
+                <img src="/logo.png" alt="OrgFlow" className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-105" />
+                <span className="font-bold text-foreground text-xl hidden sm:inline tracking-tight -ml-2">rgFlow</span>
               </Link>
             </div>
 
@@ -267,11 +265,9 @@ export function Navbar() {
             <div className="flex flex-col h-full">
               {/* Mobile Menu Header */}
               <div className="flex items-center justify-between p-6 border-b border-border/50">
-                <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
-                  <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                    <span className="text-primary-foreground font-bold text-lg">HR</span>
-                  </div>
-                  <span className="font-bold text-foreground">HR</span>
+                <Link href="/" className="flex items-center gap-1" onClick={() => setIsOpen(false)}>
+                  <img src="/logo.png" alt="OrgFlow" className="h-11 w-auto object-contain" />
+                  <span className="font-bold text-foreground text-2xl tracking-tight -ml-2">rgFlow</span>
                 </Link>
                 <button
                   onClick={() => setIsOpen(false)}
@@ -403,7 +399,7 @@ export function Navbar() {
               {/* Mobile Menu Footer */}
               <div className="p-6 border-t border-border/50">
                 <p className="text-sm text-muted-foreground text-center">
-                  © 2024 HR. All rights reserved.
+                  © {new Date().getFullYear()} OrgFlow. All rights reserved.
                 </p>
               </div>
             </div>

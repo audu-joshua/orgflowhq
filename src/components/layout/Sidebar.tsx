@@ -45,13 +45,13 @@ export function Sidebar() {
         bg-sidebar border-r border-sidebar-border h-full flex flex-col fixed left-0 top-0 bottom-0 z-50 transition-all duration-300 ease-in-out
       `}
     >
-      <div className={`p-6 h-16 flex items-center border-b border-sidebar-border ${isSidebarCollapsed ? "justify-center px-2" : "justify-between"}`}>
-        <div className="flex items-center gap-2 overflow-hidden">
-          <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-            <span className="text-primary font-bold text-lg">H</span>
+      <div className={`p-4 h-16 flex items-center border-b border-sidebar-border ${isSidebarCollapsed ? "justify-center px-1" : "justify-between"}`}>
+        <div className="flex items-center gap-1 overflow-hidden">
+          <div className="flex items-center justify-center shrink-0">
+            <img src="/logo.png" alt="OrgFlow" className="h-10 w-auto object-contain" />
           </div>
           {!isSidebarCollapsed && (
-            <span className="font-bold text-sidebar-foreground whitespace-nowrap opacity-100 transition-opacity duration-300">HR</span>
+            <span className="font-bold text-sidebar-foreground whitespace-nowrap opacity-100 transition-opacity duration-300 text-lg tracking-tight -ml-2">rgFlow</span>
           )}
         </div>
 

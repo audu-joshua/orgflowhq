@@ -19,11 +19,9 @@ export default function ClockLayout({
             <header className="p-6 border-b border-border bg-card">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     {/* App Logo (Left) */}
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                            <span className="text-primary-foreground font-bold text-lg">H</span>
-                        </div>
-                        <span className="font-bold text-foreground text-xl tracking-tight">HR Clock</span>
+                    <div className="flex items-center gap-1">
+                        <img src="/logo.png" alt="OrgFlow" className="h-11 w-auto object-contain" />
+                        <span className="font-bold text-foreground text-xl tracking-tight -ml-2">rgFlow Clock</span>
                     </div>
 
                     {/* Right Side: Organization & User Profile */}
@@ -73,7 +71,7 @@ export default function ClockLayout({
             </main>
 
             <footer className="p-6 text-center text-muted-foreground text-[10px] font-bold uppercase tracking-widest border-t border-border bg-card">
-                &copy; {new Date().getFullYear()} HR SaaS. Enterprise Personnel Management.
+                &copy; {new Date().getFullYear()} OrgFlow. Enterprise Personnel Management.
             </footer>
 
             <UserProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
