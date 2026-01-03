@@ -8,58 +8,7 @@ import { useAppStore } from "@/store/useAppStore"
 import { useTheme } from "@/providers/ThemeProvider"
 import { getSupabaseClient } from "@/lib/supabaseClient"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-interface NavItem {
-  href: string
-  label: string
-  icon: any
-  allowedRoles?: string[]
-}
-
-const navItems: NavItem[] = [
-  {
-    href: "/dashboard",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    allowedRoles: ["owner", "admin", "hr", "manager"]
-  },
-  {
-    href: "/dashboard/roles",
-    label: "Roles",
-    icon: Briefcase,
-    allowedRoles: ["owner", "admin", "hr", "manager"]
-  },
-  {
-    href: "/dashboard/departments",
-    label: "Departments",
-    icon: Building,
-    allowedRoles: ["owner", "admin", "hr", "manager"]
-  },
-  {
-    href: "/dashboard/employees",
-    label: "Employees",
-    icon: Users,
-    allowedRoles: ["owner", "admin", "hr", "manager"]
-  },
-  {
-    href: "/dashboard/applications",
-    label: "Applications",
-    icon: FileText,
-    allowedRoles: ["owner", "admin", "hr", "manager"]
-  },
-  {
-    href: "/dashboard/timesheets",
-    label: "Timesheets",
-    icon: Clock,
-    allowedRoles: ["owner", "admin", "hr", "manager", "finance"]
-  },
-  {
-    href: "/dashboard/settings",
-    label: "Settings",
-    icon: Settings,
-    allowedRoles: ["owner"]
-  },
-]
+import { navItems } from "@/config/navigation"
 
 export function Sidebar() {
   const pathname = usePathname()

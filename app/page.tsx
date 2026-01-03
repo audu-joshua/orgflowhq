@@ -11,13 +11,13 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
-              <span className="text-primary text-sm font-semibold">Streamline Your Hiring</span>
+              <span className="text-primary text-sm font-semibold">Complete Workforce Management</span>
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-8 leading-tight">
-              Hire the Right Talent, <span className="text-primary">Faster</span>
+              Manage Your Team, <span className="text-primary">Anywhere</span>
             </h1>
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-              Manage job applications, track candidates, and collaborate with your team all in one powerful platform
+              From clock-in to payroll, candidate tracking to team collaboration. Everything you need to manage your business and your people in one place.
             </p>
             <div className="flex gap-6 justify-center flex-wrap">
               <Link
@@ -55,13 +55,13 @@ export default function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">Manage Roles</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-2">Time Tracking</h3>
               <p className="text-muted-foreground">
-                Create and manage job openings with detailed descriptions, images, and requirements
+                Easy clock-in and clock-out for all team members with automated timesheets and location tracking.
               </p>
             </div>
 

@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { useAppStore } from "@/store/useAppStore"
 import { LoadingSpinner } from "../shared/LoadingSpinner"
+import { navItems } from "@/config/navigation"
 
 interface ProtectedRouteProps {
     children: React.ReactNode
@@ -17,28 +18,62 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
     useEffect(() => {
         if (!isInitialized) return
 
-        // Wait for hydration/initial load
         const checkAuth = async () => {
             if (!user) {
                 router.push("/login")
                 return
             }
 
-            // Role-based route guarding
-            const isAdminRoute = pathname.startsWith("/dashboard")
-            const hasAdminRole = ["owner", "admin", "hr", "manager", "finance"].includes(user.role || "")
+            // check if user is trying to access a dashboard route
+            if (pathname.startsWith("/dashboard")) {
+                // Find the exact matching navigation item or the closest parent
+                const matchedNavItem = navItems.find(item => {
+                    if (item.href === "/dashboard") return pathname === "/dashboard"
+                    return pathname.startsWith(item.href)
+                })
 
-            if (isAdminRoute && !hasAdminRole) {
-                // If they are an employee but not an admin, they should go to clock page
-                if (organization) {
-                    router.push(`/org/${organization.slug}/clock`)
-                } else {
-                    router.push("/login")
+                const userRole = user.role || ""
+
+                // Function to find a safe landing page for this user
+                const getSafeLandingPage = () => {
+                    // Try to find the first dashboard route they ARE allowed to access
+                    const firstAllowedItem = navItems.find(item =>
+                        !item.allowedRoles || item.allowedRoles.includes(userRole)
+                    )
+
+                    if (firstAllowedItem) return firstAllowedItem.href
+
+                    // Fallback to clock if they have an org
+                    if (organization) return `/org/${organization.slug}/clock`
+                    return "/login"
                 }
-                return
+
+                // If no direct match is found for a sub-path, or if it has role restrictions
+                if (matchedNavItem) {
+                    const isAllowed = !matchedNavItem.allowedRoles || matchedNavItem.allowedRoles.includes(userRole)
+
+                    if (!isAllowed) {
+                        console.warn(`User ${userRole} attempted unauthorized access to ${pathname}`)
+                        router.push(getSafeLandingPage())
+                        return
+                    }
+                } else if (pathname !== "/dashboard") {
+                    // It's a dashboard subroute but doesn't exist in our navItems list?
+                    // Maybe it's a dynamic route inside one of them. 
+                    // Most dynamic routes will be covered by the startsWith check above.
+                }
+
+                // Global admin check for generic /dashboard access if not specifically in navItems
+                const hasAnyAdminRole = ["owner", "admin", "hr", "manager", "finance"].includes(userRole)
+                if (!hasAnyAdminRole) {
+                    router.push(getSafeLandingPage())
+                    return
+                }
             }
 
-            if (!organization && pathname !== "/setup") {
+            if (!organization && pathname !== "/setup" && pathname !== "/dashboard") {
+                // If they are logged in but have no org, they must go to setup
+                // Exception for /dashboard itself which might be needed for the setup flow
                 router.push("/setup")
             }
         }
