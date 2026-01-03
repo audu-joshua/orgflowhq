@@ -11,7 +11,7 @@ export default function PayrollComingSoon() {
 
             <h1 className="text-3xl font-bold text-foreground mb-4">Payroll is Coming Soon!</h1>
             <p className="text-muted-foreground max-w-md mx-auto mb-10 text-lg">
-                We're building a powerful, automated payroll system to help you manage salaries, taxes, and benefits with one click.
+                We are building a powerful, automated payroll system to help you manage salaries, taxes, and benefits with one click.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-3xl">
