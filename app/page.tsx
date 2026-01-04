@@ -116,7 +116,6 @@ export default function Home() {
                       <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"></div>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-muted-foreground">90%</div>
                 </div>
               </div>
             </div>
@@ -155,7 +154,6 @@ export default function Home() {
             {/* Right Side - Security Badge */}
             <div className="hidden lg:block">
               <div className="bg-card/60 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
-                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Secure Proxy Protection</div>
                 <div className="relative">
                   {/* Map-like background */}
                   <div className="w-full h-32 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl mb-3 relative overflow-hidden">
