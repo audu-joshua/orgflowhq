@@ -7,31 +7,176 @@ export default function Home() {
       <Navbar />
 
       {/* Hero Section */}
-      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-card via-background to-card pt-16">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
-              <span className="text-primary text-sm font-semibold">Complete Workforce Management</span>
+      <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-card via-background to-card pt-32 pb-16 relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Subtle directional lines - top left area */}
+          <svg className="absolute top-24 left-12 w-40 h-40 text-border/60" viewBox="0 0 100 100">
+            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+            <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Subtle directional lines - top right area */}
+          <svg className="absolute top-40 right-20 w-48 h-24 text-border/60" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Subtle directional lines - bottom left */}
+          <svg className="absolute bottom-40 left-20 w-24 h-48 text-border/60" viewBox="0 0 50 100">
+            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Subtle directional lines - bottom right area */}
+          <svg className="absolute bottom-32 right-1/4 w-32 h-32 text-border/60" viewBox="0 0 100 100">
+            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+            <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Additional decorative lines - middle left */}
+          <svg className="absolute top-1/2 left-32 w-28 h-16 text-border/60" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Additional decorative lines - middle right */}
+          <svg className="absolute top-1/3 right-32 w-16 h-28 text-border/60" viewBox="0 0 50 100">
+            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Extra lines - top center */}
+          <svg className="absolute top-20 left-1/2 -translate-x-1/2 w-36 h-20 text-border/50" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Extra lines - left center vertical */}
+          <svg className="absolute top-1/4 left-8 w-16 h-36 text-border/50" viewBox="0 0 50 100">
+            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Extra lines - right center */}
+          <svg className="absolute bottom-1/3 right-12 w-32 h-20 text-border/50" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Extra lines - bottom center */}
+          <svg className="absolute bottom-24 left-1/3 w-20 h-32 text-border/50" viewBox="0 0 50 100">
+            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
+          </svg>
+
+          {/* Extra small accent lines - scattered */}
+          <svg className="absolute top-1/3 left-1/4 w-20 h-12 text-border/40" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
+          </svg>
+
+          <svg className="absolute bottom-1/4 right-1/3 w-12 h-20 text-border/40" viewBox="0 0 50 100">
+            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
+          </svg>
+
+          <svg className="absolute top-2/3 right-1/4 w-24 h-16 text-border/40" viewBox="0 0 100 50">
+            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
+          </svg>
+
+          {/* Gradient orbs */}
+          <div className="absolute top-1/4 -left-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-1/4 -right-32 w-96 h-96 bg-primary/5 rounded-full blur-3xl"></div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 w-full relative z-10">
+          {/* Trust Badges */}
+          <div className="flex justify-center mb-10">
+            <div className="inline-flex items-center gap-3 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-full border border-border shadow-sm">
+              <div className="flex -space-x-2">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">A</div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">B</div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">C</div>
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 border-2 border-background flex items-center justify-center text-xs font-bold text-white">D</div>
+              </div>
+              <span className="text-xs text-muted-foreground font-medium">Trusted by HRs, Managers, Team Leads & Employees</span>
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-foreground mb-8 leading-tight">
-              Manage Your Team, <span className="text-primary">Anywhere</span>
-            </h1>
-            <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
-              From clock-in to payroll, candidate tracking to team collaboration. Everything you need to manage your business and your people in one place.
-            </p>
-            <div className="flex gap-6 justify-center flex-wrap">
-              <Link
-                href="/register"
-                className="px-8 py-3 bg-primary text-primary-foreground rounded-lg hover:opacity-90 transition-opacity font-medium"
-              >
-                Get Started Free
-              </Link>
-              <Link
-                href="/login"
-                className="px-8 py-3 bg-card text-primary border-2 border-primary rounded-lg hover:bg-muted transition-colors font-medium"
-              >
-                Sign In
-              </Link>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid lg:grid-cols-[280px_1fr_280px] gap-8 items-center">
+            {/* Left Side - Feature Toggle */}
+            <div className="hidden lg:block">
+              <div className="space-y-4">
+
+                {/* Toggle Card 2 */}
+                <div className="bg-card/60 backdrop-blur-sm border border-border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                        <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-foreground">Track Time</span>
+                    </div>
+                    <div className="relative inline-block w-11 h-6">
+                      <div className="w-11 h-6 bg-primary rounded-full shadow-inner"></div>
+                      <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform"></div>
+                    </div>
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">90%</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Center - Main Headline */}
+            <div className="text-center">
+              <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
+                <span className="text-primary text-sm font-semibold">Complete Workforce Management</span>
+              </div>
+              <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
+                Manage Your Team,{" "}
+                <span className="text-primary">Anywhere</span>
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+                From time tracking to payroll, hiring to team collaboration, everything you need in one place.
+              </p>
+              <div className="flex gap-4 justify-center flex-wrap">
+                <Link
+                  href="/register"
+                  className="group px-8 py-3 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 flex items-center gap-2"
+                >
+                  Get Started Free
+                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-8 py-3 bg-card text-foreground border-2 border-border rounded-xl hover:bg-muted transition-all font-semibold shadow-sm hover:shadow-md"
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+
+            {/* Right Side - Security Badge */}
+            <div className="hidden lg:block">
+              <div className="bg-card/60 backdrop-blur-sm border border-border rounded-2xl p-6 shadow-lg hover:shadow-xl transition-shadow">
+                <div className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Secure Proxy Protection</div>
+                <div className="relative">
+                  {/* Map-like background */}
+                  <div className="w-full h-32 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl mb-3 relative overflow-hidden">
+                    <div className="absolute inset-0" style={{
+                      backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
+                      backgroundSize: '16px 16px',
+                      opacity: 0.1
+                    }}></div>
+                    {/* Shield icon */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-8 h-8 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                    </div>
+                    {/* Decorative dots */}
+                    <div className="absolute top-4 right-4 w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+                    <div className="absolute bottom-4 left-4 w-2 h-2 bg-primary rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
+                  </div>
+                  <div className="text-xs text-center text-muted-foreground">Enterprise-grade security</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
