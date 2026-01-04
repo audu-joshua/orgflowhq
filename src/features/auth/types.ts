@@ -6,6 +6,7 @@ export interface User {
   role?: string
   full_name?: string
   profile_image_url?: string
+  status?: string
 }
 
 export interface AuthContextType {

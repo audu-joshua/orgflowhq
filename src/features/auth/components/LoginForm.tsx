@@ -12,7 +12,16 @@ export function LoginForm() {
   const { signIn, loading, error } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [formError, setFormError] = useState("")
+  const [formError, setFormError] = useState(() => {
+    // Check if redirect with error via client-side router
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('error') === 'terminated') {
+        return "Account not Found; Contact Your Hr..."
+      }
+    }
+    return ""
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -25,6 +34,15 @@ export function LoginForm() {
         throw new Error("Could not fetch user profile")
       }
 
+      // 1. Critical Policy: Termination check
+      if (profile.status === 'terminated') {
+        // Sign out immediately (since auth succeeded but business policy denied)
+        const { getSupabaseClient } = await import("@/lib/supabaseClient")
+        await getSupabaseClient().auth.signOut()
+        setFormError("Account not Found; Contact Your Hr...")
+        return
+      }
+
       // Check for privileged roles
       const privilegedRoles = ["owner", "admin", "hr", "manager", "finance"]
 
@@ -32,12 +50,9 @@ export function LoginForm() {
         router.push("/dashboard")
       } else if (profile.organizations?.slug) {
         // If employee or other role, redirect to clock (or block)
-        // The requirement says "employee-only -> redirect to clock page"
         router.push(`/org/${profile.organizations.slug}/clock`)
       } else {
-        // Formatting/fallback
-        setFormError("Access Denied: You do not have permission to access the dashboard.")
-        // Ideally sign out here to prevent stuck session
+        setFormError("No active organization found for this account. If you just signed up, your organization might still be provisioning. Otherwise, please register a new organization.")
       }
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Login failed")
@@ -121,7 +136,7 @@ export function LoginForm() {
       {/* Copyright */}
       <div className="pt-6 border-t border-border">
         <p className="text-center text-xs text-muted-foreground">
-          ©2025 HR All Right Reserved
+          © {new Date().getFullYear()} OrgFlow. All Rights Reserved.
         </p>
       </div>
     </div>

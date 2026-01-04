@@ -24,6 +24,37 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
                 return
             }
 
+            // check if user is terminated
+            if (user.status === 'terminated') {
+                console.warn(`Terminated user ${user.email} attempted access.`)
+                // Sign out immediately
+                const { getSupabaseClient } = await import("@/lib/supabaseClient")
+                const supabase = getSupabaseClient()
+                await supabase.auth.signOut()
+                router.push("/login?error=terminated")
+                return
+            }
+
+            // check if user needs activation
+            if (user.status === 'invited') {
+                try {
+                    console.log("Triggering first-login activation...")
+                    const { data: { session } } = await (await import("@/lib/supabaseClient")).getSupabaseClient().auth.getSession()
+                    if (session) {
+                        await fetch("/api/auth/activate", {
+                            method: "POST",
+                            headers: {
+                                "Authorization": `Bearer ${session.access_token}`
+                            }
+                        })
+                        // Update local state is handled by the page reload or next profile fetch
+                        // For now we just let it happen in background
+                    }
+                } catch (err) {
+                    console.error("Activation trigger failed:", err)
+                }
+            }
+
             // check if user is trying to access a dashboard route
             if (pathname.startsWith("/dashboard")) {
                 // Find the exact matching navigation item or the closest parent

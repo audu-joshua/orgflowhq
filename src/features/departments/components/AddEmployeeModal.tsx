@@ -107,7 +107,8 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
         phone: formData.phone || null,
         hire_date: formData.hire_date || null,
         profile_image_url: imagePreview || null,
-        status: "active",
+        status: "invited",
+        activated_at: null,
       })
 
       toast.success("Employee added successfully")

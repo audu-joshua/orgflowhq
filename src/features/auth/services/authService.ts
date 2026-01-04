@@ -21,90 +21,7 @@ export const authService = {
       if (authError) throw authError
       if (!authData.user) throw new Error("Failed to create user")
 
-      // 2. Generate unique slug for organization
-      let slug = slugify(organizationName)
-      const { data: existingOrgs } = await supabase
-        .from("organizations")
-        .select("slug")
-        .ilike("slug", `${slug}%`)
-
-      if (existingOrgs && existingOrgs.length > 0) {
-        const slugs = existingOrgs.map((o: { slug: string }) => o.slug)
-        if (slugs.includes(slug)) {
-          let counter = 1
-          while (slugs.includes(`${slug}-${counter}`)) {
-            counter++
-          }
-          slug = `${slug}-${counter}`
-        }
-      }
-
-      // 3. Create organization
-      const { data: orgData, error: orgError } = await supabase
-        .from("organizations")
-        .insert([{
-          name: organizationName,
-          slug: slug
-        }])
-        .select()
-        .single()
-
-      if (orgError) throw orgError
-
-      // 4. Create default "Management" department
-      const { data: deptData, error: deptError } = await supabase
-        .from("departments")
-        .insert([{
-          organization_id: orgData.id,
-          name: "Management",
-          description: "Executive and Administrative management team"
-        }])
-        .select()
-        .single()
-
-      if (deptError) throw deptError
-
-      // 5. Create user profile
-      const { error: userError } = await supabase
-        .from("users")
-        .insert([{
-          id: authData.user.id,
-          email,
-          organization_id: orgData.id
-        }])
-
-      if (userError) throw userError
-
-      // 6. Link user to organization as owner
-      const { error: linkError } = await supabase
-        .from("users_organizations")
-        .insert([{
-          user_id: authData.user.id,
-          organization_id: orgData.id,
-          role: "owner"
-        }])
-
-      if (linkError) throw linkError
-
-      // 7. Create employee record for the owner (Senior developer approach)
-      // This ensures the owner can immediately use the clock portal if needed
-      const { error: empError } = await supabase
-        .from("employees")
-        .insert([{
-          organization_id: orgData.id,
-          user_id: authData.user.id,
-          department_id: deptData.id,
-          full_name: fullName || "Owner",
-          email: email,
-          employee_id: "OWN-001",
-          position: "Owner",
-          status: "active",
-          hire_date: new Date().toISOString().split('T')[0]
-        }])
-
-      if (empError) throw empError
-
-      return { user: authData.user, organization: orgData }
+      return { user: authData.user }
     } catch (error) {
       console.error("Sign up error:", error)
       throw error
@@ -144,15 +61,23 @@ export const authService = {
 
   async getUserProfile(userId: string) {
     const supabase = getSupabaseClient()
+    console.log(`[getUserProfile] Fetching for userId: ${userId}`)
 
     // 1. Check for privileged role in specific organization (Source of Truth for Admin/Owner/etc)
-    const { data: roleLink } = await supabase
+    const { data: roleLink, error: roleError } = await supabase
       .from("users_organizations")
       .select("role, organization_id, organizations(id, slug, name, logo_url)")
       .eq("user_id", userId)
       .maybeSingle()
 
+    if (roleError) console.error("[getUserProfile] Role lookup error:", roleError)
+
     if (roleLink) {
+      console.log(`[getUserProfile] Found privileged role: ${roleLink.role} for org: ${roleLink.organization_id}`)
+      if (!roleLink.organizations) {
+        console.warn("[getUserProfile] Role found but organization details blocked by RLS or missing.")
+      }
+
       // It's a privileged user
       const { data: userDetails } = await supabase
         .from("users")
@@ -163,7 +88,7 @@ export const authService = {
       // Also try to get employee details for name/image (Managers/HR/etc start as employees)
       const { data: employeeDetails } = await supabase
         .from("employees")
-        .select("full_name, profile_image_url")
+        .select("full_name, profile_image_url, status")
         .eq("user_id", userId)
         .maybeSingle()
 
@@ -174,19 +99,25 @@ export const authService = {
         role: roleLink.role,
         full_name: employeeDetails?.full_name,
         profile_image_url: employeeDetails?.profile_image_url,
+        status: employeeDetails?.status,
         organizations: roleLink.organizations,
         is_employee_only: false
       }
     }
 
+    console.log("[getUserProfile] No privileged role found. Checking employees table...")
+
     // 2. If not privileged, check employees table (Clock-only users)
-    const { data: employeeData } = await supabase
+    const { data: employeeData, error: empError } = await supabase
       .from("employees")
       .select("*, organizations(*)")
       .eq("user_id", userId)
       .maybeSingle()
 
+    if (empError) console.error("[getUserProfile] Employee lookup error:", empError)
+
     if (employeeData) {
+      console.log(`[getUserProfile] Found employee record for org: ${employeeData.organization_id}`)
       return {
         id: employeeData.user_id, // Map correctly
         email: employeeData.email,
@@ -195,13 +126,14 @@ export const authService = {
         role: "employee", // Explicitly set for frontend logic
         full_name: employeeData.full_name,
         profile_image_url: employeeData.profile_image_url,
+        status: employeeData.status,
         is_employee_only: true, // Flag for redirection
         organizations: employeeData.organizations
       }
     }
 
     // 3. Fallback: User exists in Auth but has no roles/links (Zombie account)
-    // We try to return basic info so we don't crash, but they will likely be denied access
+    console.warn(`[getUserProfile] Zombie account detected for ${userId}. No links found.`)
     const { data: basicUser } = await supabase
       .from("users")
       .select("*")

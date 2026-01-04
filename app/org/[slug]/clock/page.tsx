@@ -49,25 +49,42 @@ export default function ClockPage() {
         setLoading(true)
         setError("")
         try {
-            // Find employee record for current user directly
-            let currentEmployee = await departmentService.getEmployeeByUserId(user!.id)
+            // Find employee record for current user IN THIS SPECIFIC ORGANIZATION
+            const { getSupabaseClient } = await import("@/lib/supabaseClient")
+            const supabase = getSupabaseClient()
+
+            const { data: currentEmployee, error: empError } = await supabase
+                .from("employees")
+                .select("*, organizations(*)")
+                .eq("user_id", user!.id)
+                .eq("organization_id", organization!.id)
+                .maybeSingle()
+
+            if (empError) {
+                console.error("Employee lookup error:", empError)
+                throw empError
+            }
 
             if (!currentEmployee && user) {
                 // SENIOR REFINEMENT: If this is an Admin/Owner, provision an employee record on the fly
                 console.log("No employee record found, checking if auto-provisioning is possible...")
                 try {
-                    currentEmployee = await departmentService.provisionEmployeeRecord(
+                    const provisioned = await departmentService.provisionEmployeeRecord(
                         user.id,
                         organization!.id,
                         user.email
                     )
                     console.log("Successfully auto-provisioned employee record.")
+                    setEmployee(provisioned)
+                    const records = await timesheetService.getEmployeeTimesheets(provisioned.id)
+                    setTimesheets(records)
+                    const active = records.find(r => !r.clock_out)
+                    setCurrentTimesheet(active || null)
                 } catch (provErr) {
                     console.error("Auto-provisioning failed:", provErr)
+                    setError("No employee profile exists for your account. Please contact HR.")
                 }
-            }
-
-            if (currentEmployee) {
+            } else if (currentEmployee) {
                 setEmployee(currentEmployee)
                 const records = await timesheetService.getEmployeeTimesheets(currentEmployee.id)
                 setTimesheets(records)
@@ -142,6 +159,36 @@ export default function ClockPage() {
         } catch (err) {
             setError("Failed to clock out")
         } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleSelfTerminate = async () => {
+        if (!organization || !confirm("Are you sure you want to terminate your access to this organization? This action cannot be undone and you will be signed out immediately.")) return
+
+        setLoading(true)
+        try {
+            const { getSupabaseClient } = await import("@/lib/supabaseClient")
+            const { data: { session } } = await getSupabaseClient().auth.getSession()
+            const response = await fetch("/api/employees/self-terminate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session?.access_token}`
+                },
+                body: JSON.stringify({ organizationId: organization.id })
+            })
+
+            if (response.ok) {
+                toast.success("Account terminated. You are being signed out.")
+                await signOut()
+                window.location.href = "/login?error=terminated"
+            } else {
+                const data = await response.json()
+                throw new Error(data.error || "Failed to terminate account")
+            }
+        } catch (err: any) {
+            toast.error(err.message)
             setLoading(false)
         }
     }
@@ -290,6 +337,21 @@ export default function ClockPage() {
                         <p className="text-xs text-muted-foreground leading-relaxed">
                             Clock in when you start your shift and clock out when you finish. Your records are automatically submitted for review.
                         </p>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div className="p-6 bg-destructive/5 border border-destructive/10 rounded-2xl">
+                        <h3 className="text-xs font-bold text-destructive uppercase tracking-widest mb-2">Danger Zone</h3>
+                        <p className="text-[10px] text-muted-foreground leading-relaxed mb-4">
+                            Tired of working here? You can terminate your access to this organization. Access will be revoked immediately.
+                        </p>
+                        <button
+                            onClick={handleSelfTerminate}
+                            disabled={loading}
+                            className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50"
+                        >
+                            Resign & Terminate Access
+                        </button>
                     </div>
                 </div>
 

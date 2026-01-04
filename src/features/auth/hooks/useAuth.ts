@@ -16,17 +16,28 @@ export function useAuth() {
 
         if (currentUser) {
           const profile = await authService.getUserProfile(currentUser.id)
-          setUser({
-            id: profile.id,
-            email: profile.email,
-            organization_id: profile.organization_id,
-            created_at: profile.created_at,
-            role: profile.role,
-            full_name: profile.full_name,
-            profile_image_url: profile.profile_image_url,
-          })
-          if (profile.organizations) {
-            setOrganization(profile.organizations)
+
+          if (profile) {
+            setUser({
+              id: profile.id,
+              email: profile.email,
+              organization_id: profile.organization_id,
+              created_at: profile.created_at,
+              role: profile.role,
+              full_name: profile.full_name,
+              profile_image_url: profile.profile_image_url,
+            })
+            if (profile.organizations) {
+              setOrganization(profile.organizations)
+            }
+          } else {
+            // User is logged in but has no profile yet (registration in progress)
+            setUser({
+              id: currentUser.id,
+              email: currentUser.email || "",
+              organization_id: "",
+              created_at: currentUser.created_at,
+            })
           }
         } else {
           // No session exists - user is not logged in (this is normal)
@@ -55,7 +66,7 @@ export function useAuth() {
     setLoading(true)
     setError(null)
     try {
-      const { user: newUser, organization: newOrg } = await authService.signUp(
+      const { user: newUser } = await authService.signUp(
         email,
         password,
         organizationName
@@ -64,11 +75,10 @@ export function useAuth() {
       setUser({
         id: newUser.id,
         email: newUser.email || "",
-        organization_id: newOrg.id,
+        organization_id: "", // Will be updated after provisioning
         created_at: new Date().toISOString(),
         role: "owner",
       })
-      setOrganization(newOrg)
     } catch (err) {
       const message = err instanceof Error ? err.message : "Sign up failed"
       setError(message)
@@ -84,17 +94,20 @@ export function useAuth() {
     try {
       const { user: authUser } = await authService.signIn(email, password)
       const profile = await authService.getUserProfile(authUser.id)
-      setUser({
-        id: profile.id,
-        email: profile.email,
-        organization_id: profile.organization_id,
-        created_at: profile.created_at,
-        role: profile.role,
-        full_name: profile.full_name,
-        profile_image_url: profile.profile_image_url,
-      })
-      if (profile.organizations) {
-        setOrganization(profile.organizations)
+
+      if (profile) {
+        setUser({
+          id: profile.id,
+          email: profile.email,
+          organization_id: profile.organization_id,
+          created_at: profile.created_at,
+          role: profile.role,
+          full_name: profile.full_name,
+          profile_image_url: profile.profile_image_url,
+        })
+        if (profile.organizations) {
+          setOrganization(profile.organizations)
+        }
       }
       return profile
     } catch (err) {

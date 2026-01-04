@@ -33,10 +33,7 @@ export function RegisterForm() {
     e.preventDefault()
     setFormError("")
 
-    if (!validateCompanyEmail(email)) {
-      setFormError("Please use a company email address. Free email providers (Gmail, Yahoo, etc.) are not allowed.")
-      return
-    }
+    const isFreeEmail = !validateCompanyEmail(email)
 
     if (password.length < 6) {
       setFormError("Password must be at least 6 characters")
@@ -44,7 +41,80 @@ export function RegisterForm() {
     }
 
     try {
-      await signUp(email, password, organizationName)
+      // 1. Attempt to sign up (create identity)
+      try {
+        await signUp(email, password, organizationName)
+      } catch (err: any) {
+        // If user already exists in auth.users, try to sign in instead
+        if (err.message?.includes("already registered") || err.code === "user_already_exists") {
+          console.log("[RegisterForm] User exists, attempting sign-in to provision org...")
+          const { useAuth } = await import("../hooks/useAuth")
+          // We need the signIn from the hook directly since authData might not be accessible easily
+          // But we are already in the RegisterForm which uses useAuth
+        } else {
+          throw err
+        }
+      }
+
+      // If signUp failed because user exists, we need to sign in to get a session
+      const { getSupabaseClient } = await import("@/lib/supabaseClient")
+      const supabase = getSupabaseClient()
+
+      let { data: { session } } = await supabase.auth.getSession()
+
+      if (!session) {
+        console.log("[RegisterForm] No session, attempting manual sign-in...")
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        })
+        if (signInError) throw new Error("This email is already registered. Please provide the correct password to create your organization.")
+        session = signInData.session
+      }
+
+      if (!session) {
+        throw new Error("Authentication failed. Please try again.")
+      }
+
+      // 2. Provision Organization on the server
+      const response = await fetch("/api/auth/register-org", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ organizationName })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        // If they already have an org, maybe we should tell them
+        if (errorData.error?.includes("already linked")) {
+          throw new Error("You are already registered with an organization. Please log in normally.")
+        }
+        throw new Error(errorData.error || "Failed to finalize organization setup")
+      }
+
+      const provisionData = await response.json()
+
+      // 3. Update Store with full Org details
+      const { useAppStore } = await import("@/store/useAppStore")
+      const store = useAppStore.getState()
+
+      store.setOrganization({
+        id: provisionData.organizationId,
+        slug: provisionData.slug,
+        name: organizationName
+      })
+
+      // Ensure user has the org id too
+      if (store.user) {
+        store.setUser({
+          ...store.user,
+          organization_id: provisionData.organizationId
+        })
+      }
+
       router.push("/dashboard")
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Registration failed")
@@ -88,9 +158,15 @@ export function RegisterForm() {
             className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
             placeholder="you@company.com"
           />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Please use your company email address
-          </p>
+          {email && !validateCompanyEmail(email) ? (
+            <p className="mt-1 text-xs text-amber-600 font-medium">
+              Note: Work emails are recommended for better organization features.
+            </p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              We recommend using your company email address.
+            </p>
+          )}
         </div>
 
         <div>
