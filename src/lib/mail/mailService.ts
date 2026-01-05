@@ -46,20 +46,42 @@ export const mailService = {
 
   async sendOrgWelcomeEmail(to: string, orgName: string, ownerName: string) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-    const dashboardUrl = `${siteUrl}/dashboard`
+    const dashboardUrl = `${siteUrl}/login`
     const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.6;">
-        <h2 style="color: #1a202c;">Hi ${ownerName},</h2>
-        <p>Welcome to <strong>OrgFlow</strong>! Your organization, <strong>${orgName}</strong>, is now ready for action.</p>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
+        <h2 style="color: #000; margin-top: 0;">Hi ${ownerName},</h2>
+        
+        <p>Welcome to <strong>OrgFlow</strong> 🎉</p>
+        <p>I wanted to personally reach out to say we’re excited to have <strong>${orgName}</strong> onboard.</p>
+        
+        <p>At OrgFlow, we’re all about simplifying your entire HR workflow, from sending out open roles, tracking applicants, and hiring the right people, to managing employees and keeping tabs on clock-in and clock-out records. We handle the structure and process, so you can focus on the real work that matters.</p>
+        
+        <p>To get started, the next step is simple:</p>
+        <ul style="padding-left: 20px;">
+          <li>Create your employees, or</li>
+          <li>Create a job opening and begin receiving applications</li>
+        </ul>
+        
         <div style="margin: 30px 0; text-align: center;">
-          <a href="${dashboardUrl}" style="background-color: #000; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Go to Dashboard</a>
+          <a href="${dashboardUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In</a>
         </div>
-        <p>Best regards,<br><strong>Audu Joshua Adinoyi</strong><br>Founder @ OrgFlow</p>
+        
+        <p>Once that’s done, you’ll start seeing how OrgFlow brings everything together in one place.</p>
+        
+        <p>If you need any help along the way or have questions, feel free to reach out — I am always happy to help.</p>
+        
+        <p>Welcome once again, and I am glad to have you here.</p>
+        
+        <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+          Warm regards,<br>
+          <strong>Audu Joshua Adinoyi</strong><br>
+          Founder, OrgFlow
+        </p>
       </div>
     `
     return this.sendEmail({
       to,
-      subject: `Welcome to OrgFlow, ${ownerName}!`,
+      subject: `Welcome to OrgFlow 🎉`,
       html,
       fromName: "Orgflow Team"
     })
@@ -69,13 +91,17 @@ export const mailService = {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const clockUrl = `${siteUrl}/org/${slug}/clock`
     const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; line-height: 1.6;">
-        <h2 style="color: #1a202c;">Welcome to the Team, ${employeeName}!</h2>
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
+        <h2 style="color: #000; margin-top: 0;">Welcome to the Team, ${employeeName}!</h2>
         <p>Your account for <strong>${orgName}</strong> on OrgFlow is now active.</p>
         <div style="margin: 30px 0; text-align: center;">
-          <a href="${clockUrl}" style="background-color: #000; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Clock Portal</a>
+          <a href="${clockUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Clock Portal</a>
         </div>
         <p>Welcome aboard!</p>
+        <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+          Best regards,<br>
+          <strong>Orgflow Team</strong>
+        </p>
       </div>
     `
     return this.sendEmail({
@@ -88,11 +114,11 @@ export const mailService = {
 
   async sendEmployeeInviteEmail(to: string, orgName: string, employeeName: string, clockLink: string, isNewUser: boolean = true, employeeId?: string) {
     const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 2px solid #000; border-radius: 12px; line-height: 1.6;">
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
         <h2 style="color: #000; margin-top: 0;">Hi ${employeeName},</h2>
         <p>You have been added to <strong>${orgName}</strong> on OrgFlow.</p>
         
-        <div style="background-color: #f4f4f5; padding: 20px; border-radius: 8px; margin: 24px 0;">
+        <div style="background-color: #f4f4f5; padding: 20px; border-radius: 12px; margin: 24px 0;">
           <h3 style="margin-top: 0; font-size: 16px; color: #000; text-align: center;">Login Credentials</h3>
           <div style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
             <p style="margin: 8px 0; font-family: sans-serif;"><strong>Email:</strong> ${to}</p>
@@ -106,10 +132,13 @@ export const mailService = {
         <p style="text-align: center; margin-top: 32px;">Access your organization's clock portal:</p>
 
         <div style="margin: 16px 0; text-align: center;">
-          <a href="${clockLink}" style="background-color: #000; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">Go to Clock Portal</a>
+          <a href="${clockLink}" style="background-color: #0fadaa; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">Go to Clock Portal</a>
         </div>
 
-        <p style="margin-top: 40px; font-size: 14px; text-align: center; color: #666;">Best regards,<br><strong>Orgflow Team</strong></p>
+        <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; text-align: center; color: #666;">
+          Best regards,<br>
+          <strong>Orgflow Team</strong>
+        </p>
       </div>
     `
     return this.sendEmail({

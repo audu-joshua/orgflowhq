@@ -5,7 +5,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
 import Link from "next/link"
-import { Loader2 } from "lucide-react"
+import { Loader2, Eye, EyeOff } from "lucide-react"
 
 // Common free email providers to reject
 const FREE_EMAIL_PROVIDERS = [
@@ -16,11 +16,14 @@ const FREE_EMAIL_PROVIDERS = [
 
 export function RegisterForm() {
   const router = useRouter()
-  const { signUp, loading, error } = useAuth()
+  const { signUp, loading, error, clearError, refreshProfile } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [fullName, setFullName] = useState("")
   const [organizationName, setOrganizationName] = useState("")
   const [formError, setFormError] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
+  const [localLoading, setLocalLoading] = useState(false)
 
   const validateCompanyEmail = (email: string): boolean => {
     const domain = email.split('@')[1]?.toLowerCase()
@@ -32,6 +35,7 @@ export function RegisterForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError("")
+    setLocalLoading(true)
 
     const isFreeEmail = !validateCompanyEmail(email)
 
@@ -45,12 +49,10 @@ export function RegisterForm() {
       try {
         await signUp(email, password, organizationName)
       } catch (err: any) {
-        // If user already exists in auth.users, try to sign in instead
+        // If user already exists, we recover silently if they provide correct password
         if (err.message?.includes("already registered") || err.code === "user_already_exists") {
-          console.log("[RegisterForm] User exists, attempting sign-in to provision org...")
-          const { useAuth } = await import("../hooks/useAuth")
-          // We need the signIn from the hook directly since authData might not be accessible easily
-          // But we are already in the RegisterForm which uses useAuth
+          console.log("[RegisterForm] User exists, attempting silent recovery...")
+          clearError() // Remove the shared error so the UI stays clean
         } else {
           throw err
         }
@@ -83,7 +85,7 @@ export function RegisterForm() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`
         },
-        body: JSON.stringify({ organizationName })
+        body: JSON.stringify({ organizationName, fullName })
       })
 
       if (!response.ok) {
@@ -107,17 +109,24 @@ export function RegisterForm() {
         name: organizationName
       })
 
-      // Ensure user has the org id too
+      // Ensure user has the org id AND the default owner role for the transition
       if (store.user) {
         store.setUser({
           ...store.user,
-          organization_id: provisionData.organizationId
+          organization_id: provisionData.organizationId,
+          role: "owner", // Critical: prevents ProtectedRoute from redirecting to login during sync
+          full_name: fullName
         })
       }
+
+      // 4. Force a profile sync to ensure all data-driven components (Sidebar, TopBar) are ready
+      await refreshProfile(session.user.id, provisionData.organizationId)
 
       router.push("/dashboard")
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Registration failed")
+    } finally {
+      setLocalLoading(false)
     }
   }
 
@@ -142,6 +151,21 @@ export function RegisterForm() {
             required
             className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
             placeholder="Your Company"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="fullName" className="block text-sm font-medium text-foreground mb-2">
+            Your Full Name
+          </label>
+          <input
+            id="fullName"
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
+            placeholder="John Doe"
           />
         </div>
 
@@ -173,15 +197,24 @@ export function RegisterForm() {
           <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
             Password
           </label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
-            placeholder="Enter your Password"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all pr-12"
+              placeholder="Enter your Password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             Minimum 6 characters
           </p>
@@ -195,10 +228,10 @@ export function RegisterForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={localLoading || loading}
           className="w-full h-[52px] px-4 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-xl disabled:opacity-50 transition-all font-semibold text-lg cursor-pointer flex items-center justify-center gap-2"
         >
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Sign Up"}
+          {localLoading || loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Sign Up"}
         </button>
       </form>
 

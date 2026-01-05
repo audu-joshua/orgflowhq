@@ -182,6 +182,10 @@ export function useAuth() {
     }
   }
 
+  const clearError = useCallback(() => {
+    setError(null)
+  }, [])
+
   return {
     user,
     organization,
@@ -190,6 +194,7 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
-    refreshProfile
+    refreshProfile,
+    clearError
   }
 }
