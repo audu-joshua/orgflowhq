@@ -10,69 +10,127 @@ export default function Home() {
       <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-card via-background to-card pt-32 pb-16 relative overflow-hidden">
         {/* Decorative Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* Subtle directional lines - top left area */}
-          <svg className="absolute top-24 left-12 w-40 h-40 text-border/60" viewBox="0 0 100 100">
-            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-            <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
+          {/* Connected Branching Network SVG */}
+          <svg className="absolute inset-0 w-full h-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              {/* Define the connected path network */}
+              <path
+                id="networkPath"
+                d="
+                  M 80,150
+                  L 200,150
+                  L 200,280
+                  M 200,150
+                  L 350,120
+                  L 350,250
+                  M 350,250
+                  L 480,280
+                  L 480,420
+                  M 480,280
+                  L 600,250
+                  M 200,280
+                  L 350,350
+                  M 350,350
+                  L 480,420
+                  M 350,350
+                  L 200,450
+                  L 200,600
+                  M 200,600
+                  L 350,650
+                  L 480,620
+                  M 480,620
+                  L 480,780
+                  M 350,650
+                  L 200,750
+                  L 80,800
+                  M 600,250
+                  L 960,200
+                  L 1350,250
+                  M 480,620
+                  L 720,650
+                  L 960,680
+                  L 1200,650
+                  L 1480,620
+                  M 1920,150
+                  L 1750,150
+                  L 1750,280
+                  M 1750,150
+                  L 1600,120
+                  L 1600,250
+                  M 1600,250
+                  L 1480,280
+                  L 1480,420
+                  M 1480,280
+                  L 1350,250
+                  M 1750,280
+                  L 1600,350
+                  M 1600,350
+                  L 1480,420
+                  M 1600,350
+                  L 1750,450
+                  L 1750,600
+                  M 1750,600
+                  L 1600,650
+                  L 1480,620
+                  M 1480,620
+                  L 1480,780
+                  M 1600,650
+                  L 1750,750
+                  L 1850,800
+                "
+                fill="none"
+              />
 
-          {/* Subtle directional lines - top right area */}
-          <svg className="absolute top-40 right-20 w-48 h-24 text-border/60" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
+              {/* Glowing particle filter */}
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
 
-          {/* Subtle directional lines - bottom left */}
-          <svg className="absolute bottom-40 left-20 w-24 h-48 text-border/60" viewBox="0 0 50 100">
-            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
+            {/* Draw the network path with dashed lines */}
+            <use
+              href="#networkPath"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeDasharray="4,8"
+              className="text-border/90 dark:text-white/15"
+            />
 
-          {/* Subtle directional lines - bottom right area */}
-          <svg className="absolute bottom-32 right-1/4 w-32 h-32 text-border/60" viewBox="0 0 100 100">
-            <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-            <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
+            {/* Animated glowing particle */}
+            <circle r="4" fill="currentColor" className="text-primary" filter="url(#glow)">
+              <animateMotion
+                dur="45s"
+                repeatCount="indefinite"
+              >
+                <mpath href="#networkPath" />
+              </animateMotion>
+              <animate
+                attributeName="opacity"
+                values="0.6;1;0.6"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
 
-          {/* Additional decorative lines - middle left */}
-          <svg className="absolute top-1/2 left-32 w-28 h-16 text-border/60" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
+            {/* Additional subtle accent lines */}
+            <g className="text-border dark:text-white/12" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8">
+              <line x1="100" y1="500" x2="250" y2="500" />
+              <line x1="1670" y1="500" x2="1820" y2="500" />
+              <line x1="150" y1="100" x2="150" y2="250" />
+              <line x1="1770" y1="100" x2="1770" y2="250" />
+            </g>
 
-          {/* Additional decorative lines - middle right */}
-          <svg className="absolute top-1/3 right-32 w-16 h-28 text-border/60" viewBox="0 0 50 100">
-            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
-
-          {/* Extra lines - top center */}
-          <svg className="absolute top-20 left-1/2 -translate-x-1/2 w-36 h-20 text-border/50" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
-
-          {/* Extra lines - left center vertical */}
-          <svg className="absolute top-1/4 left-8 w-16 h-36 text-border/50" viewBox="0 0 50 100">
-            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
-
-          {/* Extra lines - right center */}
-          <svg className="absolute bottom-1/3 right-12 w-32 h-20 text-border/50" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
-
-          {/* Extra lines - bottom center */}
-          <svg className="absolute bottom-24 left-1/3 w-20 h-32 text-border/50" viewBox="0 0 50 100">
-            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4,8" />
-          </svg>
-
-          {/* Extra small accent lines - scattered */}
-          <svg className="absolute top-1/3 left-1/4 w-20 h-12 text-border/40" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
-          </svg>
-
-          <svg className="absolute bottom-1/4 right-1/3 w-12 h-20 text-border/40" viewBox="0 0 50 100">
-            <line x1="25" y1="0" x2="25" y2="100" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
-          </svg>
-
-          <svg className="absolute top-2/3 right-1/4 w-24 h-16 text-border/40" viewBox="0 0 100 50">
-            <line x1="0" y1="25" x2="100" y2="25" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6" />
+            {/* Small decorative accent lines */}
+            <g className="text-border/90 dark:text-white/10" stroke="currentColor" strokeWidth="1" strokeDasharray="3,6">
+              <line x1="50" y1="350" x2="200" y2="350" />
+              <line x1="1720" y1="350" x2="1870" y2="350" />
+              <line x1="300" y1="550" x2="300" y2="700" />
+              <line x1="1620" y1="550" x2="1620" y2="700" />
+            </g>
           </svg>
 
           {/* Gradient orbs */}
@@ -137,10 +195,7 @@ export default function Home() {
                   href="/register"
                   className="group px-8 py-3 bg-primary text-primary-foreground rounded-xl hover:opacity-90 transition-all font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 flex items-center gap-2"
                 >
-                  Get Started Free
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
+                  Get Started
                 </Link>
                 <Link
                   href="/login"
@@ -160,7 +215,7 @@ export default function Home() {
                     <div className="absolute inset-0" style={{
                       backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)`,
                       backgroundSize: '16px 16px',
-                      opacity: 0.1
+                      opacity: 0.5
                     }}></div>
                     {/* Shield icon */}
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-lg">
