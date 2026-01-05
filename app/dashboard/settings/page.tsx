@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal"
 
 export default function SettingsPage() {
     const { organization, setOrganization } = useAppStore()
@@ -17,6 +18,7 @@ export default function SettingsPage() {
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [isCopied, setIsCopied] = useState(false)
+    const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
     // Initial data load
     useEffect(() => {
@@ -328,6 +330,36 @@ export default function SettingsPage() {
                     </form>
                 </CardContent>
             </Card>
+
+            {/* Security Section */}
+            <Card className="mt-8 border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20 pb-8">
+                    <CardTitle>Security Settings</CardTitle>
+                    <CardDescription>
+                        Manage your account security and authentication credentials.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-8">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-medium">Password</h3>
+                            <p className="text-xs text-muted-foreground">Change your account password to keep your account secure.</p>
+                        </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsChangePasswordOpen(true)}
+                            className="font-bold border-2"
+                        >
+                            Change Password
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <ChangePasswordModal
+                isOpen={isChangePasswordOpen}
+                onClose={() => setIsChangePasswordOpen(false)}
+            />
         </div>
     )
 }

@@ -9,12 +9,13 @@ import { departmentService } from "@/features/departments/services/departmentSer
 import { useAppStore } from "@/store/useAppStore"
 import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2 } from "lucide-react"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
+import { ForgotPasswordModal } from "@/features/auth/components/ForgotPasswordModal"
 import { toast } from "sonner"
 import { isSameWeek, isSameMonth, parseISO } from "date-fns"
 
 export default function ClockPage() {
     const { slug } = useParams() as { slug: string }
-    const { user, signIn, signOut, loading: authLoading } = useAuth()
+    const { user, signIn, signOut, refreshProfile, loading: authLoading } = useAuth()
     const { organization, setOrganization } = useAppStore()
 
     const [email, setEmail] = useState("")
@@ -24,6 +25,7 @@ export default function ClockPage() {
     const [timesheets, setTimesheets] = useState<Timesheet[]>([])
     const [currentTimesheet, setCurrentTimesheet] = useState<Timesheet | null>(null)
     const [employee, setEmployee] = useState<any>(null)
+    const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
     const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all')
     const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'rejected'>('all')
 
@@ -53,7 +55,7 @@ export default function ClockPage() {
             const { getSupabaseClient } = await import("@/lib/supabaseClient")
             const supabase = getSupabaseClient()
 
-            const { data: currentEmployee, error: empError } = await supabase
+            let { data: currentEmployee, error: empError } = await supabase
                 .from("employees")
                 .select("*, organizations(*)")
                 .eq("user_id", user!.id)
@@ -65,8 +67,39 @@ export default function ClockPage() {
                 throw empError
             }
 
+            // SENIOR REFINEMENT: If no record found by user_id, check if they exist by email but unlinked
+            if (!currentEmployee && user?.email) {
+                console.log("[fetchEmployeeData] Checking for unlinked record by email:", user.email)
+                const { data: employeeByEmail, error: emailLookupError } = await supabase
+                    .from("employees")
+                    .select("*, organizations(*)")
+                    .eq("email", user.email)
+                    .eq("organization_id", organization!.id)
+                    .is("user_id", null)
+                    .maybeSingle()
+
+                if (emailLookupError) console.error("[fetchEmployeeData] Email lookup error:", emailLookupError)
+
+                if (employeeByEmail) {
+                    console.log("[fetchEmployeeData] Found unlinked record, linking now...")
+                    const { error: linkError } = await supabase
+                        .from("employees")
+                        .update({ user_id: user.id })
+                        .eq("id", employeeByEmail.id)
+
+                    if (!linkError) {
+                        currentEmployee = { ...employeeByEmail, user_id: user.id }
+                        toast.success("Accounts linked successfully.")
+                        // Refresh the auth profile to pick up the new role
+                        await refreshProfile(user.id, organization!.id)
+                    } else {
+                        console.error("[fetchEmployeeData] Link error:", linkError)
+                    }
+                }
+            }
+
             if (!currentEmployee && user) {
-                // SENIOR REFINEMENT: If this is an Admin/Owner, provision an employee record on the fly
+                // If this is an Admin/Owner, provision an employee record on the fly
                 console.log("No employee record found, checking if auto-provisioning is possible...")
                 try {
                     const provisioned = await departmentService.provisionEmployeeRecord(
@@ -281,16 +314,29 @@ export default function ClockPage() {
                             className="w-full px-4 py-3 bg-background border border-border rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all"
                             placeholder="EMP-XXXX"
                         />
-                        <p className="mt-2 text-[10px] text-muted-foreground italic">Your default password is your Employee ID.</p>
+                        <div className="flex justify-end mt-2">
+                            <button
+                                type="button"
+                                onClick={() => setIsForgotModalOpen(true)}
+                                className="text-xs text-primary hover:underline font-bold cursor-pointer"
+                            >
+                                Forgot Password?
+                            </button>
+                        </div>
                     </div>
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2"
+                        className="w-full h-[60px] py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2 cursor-pointer"
                     >
-                        {loading ? <LoadingSpinner /> : <><LogIn size={20} /> Clock Service Login</>}
+                        {loading ? <Loader2 className="w-6 h-6 animate-spin text-primary-foreground" /> : <><LogIn size={20} /> Clock Service Login</>}
                     </button>
                 </form>
+                <ForgotPasswordModal
+                    isOpen={isForgotModalOpen}
+                    onClose={() => setIsForgotModalOpen(false)}
+                    initialEmail={email}
+                />
             </div>
         )
     }
@@ -323,7 +369,7 @@ export default function ClockPage() {
                         await signOut()
                         window.location.reload()
                     }}
-                    className="px-3 py-1.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                    className="px-3 py-1.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors cursor-pointer"
                 >
                     Sign Out
                 </button>
@@ -348,7 +394,7 @@ export default function ClockPage() {
                         <button
                             onClick={handleSelfTerminate}
                             disabled={loading}
-                            className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50"
+                            className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50 cursor-pointer"
                         >
                             Resign & Terminate Access
                         </button>
@@ -391,9 +437,9 @@ export default function ClockPage() {
                                     <button
                                         onClick={handleClockOut}
                                         disabled={loading}
-                                        className="w-full py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-[80px] py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer"
                                     >
-                                        {loading ? <LoadingSpinner /> : <><LogOut size={24} /> Clock Out Now</>}
+                                        {loading ? <Loader2 className="w-8 h-8 animate-spin text-destructive-foreground" /> : <><LogOut size={24} /> Clock Out Now</>}
                                     </button>
                                 </div>
                             ) : (
@@ -405,9 +451,9 @@ export default function ClockPage() {
                                     <button
                                         onClick={handleClockIn}
                                         disabled={loading}
-                                        className="w-full py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3"
+                                        className="w-full h-[80px] py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer"
                                     >
-                                        {loading ? <LoadingSpinner /> : <><Clock size={24} /> Clock In Now</>}
+                                        {loading ? <Loader2 className="w-8 h-8 animate-spin text-primary-foreground" /> : <><Clock size={24} /> Clock In Now</>}
                                     </button>
                                 </div>
                             )}
@@ -426,19 +472,19 @@ export default function ClockPage() {
                                 <div className="flex bg-muted/50 rounded-lg p-1">
                                     <button
                                         onClick={() => setTimeFilter('all')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'all' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'all' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         All
                                     </button>
                                     <button
                                         onClick={() => setTimeFilter('week')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         Week
                                     </button>
                                     <button
                                         onClick={() => setTimeFilter('month')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         Month
                                     </button>
@@ -447,7 +493,7 @@ export default function ClockPage() {
                                 <button
                                     onClick={handleDownload}
                                     title="Download CSV"
-                                    className="p-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground rounded-lg transition-colors"
+                                    className="p-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground rounded-lg transition-colors cursor-pointer"
                                 >
                                     <Download size={16} />
                                 </button>
@@ -460,7 +506,7 @@ export default function ClockPage() {
                                 <button
                                     key={s}
                                     onClick={() => setStatusFilter(s as any)}
-                                    className={`px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border ${statusFilter === s
+                                    className={`px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border cursor-pointer ${statusFilter === s
                                         ? 'bg-primary/10 border-primary text-primary'
                                         : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
                                         }`}
@@ -506,6 +552,7 @@ export default function ClockPage() {
                     <AlertCircle size={16} /> {error}
                 </div>
             )}
+
         </div>
     )
 }

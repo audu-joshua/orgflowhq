@@ -112,10 +112,9 @@ export default function ResetPasswordPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full px-4 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-xl disabled:opacity-50 transition-all font-semibold text-lg cursor-pointer flex items-center justify-center gap-2"
+                            className="w-full h-[52px] px-4 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-xl disabled:opacity-50 transition-all font-semibold text-lg cursor-pointer flex items-center justify-center gap-2"
                         >
-                            {loading && <Loader2 className="w-5 h-5 animate-spin" />}
-                            {loading ? "Updating..." : "Update Password"}
+                            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Update Password"}
                         </button>
                     </form>
                 ) : (

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, Mail, Phone, Calendar, Building, User, Trash2, Send, ExternalLink, Briefcase, MapPin, Shield, Key, CheckCircle2, UserPlus, Fingerprint, Copy, Check, Info, Edit2 } from "lucide-react"
+import { X, Mail, Phone, Calendar, Building, User, Trash2, Send, ExternalLink, Briefcase, MapPin, Shield, CheckCircle2, UserPlus, Fingerprint, Copy, Check, Info, Edit2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { departmentService } from "../services/departmentService"
 import { DeleteConfirmModal } from "./DeleteConfirmModal"
@@ -28,15 +28,10 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   const [emailSubject, setEmailSubject] = useState("")
   const [emailBody, setEmailBody] = useState("")
 
-  const [isResetting, setIsResetting] = useState(false)
-  const [newCustomPassword, setNewCustomPassword] = useState("")
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-
   const [systemRole, setSystemRole] = useState<string | null>(employee.system_role || null)
   const [pendingRole, setPendingRole] = useState<string | null>(null)
   const [showRoleConfirm, setShowRoleConfirm] = useState(false)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false)
-  const [copiedId, setCopiedId] = useState(false)
   const [copiedDetails, setCopiedDetails] = useState(false)
 
   const canManageSecurity = ["owner", "admin"].includes(currentUser?.role || "")
@@ -60,39 +55,6 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
     window.location.href = mailtoLink
   }
 
-  const handleResetToDefault = async () => {
-    if (!employee.employee_id) {
-      toast.error("Employee ID is required for default password reset")
-      return
-    }
-
-    setIsResetting(true)
-    try {
-      await departmentService.resetEmployeePassword(employee.id, employee.employee_id)
-      toast.success(`Password reset to default (${employee.employee_id})`)
-    } catch (error) {
-      toast.error("Failed to reset password")
-    } finally {
-      setIsResetting(false)
-    }
-  }
-
-  const handleSetCustomPassword = async () => {
-    if (!newCustomPassword) return
-
-    setIsResetting(true)
-    try {
-      await departmentService.updateEmployeePassword(employee.id, newCustomPassword)
-      toast.success("Custom password set successfully")
-      setNewCustomPassword("")
-      setShowPasswordForm(false)
-    } catch (error) {
-      toast.error("Failed to set custom password")
-    } finally {
-      setIsResetting(false)
-    }
-  }
-
   const handleUpdateRole = async (newRole: string | null) => {
     setIsUpdatingRole(true)
     try {
@@ -104,14 +66,6 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
     } finally {
       setIsUpdatingRole(false)
     }
-  }
-
-  const handleCopyId = () => {
-    if (!employee.employee_id) return
-    navigator.clipboard.writeText(employee.employee_id)
-    setCopiedId(true)
-    setTimeout(() => setCopiedId(false), 2000)
-    toast.success("Employee ID copied")
   }
 
   const handleCopyLoginDetails = () => {
@@ -182,7 +136,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-            {/* Left Wing: Profile & Quick Info (Column 1-3) */}
+            {/* Left Wing: Profile & Quick Info */}
             <div className="lg:col-span-3 space-y-6">
               <div className="flex flex-col items-center p-6 bg-muted/20 border border-border rounded-2xl text-center">
                 <div className="relative">
@@ -205,8 +159,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                 <p className="text-sm text-muted-foreground mt-1 font-medium">{employee.position || "Staff Member"}</p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-current bg-background ${employee.status === 'active' ? 'text-green-500' : 'text-yellow-500'
-                    }`}>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest border border-current bg-background ${employee.status === 'active' ? 'text-green-500' : 'text-yellow-500'}`}>
                     {employee.status}
                   </span>
                   {systemRole && (
@@ -227,7 +180,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                 )}
                 {employee.phone && (
                   <div className="flex items-center gap-3 text-sm text-foreground">
-                    <Phone size={16} className="text-muted-foreground" />
+                    <Phone size={16} className="text-foreground" />
                     <span>{employee.phone}</span>
                   </div>
                 )}
@@ -261,27 +214,11 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
               )}
             </div>
 
-            {/* Center Wing: Details (Column 4-8) */}
+            {/* Center Wing: Details */}
             <div className="lg:col-span-5 space-y-8">
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 block border-l-4 border-primary pl-3">Employment Information</label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-card border border-border rounded-xl space-y-1 relative group/copy">
-                    <div className="flex items-center justify-between text-primary mb-1">
-                      <div className="flex items-center gap-2">
-                        <Fingerprint size={14} />
-                        <span className="text-[10px] font-bold uppercase tracking-tight">Employee ID</span>
-                      </div>
-                      <button
-                        onClick={handleCopyId}
-                        className="p-1 hover:bg-primary/10 rounded transition-colors"
-                        title="Copy ID"
-                      >
-                        {copiedId ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-                      </button>
-                    </div>
-                    <p className="font-mono text-sm font-bold text-foreground">{employee.employee_id || "NOT-ASSIGNED"}</p>
-                  </div>
                   <div className="p-4 bg-card border border-border rounded-xl space-y-1">
                     <div className="flex items-center gap-2 text-primary mb-1">
                       <Briefcase size={14} />
@@ -306,7 +243,6 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                 </div>
               </div>
 
-              {/* System Roles Promotion - User's Request */}
               {canManageSecurity && (
                 <div className="space-y-4">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block border-l-4 border-primary pl-3">System Access Promotion</label>
@@ -343,9 +279,8 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
               )}
             </div>
 
-            {/* Right Wing: Security & Controls (Column 9-12) */}
+            {/* Right Wing: Security & Controls */}
             <div className="lg:col-span-4 space-y-6">
-              {/* Security Controls */}
               {canManageSecurity && (
                 <div className="p-6 bg-card border border-border rounded-2xl space-y-6 shadow-sm">
                   <div className="flex items-center justify-between gap-2 text-primary">
@@ -361,49 +296,6 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                       {copiedDetails ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
                       <span>Copy Details</span>
                     </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">Credentials</label>
-                      <button
-                        onClick={handleResetToDefault}
-                        disabled={isResetting}
-                        className="w-full flex items-center justify-between px-4 py-3 bg-muted border border-border text-foreground rounded-xl hover:bg-muted/80 transition-all font-semibold text-xs disabled:opacity-50"
-                      >
-                        <span className="flex items-center gap-2"><Key size={14} /> Reset Default</span>
-                        <span className="font-mono opacity-50">{employee.employee_id}</span>
-                      </button>
-                    </div>
-
-                    {!showPasswordForm ? (
-                      <button
-                        onClick={() => setShowPasswordForm(true)}
-                        className="w-full py-3 text-primary bg-primary/10 border border-primary/20 rounded-xl hover:bg-primary/20 transition-all font-bold text-xs"
-                      >
-                        Override Password
-                      </button>
-                    ) : (
-                      <div className="p-4 bg-muted/30 rounded-xl space-y-3 animate-in fade-in zoom-in-95">
-                        <input
-                          type="password"
-                          value={newCustomPassword}
-                          onChange={(e) => setNewCustomPassword(e.target.value)}
-                          placeholder="New secure password"
-                          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handleSetCustomPassword}
-                            disabled={isResetting || !newCustomPassword}
-                            className="flex-1 py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs hover:bg-primary/90"
-                          >
-                            Set Password
-                          </button>
-                          <button onClick={() => setShowPasswordForm(false)} className="px-3 py-2 bg-muted rounded-lg font-bold text-xs">Esc</button>
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div className="p-4 bg-green-500/5 border border-green-500/10 rounded-xl flex items-start gap-3">

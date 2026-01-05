@@ -59,45 +59,46 @@ export const authService = {
     }
   },
 
-  async getUserProfile(userId: string) {
+  async getUserProfile(userId: string, scopedOrgId?: string) {
     const supabase = getSupabaseClient()
-    console.log(`[getUserProfile] Fetching for userId: ${userId}`)
+    console.log(`[getUserProfile] Fetching for userId: ${userId}, scopedOrgId: ${scopedOrgId}`)
 
-    // 1. Check for privileged role in specific organization (Source of Truth for Admin/Owner/etc)
-    const { data: roleLink, error: roleError } = await supabase
+    // 1. Check for privileged role in specific organization
+    let roleQuery = supabase
       .from("users_organizations")
       .select("role, organization_id, organizations(id, slug, name, logo_url)")
       .eq("user_id", userId)
-      .maybeSingle()
+
+    if (scopedOrgId) {
+      roleQuery = roleQuery.eq("organization_id", scopedOrgId)
+    }
+
+    const { data: roleLink, error: roleError } = await roleQuery.maybeSingle()
 
     if (roleError) console.error("[getUserProfile] Role lookup error:", roleError)
 
     if (roleLink) {
       console.log(`[getUserProfile] Found privileged role: ${roleLink.role} for org: ${roleLink.organization_id}`)
-      if (!roleLink.organizations) {
-        console.warn("[getUserProfile] Role found but organization details blocked by RLS or missing.")
-      }
 
-      // It's a privileged user
       const { data: userDetails } = await supabase
         .from("users")
         .select("*")
         .eq("id", userId)
         .maybeSingle()
 
-      // Also try to get employee details for name/image (Managers/HR/etc start as employees)
+      // Also try to get employee details for name/image
       const { data: employeeDetails } = await supabase
         .from("employees")
         .select("full_name, profile_image_url, status")
         .eq("user_id", userId)
+        .eq("organization_id", roleLink.organization_id)
         .maybeSingle()
 
       return {
-        ...userDetails, //id, email, etc
-        // Enforce organization from the link, not the user record
+        ...userDetails,
         organization_id: roleLink.organization_id,
         role: roleLink.role,
-        full_name: employeeDetails?.full_name,
+        full_name: employeeDetails?.full_name || userDetails?.full_name,
         profile_image_url: employeeDetails?.profile_image_url,
         status: employeeDetails?.status,
         organizations: roleLink.organizations,
@@ -108,32 +109,37 @@ export const authService = {
     console.log("[getUserProfile] No privileged role found. Checking employees table...")
 
     // 2. If not privileged, check employees table (Clock-only users)
-    const { data: employeeData, error: empError } = await supabase
+    let employeeQuery = supabase
       .from("employees")
       .select("*, organizations(*)")
       .eq("user_id", userId)
-      .maybeSingle()
+
+    if (scopedOrgId) {
+      employeeQuery = employeeQuery.eq("organization_id", scopedOrgId)
+    }
+
+    const { data: employeeData, error: empError } = await employeeQuery.maybeSingle()
 
     if (empError) console.error("[getUserProfile] Employee lookup error:", empError)
 
     if (employeeData) {
       console.log(`[getUserProfile] Found employee record for org: ${employeeData.organization_id}`)
       return {
-        id: employeeData.user_id, // Map correctly
+        id: employeeData.user_id,
         email: employeeData.email,
         organization_id: employeeData.organization_id,
         created_at: employeeData.created_at,
-        role: "employee", // Explicitly set for frontend logic
+        role: "employee",
         full_name: employeeData.full_name,
         profile_image_url: employeeData.profile_image_url,
         status: employeeData.status,
-        is_employee_only: true, // Flag for redirection
+        is_employee_only: true,
         organizations: employeeData.organizations
       }
     }
 
-    // 3. Fallback: User exists in Auth but has no roles/links (Zombie account)
-    console.warn(`[getUserProfile] Zombie account detected for ${userId}. No links found.`)
+    // 3. Fallback: User exists in Auth but has no roles/links
+    console.warn(`[getUserProfile] No links found for ${userId} in ${scopedOrgId || 'any org'}.`)
     const { data: basicUser } = await supabase
       .from("users")
       .select("*")
@@ -143,6 +149,7 @@ export const authService = {
     if (basicUser) {
       return {
         ...basicUser,
+        organization_id: scopedOrgId || basicUser.organization_id || "", // Prioritize scope, fallback to DB only if no scope
         role: null,
         organizations: null
       }
@@ -215,5 +222,25 @@ export const authService = {
 
     console.log("[setupEmployeeAccount] Link successful.")
     return authData.user
+  },
+
+  async updatePassword(newPassword: string) {
+    const supabase = getSupabaseClient()
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    })
+
+    if (error) throw error
+    return data
+  },
+
+  async sendPasswordResetEmail(email: string, redirectTo?: string) {
+    const supabase = getSupabaseClient()
+    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: redirectTo || `${window.location.origin}/reset-password`,
+    })
+
+    if (error) throw error
+    return data
   }
 }
