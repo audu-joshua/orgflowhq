@@ -207,7 +207,7 @@ export function Navbar() {
                 ) : (
                   <button
                     onClick={handleLogout}
-                    className="px-6 py-2 bg-destructive text-destructive-foreground rounded-lg hover:opacity-90 transition-opacity font-medium text-sm cursor-pointer"
+                    className="px-6 py-2 bg-red-700 text-white rounded-lg hover:bg-red-800 transition-colors font-medium text-sm cursor-pointer"
                   >
                     Logout
                   </button>
@@ -310,7 +310,7 @@ export function Navbar() {
                           onClick={() => setIsOpen(false)}
                         >
                           <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">03</span>
-                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Applications</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Talent</span>
                         </Link>
                       </motion.div>
                     </>
@@ -387,7 +387,7 @@ export function Navbar() {
                           handleLogout()
                           setIsOpen(false)
                         }}
-                        className="w-full bg-destructive text-destructive-foreground py-4 text-lg font-bold hover:opacity-90 transition-all duration-200 rounded-lg cursor-pointer"
+                        className="w-full bg-red-700 text-white py-4 text-lg font-bold hover:bg-red-800 transition-colors duration-200 rounded-lg cursor-pointer"
                       >
                         Logout
                       </button>
