@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { Navbar } from "@/components/layout/Navbar"
+import { Pricing } from "@/components/sections/Pricing"
 
 export default function Home() {
   return (
@@ -302,97 +303,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-32 bg-card">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-foreground mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-xl text-muted-foreground">Choose the plan that's right for you</p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-12 max-w-4xl mx-auto">
-            {/* Free Plan */}
-            <div className="bg-background rounded-2xl p-8 border border-border shadow-sm hover:shadow-lg transition-all relative overflow-hidden">
-              <h3 className="text-2xl font-bold text-foreground mb-2">Free Starter</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-bold text-primary">$0</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <p className="text-muted-foreground mb-6">Perfect for small teams just getting started.</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2 text-foreground">
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Up to 3 Job Postings
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Basic Candidate Tracking
-                </li>
-                <li className="flex items-center gap-2 text-foreground">
-                  <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Email Support
-                </li>
-              </ul>
-              <Link
-                href="/register"
-                className="block w-full py-3 text-center bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/90 transition-colors font-medium"
-              >
-                Get Started
-              </Link>
-            </div>
-
-            {/* Paid Plan */}
-            <div className="bg-primary text-primary-foreground rounded-2xl p-8 shadow-xl transform scale-105 border-2 border-primary relative overflow-hidden">
-              <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 px-3 py-1 text-xs font-bold rounded-bl-lg uppercase tracking-wider">
-                Popular
-              </div>
-              <h3 className="text-2xl font-bold mb-2">Pro Growth</h3>
-              <div className="flex items-baseline gap-1 mb-6">
-                <span className="text-4xl font-bold">$10</span>
-                <span className="text-primary-foreground/80">/month</span>
-              </div>
-              <p className="text-primary-foreground/80 mb-6">Everything you need to scale your hiring.</p>
-              <ul className="space-y-3 mb-8">
-                <li className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Unlimited Job Postings
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Advanced Analytics
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Priority Support
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Team Collaboration Tools
-                </li>
-              </ul>
-              <Link
-                href="/register"
-                className="block w-full py-3 text-center bg-background text-primary rounded-lg hover:bg-background/90 transition-colors font-bold"
-              >
-                Upgrade Now
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <Pricing />
 
       {/* Testimonials Section */}
       {/* Reviews (Testimonials) Section */}
