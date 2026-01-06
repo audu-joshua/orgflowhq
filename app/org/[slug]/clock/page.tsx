@@ -9,7 +9,6 @@ import { timesheetService, Timesheet } from "@/features/timesheets/services/time
 import { departmentService } from "@/features/departments/services/departmentService"
 import { useAppStore } from "@/store/useAppStore"
 import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2 } from "lucide-react"
-import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { ForgotPasswordModal } from "@/features/auth/components/ForgotPasswordModal"
 import { toast } from "sonner"
 import { isSameWeek, isSameMonth, parseISO } from "date-fns"
@@ -23,7 +22,6 @@ export default function ClockPage() {
     const [employeeIdField, setEmployeeIdField] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
-    const [showTerminateConfirm, setShowTerminateConfirm] = useState(false)
     const [timesheets, setTimesheets] = useState<Timesheet[]>([])
     const [currentTimesheet, setCurrentTimesheet] = useState<Timesheet | null>(null)
     const [employee, setEmployee] = useState<any>(null)
@@ -145,25 +143,17 @@ export default function ClockPage() {
         try {
             console.log("Attempting sign-in for:", email)
             try {
+                // 0. Pre-login access validation
+                const access = await authService.validateAccessStatus(email)
+                if (!access.allowed) {
+                    setError(access.error || "Access Denied")
+                    setLoading(false)
+                    return
+                }
+
                 // Primary Login: Email + Employee ID (as password)
                 await signIn(email, employeeIdField)
                 console.log("Login successful.")
-
-                // Critical Policy Check: Inactive/Terminated
-                const { getSupabaseClient } = await import("@/lib/supabaseClient")
-                const supabase = getSupabaseClient()
-                const { data: { user: authUser } } = await supabase.auth.getUser()
-
-                if (authUser) {
-                    const profile = await authService.getUserProfile(authUser.id, organization?.id)
-                    if (profile && (profile.status === 'inactive' || profile.status === 'terminated')) {
-                        await signOut()
-                        setError("You have been Deactivated; Contact Your Hr")
-                        setLoading(false)
-                        return
-                    }
-                }
-
                 toast.success("Welcome back!")
             } catch (signInErr: any) {
                 console.log("Login failed:", signInErr.message)
@@ -215,10 +205,9 @@ export default function ClockPage() {
     }
 
     const handleSelfTerminate = async () => {
-        if (!organization) return
-        setLoading(true)
-        setShowTerminateConfirm(false)
+        if (!organization || !confirm("Are you sure you want to terminate your access to this organization? This action cannot be undone and you will be signed out immediately.")) return
 
+        setLoading(true)
         try {
             const { getSupabaseClient } = await import("@/lib/supabaseClient")
             const { data: { session } } = await getSupabaseClient().auth.getSession()
@@ -346,9 +335,9 @@ export default function ClockPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2 h-14"
                     >
-                        {loading ? <LoadingSpinner /> : <><LogIn size={20} /> Clock Service Login</>}
+                        {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><LogIn size={20} /> Clock Service Login</>}
                     </button>
                 </form>
                 <ForgotPasswordModal
@@ -411,7 +400,7 @@ export default function ClockPage() {
                             Tired of working here? You can terminate your access to this organization. Access will be revoked immediately.
                         </p>
                         <button
-                            onClick={() => setShowTerminateConfirm(true)}
+                            onClick={handleSelfTerminate}
                             disabled={loading}
                             className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50"
                         >
@@ -419,33 +408,6 @@ export default function ClockPage() {
                         </button>
                     </div>
                 </div>
-
-                {/* Custom Termination Dialog */}
-                {showTerminateConfirm && (
-                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
-                        <div className="bg-card border border-destructive/20 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-                            <h3 className="text-lg font-bold text-foreground mb-2">Final Confirmation</h3>
-                            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                                Are you sure you want to **Resign & Terminate** your access to {organization?.name}?
-                                This will permanently delete your employee record and you will be signed out immediately.
-                            </p>
-                            <div className="flex gap-3">
-                                <button
-                                    onClick={() => setShowTerminateConfirm(false)}
-                                    className="flex-1 py-2 text-xs font-bold bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
-                                >
-                                    Go Back
-                                </button>
-                                <button
-                                    onClick={handleSelfTerminate}
-                                    className="flex-1 py-2 text-xs font-bold bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors"
-                                >
-                                    Yes, Terminate
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Action Card */}
                 <div className="md:col-span-2 space-y-6">

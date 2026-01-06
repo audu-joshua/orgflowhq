@@ -2,6 +2,22 @@ import { getSupabaseClient } from "@/lib/supabaseClient"
 import { slugify } from "@/lib/utils"
 
 export const authService = {
+  async validateAccessStatus(email: string) {
+    try {
+      const response = await fetch("/api/auth/validate-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      })
+
+      const result = await response.json()
+      return result
+    } catch (err) {
+      console.warn("[AuthService] Validation API error:", err)
+      return { allowed: true } // Fail open on network errors
+    }
+  },
+
   async signUp(email: string, password: string, organizationName: string, fullName?: string) {
     const supabase = getSupabaseClient()
 

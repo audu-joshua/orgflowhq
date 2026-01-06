@@ -4,6 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
+import { authService } from "../services/authService"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 
@@ -29,6 +30,13 @@ export function LoginForm() {
     setFormError("")
 
     try {
+      // 0. Pre-login access validation
+      const access = await authService.validateAccessStatus(email)
+      if (!access.allowed) {
+        setFormError(access.error || "Access Denied")
+        return
+      }
+
       const profile = await signIn(email, password)
 
       if (!profile) {
