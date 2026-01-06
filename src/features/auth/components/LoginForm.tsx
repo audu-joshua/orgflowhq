@@ -35,12 +35,11 @@ export function LoginForm() {
         throw new Error("Could not fetch user profile")
       }
 
-      // 1. Critical Policy: Termination check
-      if (profile.status === 'terminated') {
-        // Sign out immediately (since auth succeeded but business policy denied)
+      // 1. Critical Policy: Termination/Deactivation check
+      if (profile.status === 'terminated' || profile.status === 'inactive') {
         const { getSupabaseClient } = await import("@/lib/supabaseClient")
         await getSupabaseClient().auth.signOut()
-        setFormError("Account not Found; Contact Your Hr...")
+        setFormError("You have been Deactivated; Contact Your Hr")
         return
       }
 

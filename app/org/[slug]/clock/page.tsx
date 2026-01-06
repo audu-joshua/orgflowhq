@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useAuth } from "@/features/auth/hooks/useAuth"
+import { authService } from "@/features/auth/services/authService"
 import { organizationService } from "@/features/organization/services/organizationService"
 import { timesheetService, Timesheet } from "@/features/timesheets/services/timesheetService"
 import { departmentService } from "@/features/departments/services/departmentService"
@@ -22,6 +23,7 @@ export default function ClockPage() {
     const [employeeIdField, setEmployeeIdField] = useState("")
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
+    const [showTerminateConfirm, setShowTerminateConfirm] = useState(false)
     const [timesheets, setTimesheets] = useState<Timesheet[]>([])
     const [currentTimesheet, setCurrentTimesheet] = useState<Timesheet | null>(null)
     const [employee, setEmployee] = useState<any>(null)
@@ -146,6 +148,22 @@ export default function ClockPage() {
                 // Primary Login: Email + Employee ID (as password)
                 await signIn(email, employeeIdField)
                 console.log("Login successful.")
+
+                // Critical Policy Check: Inactive/Terminated
+                const { getSupabaseClient } = await import("@/lib/supabaseClient")
+                const supabase = getSupabaseClient()
+                const { data: { user: authUser } } = await supabase.auth.getUser()
+
+                if (authUser) {
+                    const profile = await authService.getUserProfile(authUser.id, organization?.id)
+                    if (profile && (profile.status === 'inactive' || profile.status === 'terminated')) {
+                        await signOut()
+                        setError("You have been Deactivated; Contact Your Hr")
+                        setLoading(false)
+                        return
+                    }
+                }
+
                 toast.success("Welcome back!")
             } catch (signInErr: any) {
                 console.log("Login failed:", signInErr.message)
@@ -197,9 +215,10 @@ export default function ClockPage() {
     }
 
     const handleSelfTerminate = async () => {
-        if (!organization || !confirm("Are you sure you want to terminate your access to this organization? This action cannot be undone and you will be signed out immediately.")) return
-
+        if (!organization) return
         setLoading(true)
+        setShowTerminateConfirm(false)
+
         try {
             const { getSupabaseClient } = await import("@/lib/supabaseClient")
             const { data: { session } } = await getSupabaseClient().auth.getSession()
@@ -318,7 +337,7 @@ export default function ClockPage() {
                             <button
                                 type="button"
                                 onClick={() => setIsForgotModalOpen(true)}
-                                className="text-xs text-primary hover:underline font-bold cursor-pointer"
+                                className="text-xs text-primary hover:underline font-bold"
                             >
                                 Forgot Password?
                             </button>
@@ -327,9 +346,9 @@ export default function ClockPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full h-[60px] py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2 cursor-pointer"
+                        className="w-full py-4 bg-primary text-primary-foreground rounded-xl font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100 mt-4 flex items-center justify-center gap-2"
                     >
-                        {loading ? <Loader2 className="w-6 h-6 animate-spin text-primary-foreground" /> : <><LogIn size={20} /> Clock Service Login</>}
+                        {loading ? <LoadingSpinner /> : <><LogIn size={20} /> Clock Service Login</>}
                     </button>
                 </form>
                 <ForgotPasswordModal
@@ -369,7 +388,7 @@ export default function ClockPage() {
                         await signOut()
                         window.location.reload()
                     }}
-                    className="px-3 py-1.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 text-xs font-medium bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
                 >
                     Sign Out
                 </button>
@@ -392,14 +411,41 @@ export default function ClockPage() {
                             Tired of working here? You can terminate your access to this organization. Access will be revoked immediately.
                         </p>
                         <button
-                            onClick={handleSelfTerminate}
+                            onClick={() => setShowTerminateConfirm(true)}
                             disabled={loading}
-                            className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50 cursor-pointer"
+                            className="w-full py-2 text-[10px] font-bold text-destructive border border-destructive/20 rounded-lg hover:bg-destructive hover:text-white transition-all disabled:opacity-50"
                         >
                             Resign & Terminate Access
                         </button>
                     </div>
                 </div>
+
+                {/* Custom Termination Dialog */}
+                {showTerminateConfirm && (
+                    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                        <div className="bg-card border border-destructive/20 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+                            <h3 className="text-lg font-bold text-foreground mb-2">Final Confirmation</h3>
+                            <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                                Are you sure you want to **Resign & Terminate** your access to {organization?.name}?
+                                This will permanently delete your employee record and you will be signed out immediately.
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setShowTerminateConfirm(false)}
+                                    className="flex-1 py-2 text-xs font-bold bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors"
+                                >
+                                    Go Back
+                                </button>
+                                <button
+                                    onClick={handleSelfTerminate}
+                                    className="flex-1 py-2 text-xs font-bold bg-destructive text-white rounded-lg hover:bg-destructive/90 transition-colors"
+                                >
+                                    Yes, Terminate
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Action Card */}
                 <div className="md:col-span-2 space-y-6">
@@ -437,9 +483,9 @@ export default function ClockPage() {
                                     <button
                                         onClick={handleClockOut}
                                         disabled={loading}
-                                        className="w-full h-[80px] py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                                        className="w-full py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px]"
                                     >
-                                        {loading ? <Loader2 className="w-8 h-8 animate-spin text-destructive-foreground" /> : <><LogOut size={24} /> Clock Out Now</>}
+                                        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><LogOut size={24} /> Clock Out Now</>}
                                     </button>
                                 </div>
                             ) : (
@@ -451,9 +497,9 @@ export default function ClockPage() {
                                     <button
                                         onClick={handleClockIn}
                                         disabled={loading}
-                                        className="w-full h-[80px] py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 cursor-pointer"
+                                        className="w-full py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px]"
                                     >
-                                        {loading ? <Loader2 className="w-8 h-8 animate-spin text-primary-foreground" /> : <><Clock size={24} /> Clock In Now</>}
+                                        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><Clock size={24} /> Clock In Now</>}
                                     </button>
                                 </div>
                             )}
@@ -472,19 +518,19 @@ export default function ClockPage() {
                                 <div className="flex bg-muted/50 rounded-lg p-1">
                                     <button
                                         onClick={() => setTimeFilter('all')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'all' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'all' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         All
                                     </button>
                                     <button
                                         onClick={() => setTimeFilter('week')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'week' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         Week
                                     </button>
                                     <button
                                         onClick={() => setTimeFilter('month')}
-                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all cursor-pointer ${timeFilter === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeFilter === 'month' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                                     >
                                         Month
                                     </button>
@@ -493,7 +539,7 @@ export default function ClockPage() {
                                 <button
                                     onClick={handleDownload}
                                     title="Download CSV"
-                                    className="p-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground rounded-lg transition-colors cursor-pointer"
+                                    className="p-2 bg-secondary/10 hover:bg-secondary/20 text-secondary-foreground rounded-lg transition-colors"
                                 >
                                     <Download size={16} />
                                 </button>
@@ -506,7 +552,7 @@ export default function ClockPage() {
                                 <button
                                     key={s}
                                     onClick={() => setStatusFilter(s as any)}
-                                    className={`px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border cursor-pointer ${statusFilter === s
+                                    className={`px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-full border ${statusFilter === s
                                         ? 'bg-primary/10 border-primary text-primary'
                                         : 'bg-transparent border-border text-muted-foreground hover:border-primary/50'
                                         }`}

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Sparkles } from "lucide-react"
+import { Loader2, X, Sparkles } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { departmentService } from "../services/departmentService"
 import { toast } from "sonner"
@@ -139,20 +139,60 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                         <div className="space-y-4">
 
                             <div>
-                                <label htmlFor="status" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
-                                    Status
+                                <label className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-3 px-1">
+                                    Account Status
                                 </label>
-                                <CustomSelect
-                                    id="status"
-                                    value={formData.status}
-                                    onChange={(value) => setFormData({ ...formData, status: value })}
-                                    options={[
-                                        { value: "active", label: "Active" },
-                                        { value: "inactive", label: "Inactive" },
-                                        { value: "terminated", label: "Terminated" },
-                                    ]}
-                                    required
-                                />
+                                <div
+                                    onClick={() => {
+                                        if (formData.status === 'invited') {
+                                            setFormData({ ...formData, status: 'inactive' });
+                                        } else {
+                                            setFormData({ ...formData, status: formData.status === 'active' ? 'inactive' : 'active' });
+                                        }
+                                    }}
+                                    className={`
+                                        relative w-full h-12 rounded-xl border p-1 cursor-pointer transition-all duration-300 flex items-center
+                                        ${formData.status === 'active' ? 'bg-green-500/10 border-green-500/20' :
+                                            formData.status === 'invited' ? 'bg-amber-500/10 border-amber-500/20' :
+                                                'bg-destructive/10 border-destructive/20'}
+                                    `}
+                                >
+                                    {formData.status === 'invited' ? (
+                                        <div className="flex-1 text-center text-[10px] font-bold text-amber-600 z-10">
+                                            Invited (Pending Login)
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className={`
+                                                flex-1 text-center text-xs font-bold transition-all duration-300 z-10
+                                                ${formData.status === 'active' ? 'text-green-600' : 'text-muted-foreground'}
+                                            `}>
+                                                Active
+                                            </div>
+                                            <div className={`
+                                                flex-1 text-center text-xs font-bold transition-all duration-300 z-10
+                                                ${formData.status === 'inactive' ? 'text-destructive' : 'text-muted-foreground'}
+                                            `}>
+                                                Inactive
+                                            </div>
+                                        </>
+                                    )}
+                                    <div
+                                        className={`
+                                            absolute top-1 bottom-1 w-[48%] bg-white rounded-lg shadow-sm border border-border transition-all duration-300 ease-in-out
+                                            ${formData.status === 'active' ? 'left-1' :
+                                                formData.status === 'invited' ? 'left-1 opacity-0' :
+                                                    'left-[51%]'}
+                                        `}
+                                    />
+                                </div>
+                                <p className="text-[9px] text-muted-foreground mt-2 px-1">
+                                    {formData.status === 'invited'
+                                        ? "Waiting for employee's first login. Click to Deactivate."
+                                        : formData.status === 'active'
+                                            ? "Employee can access the system normally."
+                                            : "Employee session will be blocked immediately."}
+                                </p>
                             </div>
 
                             <div>
@@ -283,9 +323,9 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                             form="edit-employee-form"
                             type="submit"
                             disabled={loading}
-                            className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+                            className="flex-1 h-[52px] bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center cursor-pointer"
                         >
-                            {loading ? "Saving..." : "Save Changes"}
+                            {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Save Changes"}
                         </button>
                     </div>
                 </div>

@@ -19,7 +19,7 @@ export interface Employee {
   phone: string | null
   hire_date: string | null
   profile_image_url: string | null
-  status: 'active' | 'inactive' | 'terminated' | 'invited'
+  status: 'active' | 'inactive' | 'invited'
   activated_at: string | null
   system_role?: string | null
   created_at: string

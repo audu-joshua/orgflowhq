@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Sparkles } from "lucide-react"
+import { X, Sparkles, Loader2 } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { departmentService } from "../services/departmentService"
 import { toast } from "sonner"
@@ -300,9 +300,9 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
               form="add-employee-form"
               type="submit"
               disabled={loading || isGeneratingId}
-              className="flex-1 px-4 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-50"
+              className="flex-1 h-[52px] px-4 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center cursor-pointer"
             >
-              {loading ? "Registering..." : "Add Personnel"}
+              {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Add Personnel"}
             </button>
           </div>
         </div>

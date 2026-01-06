@@ -187,59 +187,44 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
               </div>
 
               <button
-                onClick={() => setShowEmailForm(!showEmailForm)}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-muted border border-border text-foreground hover:bg-muted/80 rounded-xl transition-all font-bold text-sm"
+                onClick={() => window.location.href = `mailto:${employee.email}`}
+                className="w-full h-[52px] flex items-center justify-center gap-2 px-5 py-3 bg-muted border border-border text-foreground hover:bg-muted/80 rounded-xl transition-all font-bold text-sm cursor-pointer"
               >
-                <Send size={16} /> Send Email
+                <Mail size={16} /> Send Email
               </button>
-
-              {showEmailForm && (
-                <div className="border border-border rounded-xl p-4 space-y-4 bg-background animate-in slide-in-from-top-4 duration-300">
-                  <input
-                    type="text"
-                    value={emailSubject}
-                    onChange={(e) => setEmailSubject(e.target.value)}
-                    placeholder="Subject..."
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <textarea
-                    value={emailBody}
-                    onChange={(e) => setEmailBody(e.target.value)}
-                    placeholder="Message..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-sm resize-none outline-none focus:ring-2 focus:ring-primary"
-                  />
-                  <button onClick={handleSendEmail} className="w-full py-2 bg-primary text-primary-foreground rounded-lg font-bold text-xs">Open Client</button>
-                </div>
-              )}
             </div>
 
             {/* Center Wing: Details */}
             <div className="lg:col-span-5 space-y-8">
               <div>
                 <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-4 block border-l-4 border-primary pl-3">Employment Information</label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-card border border-border rounded-xl space-y-1">
-                    <div className="flex items-center gap-2 text-primary mb-1">
-                      <Briefcase size={14} />
-                      <span className="text-[10px] font-bold uppercase tracking-tight">Current Role</span>
-                    </div>
-                    <p className="font-bold text-foreground">{employee.position || "Worker"}</p>
+                <div className="p-4 bg-card border border-border rounded-xl space-y-1">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Fingerprint size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Employee ID</span>
                   </div>
-                  <div className="p-4 bg-card border border-border rounded-xl space-y-1">
-                    <div className="flex items-center gap-2 text-primary mb-1">
-                      <Calendar size={14} />
-                      <span className="text-[10px] font-bold uppercase tracking-tight">Join Date</span>
-                    </div>
-                    <p className="font-bold text-foreground">{employee.hire_date ? formatDate(employee.hire_date) : "N/A"}</p>
+                  <p className="font-mono font-bold text-foreground">{employee.employee_id || "NOT ASSIGNED"}</p>
+                </div>
+                <div className="p-4 bg-card border border-border rounded-xl space-y-1">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Briefcase size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Current Role</span>
                   </div>
-                  <div className="p-4 bg-card border border-border rounded-xl space-y-1">
-                    <div className="flex items-center gap-2 text-primary mb-1">
-                      <Briefcase size={14} />
-                      <span className="text-[10px] font-bold uppercase tracking-tight">System Role</span>
-                    </div>
-                    <p className="font-bold text-foreground capitalize">{systemRole || "Employee"}</p>
+                  <p className="font-bold text-foreground">{employee.position || "Worker"}</p>
+                </div>
+                <div className="p-4 bg-card border border-border rounded-xl space-y-1">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Calendar size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">Join Date</span>
                   </div>
+                  <p className="font-bold text-foreground">{employee.hire_date ? formatDate(employee.hire_date) : "N/A"}</p>
+                </div>
+                <div className="p-4 bg-card border border-border rounded-xl space-y-1 flex flex-col justify-center">
+                  <div className="flex items-center gap-2 text-primary mb-1">
+                    <Shield size={14} />
+                    <span className="text-[10px] font-bold uppercase tracking-tight">System Role</span>
+                  </div>
+                  <p className="font-bold text-foreground capitalize">{systemRole || "Employee"}</p>
                 </div>
               </div>
 

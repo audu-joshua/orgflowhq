@@ -13,30 +13,70 @@ export function useAuth() {
   const slug = params?.slug as string | undefined
   const { user, setUser, organization, setOrganization, setInitialized } = useAppStore()
 
-  const refreshProfile = useCallback(async (userId: string, orgId?: string) => {
-    const profile = await authService.getUserProfile(userId, orgId)
-    if (profile) {
-      setUser({
-        id: profile.id,
-        email: profile.email,
-        organization_id: profile.organization_id,
-        created_at: profile.created_at,
-        role: profile.role,
-        full_name: profile.full_name,
-        profile_image_url: profile.profile_image_url,
-      })
-      if (profile.organizations) {
-        setOrganization(profile.organizations)
+  const checkActivation = useCallback(async (profile: any) => {
+    if (profile && profile.status === "invited") {
+      console.log(`[useAuth] Detected INVITED status for ${profile.email}. Triggering activation...`)
+      try {
+        const { getSupabaseClient } = await import("@/lib/supabaseClient")
+        const supabase = getSupabaseClient()
+        const { data: { session } } = await supabase.auth.getSession()
+
+        if (session) {
+          const activationUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/auth/activate` : "/api/auth/activate"
+          const response = await fetch(activationUrl, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${session.access_token}`
+            }
+          })
+          const result = await response.json()
+          console.log("[useAuth] Activation result:", { status: response.status, result })
+
+          if (response.ok) {
+            profile.status = "active" // Update local object for immediate UI feedback
+            return true
+          }
+        }
+      } catch (err) {
+        console.error("[useAuth] Activation trigger failed:", err)
       }
-    } else {
-      setUser({
-        id: userId,
-        email: "", // Will be filled by subsequent lookups or fallback
-        organization_id: "",
-        created_at: new Date().toISOString(),
-      })
     }
-  }, [setUser, setOrganization])
+    return false
+  }, [])
+
+  const refreshProfile = useCallback(async (userId: string, orgId?: string) => {
+    try {
+      const profile = await authService.getUserProfile(userId, orgId)
+      if (profile) {
+        if (profile.organizations) {
+          setOrganization(profile.organizations)
+        }
+
+        // Check for activation
+        await checkActivation(profile)
+
+        setUser({
+          id: profile.id,
+          email: profile.email,
+          organization_id: profile.organization_id,
+          created_at: profile.created_at,
+          role: profile.role,
+          full_name: profile.full_name,
+          profile_image_url: profile.profile_image_url,
+          status: profile.status,
+        })
+      } else {
+        setUser({
+          id: userId,
+          email: "",
+          organization_id: "",
+          created_at: new Date().toISOString(),
+        })
+      }
+    } catch (err) {
+      console.error("[useAuth] refreshProfile failed:", err)
+    }
+  }, [setUser, setOrganization, checkActivation])
 
   useEffect(() => {
     const initAuth = async () => {
@@ -46,7 +86,6 @@ export function useAuth() {
         if (currentUser) {
           let orgId = organization?.id
 
-          // If we have a slug in the URL, prioritize that organization
           if (slug) {
             try {
               const org = await organizationService.getOrganizationBySlug(slug)
@@ -59,6 +98,13 @@ export function useAuth() {
           const profile = await authService.getUserProfile(currentUser.id, orgId)
 
           if (profile) {
+            if (profile.organizations) {
+              setOrganization(profile.organizations)
+            }
+
+            // Check for activation
+            await checkActivation(profile)
+
             setUser({
               id: profile.id,
               email: profile.email,
@@ -67,12 +113,9 @@ export function useAuth() {
               role: profile.role,
               full_name: profile.full_name,
               profile_image_url: profile.profile_image_url,
+              status: profile.status,
             })
-            if (profile.organizations) {
-              setOrganization(profile.organizations)
-            }
           } else {
-            // User is logged in but has no profile for THIS org
             setUser({
               id: currentUser.id,
               email: currentUser.email || "",
@@ -81,7 +124,6 @@ export function useAuth() {
             })
           }
         } else {
-          // No session exists
           setUser(null)
           setOrganization(null)
         }
@@ -99,7 +141,7 @@ export function useAuth() {
     }
 
     initAuth()
-  }, [slug, setUser, setOrganization, setInitialized])
+  }, [slug, setUser, setOrganization, setInitialized, checkActivation])
 
   const signUp = async (email: string, password: string, organizationName: string) => {
     setLoading(true)
@@ -143,6 +185,13 @@ export function useAuth() {
       const profile = await authService.getUserProfile(authUser.id, orgIdToFetch)
 
       if (profile) {
+        if (profile.organizations) {
+          setOrganization(profile.organizations)
+        }
+
+        // Check for activation
+        await checkActivation(profile)
+
         setUser({
           id: profile.id,
           email: profile.email,
@@ -151,10 +200,8 @@ export function useAuth() {
           role: profile.role,
           full_name: profile.full_name,
           profile_image_url: profile.profile_image_url,
+          status: profile.status,
         })
-        if (profile.organizations) {
-          setOrganization(profile.organizations)
-        }
       }
       return profile
     } catch (err) {
@@ -182,10 +229,6 @@ export function useAuth() {
     }
   }
 
-  const clearError = useCallback(() => {
-    setError(null)
-  }, [])
-
   return {
     user,
     organization,
@@ -194,7 +237,6 @@ export function useAuth() {
     signUp,
     signIn,
     signOut,
-    refreshProfile,
-    clearError
+    refreshProfile
   }
 }
