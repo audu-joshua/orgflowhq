@@ -24,15 +24,20 @@ export const mailService = {
     const senderAddress = process.env.SMTP_USER || "support@orgflowhq.com"
 
     try {
-      const fromHeader = `"${senderName}" <${senderAddress}>`
+      // Use object syntax for better compatibility
+      const fromData = {
+        name: senderName,
+        address: senderAddress
+      }
+
       const info = await transporter.sendMail({
-        from: fromHeader,
+        from: fromData,
         to,
         subject,
         html,
-        replyTo: replyTo || fromHeader,
+        replyTo: replyTo || senderAddress,
       })
-      console.log(`[MailService] Email sent from ${fromHeader}: ${info.messageId}`)
+      console.log(`[MailService] Email sent from ${senderName} <${senderAddress}>: ${info.messageId}`)
       return { success: true, messageId: info.messageId }
     } catch (error) {
       console.error("[MailService] Error sending email:", error)
@@ -140,6 +145,35 @@ export const mailService = {
       subject: `Notice: Employee self-termination (${employeeName})`,
       html,
       fromName: "OrgFlow Team"
+    })
+  },
+
+  async sendOrgDeletionPin(to: string, pin: string) {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
+        <h2 style="color: #dc2626; margin-top: 0;">Organization Deletion Request</h2>
+        <p>We received a request to significantly <strong>delete</strong> your organization and all associated data from OrgFlow.</p>
+        <p>This action is <strong>irreversible</strong>. All employees, timesheets, and records will be permanently lost.</p>
+        
+        <div style="background-color: #fef2f2; border: 1px solid #fee2e2; padding: 20px; border-radius: 8px; margin: 24px 0; text-align: center;">
+          <p style="margin: 0 0 10px 0; color: #991b1b; font-size: 14px;">Use the following PIN to confirm deletion:</p>
+          <div style="font-size: 32px; font-weight: bold; letter-spacing: 4px; color: #dc2626;">${pin}</div>
+          <p style="margin: 10px 0 0 0; color: #991b1b; font-size: 12px;">This PIN expires in 15 minutes.</p>
+        </div>
+
+        <p>If you did not request this, please change your password immediately and contact support.</p>
+
+        <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+          Best rights,<br>
+          <strong>OrgFlow Security Team</strong>
+        </p>
+      </div>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Action Required: Organization Deletion PIN`,
+      html,
+      fromName: "OrgFlow Security"
     })
   }
 }

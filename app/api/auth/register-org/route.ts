@@ -122,9 +122,9 @@ export async function POST(req: Request) {
                 organizationName,
                 fullName || user.user_metadata?.full_name || "Owner"
             )
-        } catch (mailErr) {
-            console.error("[Provision-Org] Mail failed:", mailErr)
-            // We don't fail the whole registration if mail fails
+        } catch (mailErr: any) {
+            console.error("🚨 [Provision-Org] Mail FAILED:", mailErr.message || mailErr)
+            // We don't fail the whole registration if mail fails, but we log it loudly
         }
 
         return NextResponse.json({

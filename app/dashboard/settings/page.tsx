@@ -10,15 +10,24 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal"
+import { useAuth } from "@/features/auth/hooks/useAuth"
 
 export default function SettingsPage() {
     const { organization, setOrganization } = useAppStore()
+    const { signOut } = useAuth()
+
     const [name, setName] = useState("")
     const [logo, setLogo] = useState<File | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [isCopied, setIsCopied] = useState(false)
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+
+    // Deletion Modal State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+    const [deleteStep, setDeleteStep] = useState<'initial' | 'verify'>('initial')
+    const [deletePin, setDeletePin] = useState("")
+    const [deleteLoading, setDeleteLoading] = useState(false)
 
     // Initial data load
     useEffect(() => {
@@ -140,6 +149,70 @@ export default function SettingsPage() {
             toast.error(errorMessage)
         } finally {
             setLoading(false)
+        }
+    }
+
+    const handleInitiateDelete = async () => {
+        setDeleteLoading(true)
+        try {
+            const { getSupabaseClient } = await import("@/lib/supabaseClient")
+            const supabase = getSupabaseClient()
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session) throw new Error("Unauthorized")
+
+            const res = await fetch("/api/organizations/close/initiate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ organizationId: organization?.id })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            toast.success("Verification PIN sent to your email")
+            setDeleteStep('verify')
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setDeleteLoading(false)
+        }
+    }
+
+    const handleConfirmDelete = async () => {
+        setDeleteLoading(true)
+        try {
+            const { getSupabaseClient } = await import("@/lib/supabaseClient")
+            const supabase = getSupabaseClient()
+            const { data: { session } } = await supabase.auth.getSession()
+
+            if (!session) throw new Error("Unauthorized")
+
+            const res = await fetch("/api/organizations/close/confirm", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ organizationId: organization?.id, pin: deletePin })
+            })
+
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error)
+
+            toast.success("Organization closed successfully")
+
+            // Force sign out
+            await signOut()
+            window.location.href = "/login"
+
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            setDeleteLoading(false)
         }
     }
 
@@ -269,7 +342,7 @@ export default function SettingsPage() {
                                         type="button"
                                         variant="outline"
                                         size="icon"
-                                        className="shrink-0 h-10 w-10"
+                                        className="shrink-0 h-10 w-10 cursor-pointer"
                                         onClick={() => {
                                             const url = `${window.location.origin}/org/${organization.slug}/clock`;
                                             navigator.clipboard.writeText(url);
@@ -284,7 +357,7 @@ export default function SettingsPage() {
                                         type="button"
                                         variant="outline"
                                         size="icon"
-                                        className="shrink-0 h-10 w-10 text-primary hover:text-primary"
+                                        className="shrink-0 h-10 w-10 text-primary hover:text-primary cursor-pointer"
                                         onClick={() => {
                                             const url = `${window.location.origin}/org/${organization.slug}/clock`;
                                             window.open(url, '_blank');
@@ -310,13 +383,14 @@ export default function SettingsPage() {
                                     setLogo(null)
                                     setLogoPreview(organization.logo_url || null)
                                 }}
+                                className="cursor-pointer"
                             >
                                 Cancel
                             </Button>
                             <Button
                                 type="submit"
                                 disabled={loading || !hasChanges}
-                                className="min-w-[120px]"
+                                className="min-w-[120px] cursor-pointer"
                             >
                                 {loading ? (
                                     <>
@@ -331,7 +405,7 @@ export default function SettingsPage() {
                 </CardContent>
             </Card>
 
-            {/* Security Section */}
+            {/* Security Settings */}
             <Card className="mt-8 border-border/60 shadow-sm">
                 <CardHeader className="border-b border-border/40 bg-muted/20 pb-8">
                     <CardTitle>Security Settings</CardTitle>
@@ -348,9 +422,41 @@ export default function SettingsPage() {
                         <Button
                             variant="outline"
                             onClick={() => setIsChangePasswordOpen(true)}
-                            className="font-bold border-2"
+                            className="font-bold border-2 cursor-pointer"
                         >
                             Change Password
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Danger Zone */}
+            <Card className="mt-8 border-red-200 shadow-sm bg-red-50/10">
+                <CardHeader className="border-b border-red-100 bg-red-50/30 pb-8">
+                    <CardTitle className="text-red-700">Danger Zone</CardTitle>
+                    <CardDescription className="text-red-600/80">
+                        Destructive actions that cannot be undone.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-8">
+                    <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                            <h3 className="text-sm font-medium text-red-900">Close Organization</h3>
+                            <p className="text-xs text-red-700/70 max-w-lg">
+                                PERMANENTLY delete this organization and all related data (employees, timesheets, settings).
+                                This action is verified via email and cannot be reversed.
+                            </p>
+                        </div>
+                        <Button
+                            variant="destructive"
+                            onClick={() => {
+                                setIsDeleteModalOpen(true)
+                                setDeleteStep('initial')
+                                setDeletePin("")
+                            }}
+                            className="font-bold shadow-red-200 shadow-sm cursor-pointer"
+                        >
+                            Close Organization
                         </Button>
                     </div>
                 </CardContent>
@@ -360,6 +466,92 @@ export default function SettingsPage() {
                 isOpen={isChangePasswordOpen}
                 onClose={() => setIsChangePasswordOpen(false)}
             />
+
+            {/* Deletion Confirmation Modal */}
+            {isDeleteModalOpen && (
+                <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4 animate-in fade-in duration-200">
+                    <div className="bg-card border border-border rounded-xl w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-200 overflow-hidden">
+
+                        <div className="px-6 py-6 border-b border-border/50 bg-muted/20">
+                            <h3 className="text-lg font-bold text-foreground">
+                                {deleteStep === 'initial' ? 'Close Organization?' : 'Verify Deletion'}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                {deleteStep === 'initial'
+                                    ? "This action is extremely destructive."
+                                    : "Enter the PIN sent to your email."}
+                            </p>
+                        </div>
+
+                        <div className="p-6">
+                            {deleteStep === 'initial' ? (
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-red-50 border border-red-100 rounded-lg text-red-800 text-sm leading-relaxed">
+                                        <p className="font-bold mb-2">Warning: Irreversible Action</p>
+                                        <ul className="list-disc pl-5 space-y-1">
+                                            <li>All <strong>Employees</strong> will be deleted.</li>
+                                            <li>All <strong>Timesheets</strong> and records will be lost.</li>
+                                            <li>Your organization data cannot be recovered.</li>
+                                        </ul>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">
+                                        To proceed, we will send a 6-digit confirmation PIN to your registered email address.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-medium">Confirmation PIN</label>
+                                        <Input
+                                            value={deletePin}
+                                            onChange={(e) => setDeletePin(e.target.value)}
+                                            placeholder="Enter 6-digit PIN"
+                                            className="text-center text-2xl tracking-[0.5em] font-mono"
+                                            maxLength={6}
+                                        />
+                                        <p className="text-xs text-muted-foreground text-center">
+                                            Check your inbox for the code.
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="px-6 py-4 bg-muted/20 border-t border-border/50 flex justify-end gap-3">
+                            <Button
+                                variant="ghost"
+                                disabled={deleteLoading}
+                                onClick={() => setIsDeleteModalOpen(false)}
+                                className="cursor-pointer"
+                            >
+                                Cancel
+                            </Button>
+
+                            {deleteStep === 'initial' ? (
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleInitiateDelete}
+                                    disabled={deleteLoading}
+                                    className="cursor-pointer"
+                                >
+                                    {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                    Send Verification PIN
+                                </Button>
+                            ) : (
+                                <Button
+                                    variant="destructive"
+                                    onClick={handleConfirmDelete}
+                                    disabled={deleteLoading || deletePin.length < 6}
+                                    className="cursor-pointer"
+                                >
+                                    {deleteLoading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                                    Confirm & Close Organization
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

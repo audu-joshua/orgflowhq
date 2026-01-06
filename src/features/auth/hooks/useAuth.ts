@@ -229,11 +229,14 @@ export function useAuth() {
     }
   }
 
+  const clearError = useCallback(() => setError(null), [])
+
   return {
     user,
     organization,
     loading,
     error,
+    clearError,
     signUp,
     signIn,
     signOut,

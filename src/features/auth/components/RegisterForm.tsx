@@ -49,8 +49,16 @@ export function RegisterForm() {
       try {
         await signUp(email, password, organizationName)
       } catch (err: any) {
-        // If user already exists, we recover silently if they provide correct password
-        if (err.message?.includes("already registered") || err.code === "user_already_exists") {
+        console.log("Signup initial attempt failed code:", err.code, "msg:", err.message)
+
+        // Robust check for Supabase "User already registered" error (422)
+        // Error object might be structured differently depending on client version
+        const isUserExists =
+          err.code === "user_already_exists" ||
+          err.message?.includes("already registered") ||
+          (err.status === 422 && err.name === "AuthApiError")
+
+        if (isUserExists) {
           console.log("[RegisterForm] User exists, attempting silent recovery...")
           clearError() // Remove the shared error so the UI stays clean
         } else {
