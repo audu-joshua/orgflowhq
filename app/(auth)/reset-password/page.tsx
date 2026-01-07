@@ -19,8 +19,20 @@ export default function ResetPasswordPage() {
         // Basic check to see if we have an active recovery session
         const checkSession = async () => {
             const supabase = getSupabaseClient()
-            const { data: { session } } = await supabase.auth.getSession()
+
+            // Wait up to 2 seconds for session to initialize from hash
+            let session = null
+            for (let i = 0; i < 4; i++) {
+                const { data } = await supabase.auth.getSession()
+                if (data.session) {
+                    session = data.session
+                    break
+                }
+                await new Promise(r => setTimeout(r, 500))
+            }
+
             if (!session) {
+                console.warn("[ResetPassword] No session found after wait. Redirecting...")
                 toast.error("Invalid or expired reset link")
                 router.push("/login")
             }
