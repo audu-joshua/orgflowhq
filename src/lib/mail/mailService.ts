@@ -185,7 +185,7 @@ export const mailService = {
         <style>
           body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
           .container { max-width: 600px; margin: 0 auto; }
-          .header { background-color: #0fadaa; padding: 30px 0; text-align: center; border-radius: 12px 12px 0 0; }
+          .header { background-color: #0fadaa; padding: 20px 0; text-align: center; border-radius: 12px 12px 0 0; }
           .content { background-color: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
           .footer { text-align: center; padding: 20px; color: #71717a; font-size: 12px; }
           .button { display: inline-block; background-color: #0fadaa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
