@@ -21,8 +21,19 @@ export function AuthPageLayout({
     return (
         <div className="min-h-screen flex flex-col lg:flex-row">
             {/* Left Panel - Form (Scrollable) */}
-            <div className="flex-1 flex flex-col p-6 lg:p-12 bg-background lg:overflow-y-auto lg:h-screen custom-scrollbar">
-                <div className="w-full max-w-md m-auto">
+            <div className="flex-1 flex flex-col p-6 lg:p-12 bg-background lg:overflow-y-auto lg:h-screen custom-scrollbar relative overflow-hidden">
+                {/* Decorative Logo Watermark */}
+                <div className="absolute -bottom-24 -left-24 z-0 opacity-[0.05] grayscale pointer-events-none select-none">
+                    <Image
+                        src="/logo.png"
+                        alt="Logo Watermark"
+                        width={1000}
+                        height={1000}
+                        className="w-[800px] h-auto object-contain"
+                    />
+                </div>
+
+                <div className="w-full max-w-md m-auto relative z-10">
                     <div className="mb-8">
                         <h1 className="text-3xl font-bold text-foreground mb-2">{title}</h1>
                         <p className="text-muted-foreground">{subtitle}</p>

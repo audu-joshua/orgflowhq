@@ -78,7 +78,7 @@ export function RegisterForm() {
           email,
           password
         })
-        if (signInError) throw new Error("This email is already registered. Please provide the correct password to create your organization.")
+        if (signInError) throw new Error("This email is already registered. Please sign in or use a different email.")
         session = signInData.session
       }
 
@@ -100,9 +100,9 @@ export function RegisterForm() {
         const errorData = await response.json()
         // If they already have an org, maybe we should tell them
         if (errorData.error?.includes("already linked")) {
-          throw new Error("You are already registered with an organization. Please log in normally.")
+          throw new Error("You are already a member of an organization. Please log in.")
         }
-        throw new Error(errorData.error || "Failed to finalize organization setup")
+        throw new Error(errorData.error || "We encountered an issue setting up your organization. Please try again.")
       }
 
       const provisionData = await response.json()

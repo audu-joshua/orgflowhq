@@ -135,6 +135,20 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("[Provision-Org] Unexpected error:", error)
-        return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 })
+        
+        // Map technical database errors to friendly messages
+        let errorMessage = error.message || "Internal Server Error"
+        
+        if (errorMessage.includes("employees_employee_id_key")) {
+            errorMessage = "This account is already registered as an employee. Please attempt to sign in."
+        } else if (errorMessage.includes("organizations_slug_key")) {
+            errorMessage = "This organization name is already taken. Please try a different name."
+        } else if (errorMessage.includes("employees_email_key")) {
+            errorMessage = "An employee with this email already exists."
+        } else if (errorMessage.includes("users_pkey")) {
+            errorMessage = "User account already exists."
+        }
+
+        return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
 }
