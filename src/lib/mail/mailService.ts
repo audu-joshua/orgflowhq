@@ -24,20 +24,17 @@ export const mailService = {
     const senderAddress = process.env.SMTP_USER || "support@orgflowhq.com"
 
     try {
-      // Use object syntax for better compatibility
-      const fromData = {
-        name: senderName,
-        address: senderAddress
-      }
+      // Use string format "Name <email>" which is often more reliable for display names
+      const from = `"${senderName}" <${senderAddress}>`
 
       const info = await transporter.sendMail({
-        from: fromData,
+        from,
         to,
         subject,
         html,
         replyTo: replyTo || senderAddress,
       })
-      console.log(`[MailService] Email sent from ${senderName} <${senderAddress}>: ${info.messageId}`)
+      console.log(`[MailService] Email sent from ${from}: ${info.messageId}`)
       return { success: true, messageId: info.messageId }
     } catch (error) {
       console.error("[MailService] Error sending email:", error)
@@ -51,12 +48,19 @@ export const mailService = {
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
         <h2 style="color: #000; margin-top: 0;">Hi ${ownerName},</h2>
-        <p>Welcome to <strong>OrgFlow</strong> 🎉</p>
-        <p>I wanted to personally reach out to say we’re excited to have <strong>${orgName}</strong> onboard.</p>
-        <p>At OrgFlow, we’re all about simplifying your entire HR workflow. Handle the structure and process, so you can focus on the real work that matters.</p>
+        
+        <p>I wanted to personally write to you to say how excited we are to welcome <strong>${orgName}</strong> to <strong>OrgFlow</strong>.</p>
+        
+        <p>OrgFlow was built with growing teams like yours in mind; to take the weight of HR structure and process off your shoulders, so you can focus more on leading, building, and doing the work that truly matters.</p>
+        
+        <p>As you get started, know that you’re not just using a tool, you’re joining a platform designed to grow with you. If you ever have questions, need clarity, or want to share feedback, my team and I are always happy to listen.</p>
+        
+        <p>We’re grateful to be part of your journey, and we’re looking forward to supporting Mercy International every step of the way.</p>
+
         <div style="margin: 30px 0; text-align: center;">
-          <a href="${dashboardUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Log In</a>
+          <a href="${dashboardUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Get Started</a>
         </div>
+        
         <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
           Warm regards,<br>
           <strong>Audu Joshua Adinoyi</strong><br>
@@ -68,7 +72,7 @@ export const mailService = {
       to,
       subject: `Welcome to OrgFlow 🎉`,
       html,
-      fromName: "OrgFlow Team"
+      fromName: "Audu Joshua Adinoyi" // Personal welcome from the founder
     })
   },
 

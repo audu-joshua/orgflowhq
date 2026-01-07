@@ -431,18 +431,18 @@ export default function SettingsPage() {
             </Card>
 
             {/* Danger Zone */}
-            <Card className="mt-8 border-red-200 shadow-sm bg-red-50/10">
-                <CardHeader className="border-b border-red-100 bg-red-50/30 pb-8">
-                    <CardTitle className="text-red-700">Danger Zone</CardTitle>
-                    <CardDescription className="text-red-600/80">
+            <Card className="mt-8 border-red-300 shadow-sm bg-red-50/50">
+                <CardHeader className="border-b border-red-200 bg-red-100/30 pb-8">
+                    <CardTitle className="text-red-900">Danger Zone</CardTitle>
+                    <CardDescription className="text-red-800">
                         Destructive actions that cannot be undone.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-8">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <h3 className="text-sm font-medium text-red-900">Close Organization</h3>
-                            <p className="text-xs text-red-700/70 max-w-lg">
+                            <h3 className="text-sm font-medium text-red-950">Close Organization</h3>
+                            <p className="text-xs text-red-800/90 max-w-lg font-medium">
                                 PERMANENTLY delete this organization and all related data (employees, timesheets, settings).
                                 This action is verified via email and cannot be reversed.
                             </p>
@@ -454,7 +454,7 @@ export default function SettingsPage() {
                                 setDeleteStep('initial')
                                 setDeletePin("")
                             }}
-                            className="font-bold shadow-red-200 shadow-sm cursor-pointer"
+                            className="font-bold shadow-sm cursor-pointer bg-red-700 hover:bg-red-800 text-white border border-red-800"
                         >
                             Close Organization
                         </Button>
