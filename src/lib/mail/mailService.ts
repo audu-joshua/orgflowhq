@@ -53,9 +53,9 @@ export const mailService = {
         
         <p>OrgFlow was built with growing teams like yours in mind; to take the weight of HR structure and process off your shoulders, so you can focus more on leading, building, and doing the work that truly matters.</p>
         
-        <p>As you get started, know that you’re not just using a tool, you’re joining a platform designed to grow with you. If you ever have questions, need clarity, or want to share feedback, my team and I are always happy to listen.</p>
+        <p>As you get started, know that you're not just using a tool, you're joining a platform designed to grow with you. If you ever have questions, need clarity, or want to share feedback, my team and I are always happy to listen.</p>
         
-        <p>We’re grateful to be part of your journey, and we’re looking forward to supporting Mercy International every step of the way.</p>
+        <p>We're grateful to be part of your journey, and we're looking forward to supporting Mercy International every step of the way.</p>
 
         <div style="margin: 30px 0; text-align: center;">
           <a href="${dashboardUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Get Started</a>
@@ -195,7 +195,7 @@ export const mailService = {
         <div style="background-color: #f4f4f5; padding: 40px 0;">
           <div class="container">
             <div class="header">
-              <img src="${logoUrl}" alt="OrgFlow" style="height: 50px; width: auto; display: block; margin: 0 auto;">
+              <img src="${logoUrl}" alt="OrgFlow" style="height: 50px; width: auto; display: block; margin: 0 auto; background-color: #0fadaa;">
             </div>
             <div class="content">
               ${content}
