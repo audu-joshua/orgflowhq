@@ -18,6 +18,24 @@ export default function ForgotPasswordPage() {
         setError("")
 
         try {
+            // 1. Check if user exists
+            const checkRes = await fetch("/api/auth/check-user", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email })
+            })
+
+            const checkData = await checkRes.json()
+
+            if (!checkRes.ok) throw new Error("Unable to verify account status")
+
+            if (!checkData.exists) {
+                setError("Account does not exist in our system; kindly Create an account")
+                setLoading(false)
+                return
+            }
+
+            // 2. If exists, proceed with reset
             const supabase = getSupabaseClient()
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/reset-password`,

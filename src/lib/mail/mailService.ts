@@ -24,17 +24,17 @@ export const mailService = {
     const senderAddress = process.env.SMTP_USER || "support@orgflowhq.com"
 
     try {
-      // Use string format "Name <email>" which is often more reliable for display names
-      const from = `"${senderName}" <${senderAddress}>`
-
       const info = await transporter.sendMail({
-        from,
+        from: {
+          name: senderName,
+          address: senderAddress
+        },
         to,
         subject,
         html,
         replyTo: replyTo || senderAddress,
       })
-      console.log(`[MailService] Email sent from ${from}: ${info.messageId}`)
+      console.log(`[MailService] Email sent to ${to}: ${info.messageId}`)
       return { success: true, messageId: info.messageId }
     } catch (error) {
       console.error("[MailService] Error sending email:", error)
@@ -71,7 +71,7 @@ export const mailService = {
     return this.sendEmail({
       to,
       subject: `Welcome to OrgFlow 🎉`,
-      html,
+      html: this.wrapEmailHtml(html),
       fromName: "OrgFlow Team"
     })
   },
@@ -79,9 +79,8 @@ export const mailService = {
   async sendEmployeeWelcomeEmail(to: string, orgName: string, employeeName: string, slug: string) {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
     const clockUrl = `${siteUrl}/org/${slug}/clock`
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
-        <h2 style="color: #000; margin-top: 0;">Welcome to the Team, ${employeeName}!</h2>
+    const body = `
+        <h2 style="color: #0d1e4c; margin-top: 0;">Welcome to the Team, ${employeeName}!</h2>
         <p>Your account for <strong>${orgName}</strong> on OrgFlow is now active.</p>
         <div style="margin: 30px 0; text-align: center;">
           <a href="${clockUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Open Clock Portal</a>
@@ -90,20 +89,18 @@ export const mailService = {
           Best regards,<br>
           <strong>OrgFlow Team</strong>
         </p>
-      </div>
     `
     return this.sendEmail({
       to,
       subject: `Your account at ${orgName} is active!`,
-      html,
+      html: this.wrapEmailHtml(body),
       fromName: "OrgFlow Team"
     })
   },
 
   async sendEmployeeInviteEmail(to: string, orgName: string, employeeName: string, clockLink: string, isNewUser: boolean = true, employeeId?: string) {
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
-        <h2 style="color: #000; margin-top: 0;">Hi ${employeeName},</h2>
+    const body = `
+        <h2 style="color: #0d1e4c; margin-top: 0;">Hi ${employeeName},</h2>
         <p>You have been added to <strong>${orgName}</strong> on OrgFlow.</p>
         
         <div style="background-color: #f4f4f5; padding: 20px; border-radius: 12px; margin: 24px 0;">
@@ -122,39 +119,35 @@ export const mailService = {
           Best regards,<br>
           <strong>OrgFlow Team</strong>
         </p>
-      </div>
     `
     return this.sendEmail({
       to,
       subject: `Invitation to join ${orgName} on OrgFlow`,
-      html,
+      html: this.wrapEmailHtml(body),
       fromName: "OrgFlow Team"
     })
   },
 
   async sendTerminationNoticeToOwner(ownerEmail: string, employeeName: string, orgName: string) {
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
-        <h2 style="color: #000; margin-top: 0;">Employee Termination Notice</h2>
+    const body = `
+        <h2 style="color: #0d1e4c; margin-top: 0;">Employee Termination Notice</h2>
         <p>This is to inform you that <strong>${employeeName}</strong> has terminated their role in <strong>${orgName}</strong> through the OrgFlow employee portal.</p>
         <p>The employee's record has been removed from your organization. If this was unexpected, please reach out to them directly.</p>
         <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
           Best regards,<br>
           <strong>OrgFlow Team</strong>
         </p>
-      </div>
     `
     return this.sendEmail({
       to: ownerEmail,
       subject: `Notice: Employee self-termination (${employeeName})`,
-      html,
+      html: this.wrapEmailHtml(body),
       fromName: "OrgFlow Team"
     })
   },
 
   async sendOrgDeletionPin(to: string, pin: string) {
-    const html = `
-      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
+    const body = `
         <h2 style="color: #dc2626; margin-top: 0;">Organization Deletion Request</h2>
         <p>We received a request to significantly <strong>delete</strong> your organization and all associated data from OrgFlow.</p>
         <p>This action is <strong>irreversible</strong>. All employees, timesheets, and records will be permanently lost.</p>
@@ -171,14 +164,50 @@ export const mailService = {
           Best rights,<br>
           <strong>OrgFlow Security Team</strong>
         </p>
-      </div>
     `
     return this.sendEmail({
       to,
       subject: `Action Required: Organization Deletion PIN`,
-      html,
+      html: this.wrapEmailHtml(body),
       fromName: "OrgFlow Team"
     })
+  },
+
+  wrapEmailHtml(content: string) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+    const logoUrl = `${siteUrl}/logo-white.png` // Ensure this route is public
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body { margin: 0; padding: 0; background-color: #f4f4f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+          .container { max-width: 600px; margin: 0 auto; }
+          .header { background-color: #0fadaa; padding: 30px 0; text-align: center; border-radius: 12px 12px 0 0; }
+          .content { background-color: #ffffff; padding: 40px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+          .footer { text-align: center; padding: 20px; color: #71717a; font-size: 12px; }
+          .button { display: inline-block; background-color: #0fadaa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div style="background-color: #f4f4f5; padding: 40px 0;">
+          <div class="container">
+            <div class="header">
+              <img src="${logoUrl}" alt="OrgFlow" style="height: 50px; width: auto; display: block; margin: 0 auto;">
+            </div>
+            <div class="content">
+              ${content}
+            </div>
+            <div class="footer">
+              <p>&copy; ${new Date().getFullYear()} OrgFlow. All rights reserved.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `
   },
 
   async sendPasswordResetEmail(to: string, resetLink: string) {
