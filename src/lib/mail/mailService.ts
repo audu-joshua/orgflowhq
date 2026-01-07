@@ -72,7 +72,7 @@ export const mailService = {
       to,
       subject: `Welcome to OrgFlow 🎉`,
       html,
-      fromName: "Audu Joshua Adinoyi" // Personal welcome from the founder
+      fromName: "OrgFlow Team"
     })
   },
 
@@ -177,7 +177,33 @@ export const mailService = {
       to,
       subject: `Action Required: Organization Deletion PIN`,
       html,
-      fromName: "OrgFlow Security"
+      fromName: "OrgFlow Team"
+    })
+  },
+
+  async sendPasswordResetEmail(to: string, resetLink: string) {
+    const html = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
+        <h2 style="color: #000; margin-top: 0;">Reset Your Password</h2>
+        <p>We received a request to reset the password for your OrgFlow account.</p>
+        
+        <div style="margin: 30px 0; text-align: center;">
+          <a href="${resetLink}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Reset Password</a>
+        </div>
+        
+        <p style="font-size: 14px; color: #666;">If you didn't request a password reset, you can safely ignore this email.</p>
+        
+        <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+          Best regards,<br>
+          <strong>OrgFlow Team</strong>
+        </p>
+      </div>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Reset your OrgFlow password`,
+      html,
+      fromName: "OrgFlow Team"
     })
   }
 }
