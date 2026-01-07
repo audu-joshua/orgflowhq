@@ -10,6 +10,7 @@ interface ModalProps {
   children: React.ReactNode
   maxWidth?: string
   showCloseButton?: boolean
+  closeOnOutsideClick?: boolean
 }
 
 export function Modal({
@@ -18,22 +19,23 @@ export function Modal({
   title,
   children,
   maxWidth = "max-w-md",
-  showCloseButton = true
+  showCloseButton = true,
+  closeOnOutsideClick = true
 }: ModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center z-[100] transition-all overflow-y-auto p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-[100] transition-all p-4">
       <div
-        className={`bg-card rounded-xl shadow-2xl ${maxWidth} w-full overflow-hidden border border-border animate-in fade-in zoom-in duration-200 relative`}
+        className={`bg-card rounded-2xl shadow-[0_0_50px_-12px_rgba(0,0,0,0.5)] ${maxWidth} w-full max-h-[90vh] flex flex-col overflow-hidden border border-border animate-in fade-in zoom-in duration-300 relative`}
       >
         {(title || showCloseButton) && (
-          <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-            <h2 className="text-lg font-semibold text-foreground truncate mr-4">{title}</h2>
+          <div className="flex items-center justify-between px-6 py-5 border-b border-border bg-card/50 backdrop-blur-xl shrink-0">
+            <h2 className="text-xl font-bold text-foreground truncate mr-4 tracking-tight">{title}</h2>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1.5 hover:bg-muted rounded-full flex-shrink-0"
+                className="text-muted-foreground hover:text-foreground transition-all p-2 hover:bg-muted rounded-xl flex-shrink-0 cursor-pointer"
                 aria-label="Close modal"
               >
                 <X size={20} />
@@ -41,12 +43,15 @@ export function Modal({
             )}
           </div>
         )}
-        <div>{children}</div>
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-1">
+          {children}
+        </div>
       </div>
       {/* Click outside to close */}
-      <div
-        className="absolute inset-0 -z-10"
-        onClick={onClose}
+      <button
+        className={`absolute inset-0 -z-10 w-full h-full border-none bg-transparent cursor-default focus:outline-none`}
+        onClick={closeOnOutsideClick ? onClose : undefined}
+        aria-hidden="true"
       />
     </div>
   )

@@ -16,7 +16,7 @@ export const navItems: NavItem[] = [
     },
     {
         href: "/dashboard/roles",
-        label: "Roles",
+        label: "Open Roles",
         icon: Briefcase,
         allowedRoles: ["owner", "admin", "hr", "manager"]
     },

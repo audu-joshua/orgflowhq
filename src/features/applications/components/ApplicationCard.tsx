@@ -1,8 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Mail, Phone, FileText, Calendar, User } from "lucide-react"
-import { ApplicantDetailsModal } from "./ApplicantDetailsModal"
+import { useRouter } from "next/navigation"
+import { Mail, Phone, Calendar } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import type { Application } from "../types"
 
@@ -11,7 +10,7 @@ interface ApplicationCardProps {
 }
 
 export function ApplicationCard({ application }: ApplicationCardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false)
+  const router = useRouter()
 
   const getInitial = () => {
     if (application.applicant_name) return application.applicant_name[0].toUpperCase()
@@ -34,64 +33,56 @@ export function ApplicationCard({ application }: ApplicationCardProps) {
   }
 
   return (
-    <>
-      <div
-        onClick={() => setIsModalOpen(true)}
-        className="bg-card rounded-lg border border-border overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
-      >
-        <div className="relative h-44">
-          {application.applicant_passport ? (
-            <img
-              src={application.applicant_passport}
-              alt={application.applicant_name}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-          ) : (
-            <div className="w-full h-full bg-primary/10 flex items-center justify-center">
-              <span className="text-primary font-bold text-5xl">{getInitial()}</span>
-            </div>
-          )}
-          <div className="absolute top-3 right-3 text-right">
-            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusColor(application.status)}`}>
-              {application.status}
-            </span>
+    <div
+      onClick={() => router.push(`/dashboard/applications/${application.id}`)}
+      className="bg-card rounded-lg border border-border overflow-hidden cursor-pointer hover:shadow-lg transition-all group"
+    >
+      <div className="relative h-44">
+        {application.applicant_passport ? (
+          <img
+            src={application.applicant_passport}
+            alt={application.applicant_name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+        ) : (
+          <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+            <span className="text-primary font-bold text-5xl">{getInitial()}</span>
           </div>
-        </div>
-
-        <div className="p-4 space-y-3">
-          <div>
-            <h3 className="font-bold text-foreground truncate">{application.applicant_name}</h3>
-            {application.roles?.title && (
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
-                {application.roles.title}
-              </p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Mail size={12} />
-              <span className="truncate">{application.applicant_email}</span>
-            </div>
-            {application.applicant_phone && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Phone size={12} />
-                <span>{application.applicant_phone}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
-              <Calendar size={12} />
-              <span>Applied {formatDate(application.created_at)}</span>
-            </div>
-          </div>
+        )}
+        <div className="absolute top-3 right-3 text-right">
+          <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm ${getStatusColor(application.status)}`}>
+            {application.status}
+          </span>
         </div>
       </div>
 
-      <ApplicantDetailsModal
-        application={application}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
-    </>
+      <div className="p-4 space-y-3">
+        <div>
+          <h3 className="font-bold text-foreground truncate">{application.applicant_name}</h3>
+          {application.roles?.title && (
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
+              {application.roles.title}
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Mail size={12} />
+            <span className="truncate">{application.applicant_email}</span>
+          </div>
+          {application.applicant_phone && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Phone size={12} />
+              <span>{application.applicant_phone}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
+            <Calendar size={12} />
+            <span>Applied {formatDate(application.created_at)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

@@ -51,7 +51,7 @@ export default function RolesPage() {
         </button>
       </div>
 
-      <MigrationHelper />
+      {/* <MigrationHelper /> */}
 
       {roles.length === 0 ? (
         <EmptyState

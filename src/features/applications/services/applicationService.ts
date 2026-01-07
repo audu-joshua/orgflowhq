@@ -29,6 +29,19 @@ export const applicationService = {
     return data || []
   },
 
+  async getApplicationById(applicationId: string) {
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from("applications")
+      .select("*, roles(title)")
+      .eq("id", applicationId)
+      .single()
+
+    if (error) throw error
+    return data as Application & { roles?: { title: string } }
+  },
+
   async getApplicationsByOrganization(organizationId: string) {
     const supabase = getSupabaseClient()
 
