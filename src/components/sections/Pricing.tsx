@@ -15,13 +15,23 @@ export function Pricing() {
         },
         mid: {
             USD: {
-                monthly: 15,
-                yearly: 12, // 20% discount
+                monthly: 25,
+                yearly: 20, // 20% discount
             },
             NGN: {
-                monthly: 20000,
-                yearly: 16000, // 20% discount
+                monthly: 35000,
+                yearly: 28000, // 20% discount
             },
+        },
+        premium: {
+            USD: {
+                monthly: 1,
+                yearly: 0.8,
+            },
+            NGN: {
+                monthly: 800,
+                yearly: 640,
+            }
         }
     }
 
@@ -43,8 +53,8 @@ export function Pricing() {
                             <button
                                 onClick={() => setCurrency("USD")}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${currency === "USD"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 USD ($)
@@ -52,8 +62,8 @@ export function Pricing() {
                             <button
                                 onClick={() => setCurrency("NGN")}
                                 className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${currency === "NGN"
-                                        ? "bg-background text-foreground shadow-sm"
-                                        : "text-muted-foreground hover:text-foreground"
+                                    ? "bg-background text-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
                                     }`}
                             >
                                 NGN (₦)
@@ -204,9 +214,17 @@ export function Pricing() {
                         <div className="mb-8">
                             <h3 className="text-2xl font-bold text-foreground mb-2">Premium</h3>
                             <div className="flex items-baseline gap-1 mb-4">
-                                <span className="text-4xl font-bold text-foreground">Custom</span>
+                                <span className="text-4xl font-bold text-foreground">
+                                    {formatPrice(isAnnual ? pricing.premium[currency].yearly : pricing.premium[currency].monthly)}
+                                </span>
+                                <span className="text-muted-foreground">/employee/month</span>
                             </div>
-                            <p className="text-muted-foreground text-sm">Full power for large organizations.</p>
+                            {isAnnual && (
+                                <p className="text-sm bg-primary/10 text-primary inline-block px-2 py-1 rounded mb-2">
+                                    {formatPrice(pricing.premium[currency].yearly)} billed per employee
+                                </p>
+                            )}
+                            <p className="text-muted-foreground text-sm">Full power for large organizations (&gt;20 employees).</p>
                         </div>
 
                         <div className="flex-grow">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -8,6 +8,8 @@ import { AnimatePresence } from 'framer-motion';
 export default function ContactSection() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const [formData, setFormData] = useState({
         firstName: '',
         lastName: '',
@@ -24,6 +26,21 @@ export default function ContactSection() {
         "201-500 employees",
         "500+ employees"
     ];
+
+    useEffect(() => {
+        if (isDropdownOpen && dropdownRef.current) {
+            const rect = dropdownRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            // If less than 200px below and more space above, open upward
+            if (spaceBelow < 200 && spaceAbove > spaceBelow) {
+                setOpenUpward(true);
+            } else {
+                setOpenUpward(false);
+            }
+        }
+    }, [isDropdownOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -164,11 +181,13 @@ export default function ContactSection() {
                                             <AnimatePresence>
                                                 {isDropdownOpen && (
                                                     <motion.div
-                                                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                        ref={dropdownRef}
+                                                        initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                                                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                                        exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                                                         transition={{ duration: 0.2, ease: "easeOut" }}
-                                                        className="absolute z-50 w-full mt-2 bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden py-1"
+                                                        className={`absolute z-50 w-full bg-slate-900/95 backdrop-blur-xl border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden py-1 ${openUpward ? 'bottom-full mb-2' : 'mt-2'
+                                                            }`}
                                                     >
                                                         {companySizeOptions.map((option) => (
                                                             <button
