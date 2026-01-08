@@ -266,10 +266,10 @@ export function Pricing() {
                         </div>
 
                         <Link
-                            href="/contact"
+                            href="/register"
                             className="block w-full py-3 text-center bg-secondary text-secondary-foreground rounded-xl hover:bg-secondary/80 transition-colors font-semibold"
                         >
-                            Contact Sales
+                            Start Free Trial
                         </Link>
                     </div>
                 </div>
