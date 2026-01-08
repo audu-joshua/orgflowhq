@@ -2,6 +2,41 @@ import { createClient } from "@supabase/supabase-js"
 import { notFound } from "next/navigation"
 import { ApplicationPageContent } from "@/features/applications/components/ApplicationPageContent"
 import type { RoleWithImages } from "@/features/roles/services/roleService"
+import { Metadata } from "next"
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  const supabase = createClient(supabaseUrl, supabaseKey)
+
+  const { data: role } = await supabase
+    .from("roles")
+    .select(`*, role_images(image_url), organizations(name)`)
+    .eq("slug", slug)
+    .single()
+
+  if (!role) return { title: "Job Opening | OrgFlow" }
+
+  const ogImage = role.role_images?.[0]?.image_url
+
+  return {
+    title: `${role.title} at ${role.organizations?.name || "OrgFlow"}`,
+    description: role.description?.substring(0, 160) || `Apply for the ${role.title} position at ${role.organizations?.name || "OrgFlow"}.`,
+    openGraph: {
+      title: `${role.title} | ${role.organizations?.name || "OrgFlow"}`,
+      description: role.description?.substring(0, 160),
+      images: ogImage ? [ogImage] : ["/og-image.png"],
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: role.title,
+      description: role.description?.substring(0, 160),
+      images: ogImage ? [ogImage] : ["/og-image.png"],
+    }
+  }
+}
 
 export default async function ApplyPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params

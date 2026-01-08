@@ -10,6 +10,10 @@ export interface RoleWithImages extends Role {
     display_order: number
     created_at: string
   }>
+  organizations?: {
+    name: string
+    logo_url: string | null
+  }
   applications?: Array<{ count: number }>
   application_count?: number
 }
@@ -278,5 +282,18 @@ export const roleService = {
       throw error
     }
     return data as RoleWithImages
+  },
+
+  async getAllOpenRoles(): Promise<RoleWithImages[]> {
+    try {
+      const response = await fetch("/api/public/roles")
+      if (!response.ok) {
+        throw new Error("Failed to fetch roles from API")
+      }
+      return await response.json()
+    } catch (error) {
+      console.error("Error in getAllOpenRoles:", error)
+      throw error
+    }
   },
 }

@@ -49,6 +49,12 @@ export function Navbar() {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
     e.preventDefault();
     setIsOpen(false);
+
+    if (pathname !== "/") {
+      router.push(`/#${id}`);
+      return;
+    }
+
     const element = document.getElementById(id);
     if (element) {
       const offset = 80;
@@ -167,6 +173,15 @@ export function Navbar() {
                       className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
                     >
                       Contact
+                    </Link>
+                    <Link
+                      href="/roles"
+                      className={[
+                        "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                        pathname === "/roles" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+                      ].join(" ")}
+                    >
+                      Roles
                     </Link>
                   </>
                 )}
@@ -354,6 +369,16 @@ export function Navbar() {
                         >
                           <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">04</span>
                           <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Contact</span>
+                        </Link>
+                      </motion.div>
+                      <motion.div variants={itemVariants}>
+                        <Link
+                          href="/roles"
+                          className="flex items-center gap-6 group cursor-pointer"
+                          onClick={() => setIsOpen(false)}
+                        >
+                          <span className="text-2xl font-medium text-foreground group-hover:text-primary transition-colors">05</span>
+                          <span className="text-5xl font-semibold text-foreground group-hover:text-primary transition-colors">Roles</span>
                         </Link>
                       </motion.div>
                     </>
