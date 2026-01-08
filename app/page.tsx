@@ -2,6 +2,7 @@ import Link from "next/link"
 import { Navbar } from "@/components/layout/Navbar"
 import { Pricing } from "@/components/sections/Pricing"
 import { Footer } from "@/components/layout/Footer"
+import ContactSection from "@/components/sections/ContactSection"
 
 export default function Home() {
   return (
@@ -183,14 +184,13 @@ export default function Home() {
             {/* Center - Main Headline */}
             <div className="text-center">
               <div className="inline-block mb-4 px-4 py-2 bg-primary/10 rounded-full">
-                <span className="text-primary text-sm font-semibold">Complete Workforce Management</span>
+                <span className="text-primary text-sm font-semibold">Modern HR & Recruitment Software</span>
               </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-                Manage Your Team,{" "}
-                <span className="text-primary">Anywhere</span>
+                HR & <span className="text-primary">Recruitment</span> Software
               </h1>
               <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
-                From time tracking to payroll, hiring to team collaboration, everything you need in one place.
+                Manage hiring, payroll, timesheets, and your team, all in one platform.
               </p>
               <div className="flex gap-4 justify-center flex-wrap">
                 <Link
@@ -363,47 +363,14 @@ export default function Home() {
         </div>
       </section>
 
-
-
-      {/* Contact Section */}
-      <section id="contact" className="py-32 bg-background">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="max-w-2xl mx-auto text-center mb-20">
-            <h2 className="text-4xl font-bold text-foreground mb-4">Get in Touch</h2>
-            <p className="text-muted-foreground">Have questions? We'd love to hear from you.</p>
-          </div>
-          <form className="max-w-xl mx-auto space-y-8">
-            <div className="grid md:grid-cols-2 gap-8">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">First Name</label>
-                <input type="text" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="John" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">Last Name</label>
-                <input type="text" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="Doe" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Email</label>
-              <input type="email" className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="john@example.com" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-2">Message</label>
-              <textarea rows={4} className="w-full px-4 py-3 rounded-lg bg-card border border-border focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" placeholder="How can we help you?"></textarea>
-            </div>
-            <button type="button" className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:opacity-90 transition-opacity">
-              Send Message
-            </button>
-          </form>
-        </div>
-      </section>
+      <ContactSection />
 
       {/* CTA Section */}
       <section className="py-32 bg-primary">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-primary-foreground mb-4">Ready to Transform Your Hiring?</h2>
           <p className="text-xl text-primary-foreground/80 mb-8">
-            Join thousands of companies using HR to hire better, faster
+            Join thousands of companies using OrgFlow to hire better, faster
           </p>
           <div className="flex gap-4 justify-center flex-wrap">
             <Link

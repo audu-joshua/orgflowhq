@@ -8,15 +8,15 @@ import { ToastProvider } from "@/components/shared/ToastProvider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "OrgFlow | Complete Workforce Management Solution",
-  description: "Empower your team with OrgFlow. Manage payroll, time tracking, recruitment, and employee relations in one professional platform.",
+  title: "OrgFlow | HR & Recruitment Software",
+  description: "Manage hiring, payroll, timesheets, and your team, all in one platform with OrgFlow.",
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",
   },
   openGraph: {
-    title: "OrgFlow | Complete Workforce Management Solution",
-    description: "Modern HR and workforce management platform. Manage your team anywhere.",
+    title: "OrgFlow | HR & Recruitment Software",
+    description: "Manage hiring, payroll, timesheets, and your team; all in one platform with OrgFlow.",
     url: "https://www.orgflowhq.com",
     siteName: "OrgFlow",
     images: [
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "OrgFlow Workforce Management",
+        alt: "OrgFlow HR & Recruitment Software",
       },
     ],
     locale: "en_US",
@@ -32,8 +32,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OrgFlow | Workforce Management",
-    description: "Complete HR and team management solution.",
+    title: "OrgFlow | HR & Recruitment Software",
+    description: "Manage hiring, payroll, timesheets, and your team; all in one platform.",
     images: ["/og-image.png"],
   },
 }

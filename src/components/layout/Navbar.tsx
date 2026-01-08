@@ -146,6 +146,31 @@ export function Navbar() {
                 ) : (
 
                   <>
+
+                    <div className="relative group">
+                      <button className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer flex items-center gap-1">
+                        Solutions
+                        <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                      <div className="absolute top-full left-0 mt-2 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                        <div className="bg-background border border-border rounded-xl shadow-xl p-2 overflow-hidden">
+                          <Link href="/hr-software" className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                            Human Resources
+                          </Link>
+                          <Link href="/recruitment-software" className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                            Recruitment
+                          </Link>
+                          <Link href="/applicant-tracking-system" className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                            Applicant Tracking
+                          </Link>
+                          <Link href="/time-tracking" className="block px-4 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors">
+                            Time Tracking
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
                     <Link
                       href="/#features"
                       onClick={(e) => scrollToSection(e, "features")}
@@ -160,13 +185,7 @@ export function Navbar() {
                     >
                       Pricing
                     </Link>
-                    <Link
-                      href="/#reviews"
-                      onClick={(e) => scrollToSection(e, "reviews")}
-                      className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer"
-                    >
-                      Reviews
-                    </Link>
+
                     <Link
                       href="/#contact"
                       onClick={(e) => scrollToSection(e, "contact")}
@@ -177,7 +196,7 @@ export function Navbar() {
                     <Link
                       href="/roles"
                       className={[
-                        "text-sm font-medium transition-colors duration-200 cursor-pointer",
+                        "text-sm font-medium transition-colors duration-200 cursor-pointer whitespace-nowrap",
                         pathname === "/roles" ? "text-foreground" : "text-muted-foreground hover:text-foreground"
                       ].join(" ")}
                     >
@@ -430,7 +449,7 @@ export function Navbar() {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence >
     </>
   )
 }

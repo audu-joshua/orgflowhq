@@ -1,108 +1,84 @@
 import Link from "next/link"
+import { ArrowRight } from "lucide-react"
 
 export function Footer() {
     return (
-        <footer id="about" className="bg-card text-muted-foreground py-16 border-t border-border mt-auto">
-            <div className="max-w-7xl mx-auto px-4">
-                <div className="grid md:grid-cols-4 gap-8 mb-12">
-                    {/* Brand */}
-                    <div>
-                        <div className="flex items-center gap-1 mb-4">
-                            <img src="/logo.png" alt="OrgFlow" className="h-10 w-auto object-contain" />
-                            <span className="font-bold text-foreground text-xl tracking-tight -ml-1.5">rgFlow</span>
+        <footer className="bg-[#020617] text-slate-400 pt-24 pb-12 relative overflow-hidden border-t border-white/5">
+            <div className="max-w-7xl mx-auto px-4 relative z-10">
+                <div className="grid lg:grid-cols-2 gap-16 mb-12">
+                    {/* Left Side: Brand and Newsletter */}
+                    <div className="space-y-10 flex flex-col items-center">
+                        <div className="flex items-center gap-0 justify-center">
+                            <img src="/logo.png" alt="O" className="h-[7.5rem] md:h-[9rem] w-auto -mr-2 md:-mr-4" />
+                            <h2 className="text-7xl md:text-8xl font-bold text-white tracking-tighter opacity-90">
+                                rgFlow
+                            </h2>
                         </div>
-                        <p className="text-sm text-muted-foreground">The modern platform for managing your workforce and team coordination</p>
+
+                        <div className="max-w-[320px] w-full text-center">
+                            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.2em] mb-4">Newsletter</p>
+                            <div className="relative group">
+                                <input
+                                    type="email"
+                                    placeholder="Enter your email"
+                                    className="w-full bg-slate-900/50 border border-white/10 rounded-full py-3 px-5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#0fadaa]/50 transition-all group-hover:border-white/20 text-center"
+                                />
+                                <button className="absolute right-1.5 top-1.5 w-8 h-8 bg-[#0fadaa] rounded-full flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-all shadow-lg shadow-[#0fadaa]/20">
+                                    <ArrowRight className="w-4 h-4" />
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Product */}
-                    <div>
-                        <h4 className="font-semibold text-foreground mb-4">Product</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <Link href="/#features" className="hover:text-foreground transition-colors">
-                                    Features
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/#pricing" className="hover:text-foreground transition-colors">
-                                    Pricing
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-foreground transition-colors">
-                                    Security
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {/* Company */}
-                    <div>
-                        <h4 className="font-semibold text-foreground mb-4">Company</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <Link href="#" className="hover:text-foreground transition-colors">
-                                    About
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-foreground transition-colors">
-                                    Blog
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/roles" className="hover:text-foreground transition-colors text-primary font-medium">
-                                    Careers (New)
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
-                    {/* Legal */}
-                    <div>
-                        <h4 className="font-semibold text-foreground mb-4">Legal</h4>
-                        <ul className="space-y-2 text-sm">
-                            <li>
-                                <Link href="#" className="hover:text-foreground transition-colors">
-                                    Privacy
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-foreground transition-colors">
-                                    Terms
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/#contact" className="hover:text-foreground transition-colors">
-                                    Contact
-                                </Link>
-                            </li>
-                        </ul>
+                    {/* Right Side: Links and Semi-circle Graphic */}
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-8 relative">
+                        <div>
+                            <h4 className="text-white font-semibold mb-6">Find your Way</h4>
+                            <ul className="space-y-4 text-sm">
+                                <li><Link href="/" className="hover:text-[#0fadaa] transition-colors">Home</Link></li>
+                                <li><Link href="/#features" className="hover:text-[#0fadaa] transition-colors">About Us</Link></li>
+                                <li><Link href="/roles" className="hover:text-[#0fadaa] transition-colors">Roles</Link></li>
+                                <li><Link href="/#contact" className="hover:text-[#0fadaa] transition-colors">Contact Us</Link></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="text-white font-semibold mb-6">Solutions</h4>
+                            <ul className="space-y-4 text-sm">
+                                <li><Link href="/hr-software" className="hover:text-[#0fadaa] transition-colors">Human Resources</Link></li>
+                                <li><Link href="/recruitment-software" className="hover:text-[#0fadaa] transition-colors">Recruitment</Link></li>
+                                <li><Link href="/applicant-tracking-system" className="hover:text-[#0fadaa] transition-colors">Applicant Tracking</Link></li>
+                                <li><Link href="/time-tracking" className="hover:text-[#0fadaa] transition-colors">Time Tracking</Link></li>
+                            </ul>
+                        </div>
+                        <div className="col-span-2 sm:col-span-1 border-t border-white/5 pt-8 sm:pt-0 sm:border-0 text-center sm:text-left">
+                            <h4 className="hidden sm:block text-white font-semibold mb-6">Contact Us</h4>
+                            <p className="text-sm leading-relaxed text-[#0fadaa] font-medium mb-1">
+                                support@orgflowhq.com
+                            </p>
+                            <p className="hidden sm:block text-sm leading-relaxed opacity-60">
+                                Global Workforce Management<br />
+                                Available 24/7
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 {/* Footer Bottom */}
-                <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center">
-                    <p className="text-sm text-muted-foreground">© {new Date().getFullYear()} OrgFlow. All rights reserved.</p>
-                    <div className="flex gap-6 mt-4 md:mt-0">
-                        <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M8.29 20v-7.21h-2.3V9.25h2.3V7.31c0-2.31 1.41-3.57 3.45-3.57 1.02 0 1.9.08 2.15.11v2.49h-1.52c-1.15 0-1.38.55-1.38 1.37v1.79h2.77l-.29 3.54h-2.48V20" />
-                            </svg>
-                        </Link>
-                        <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2s9 5 20 5a9.5 9.5 0 00-9-5.5c4.75 2.25 7-7 7-7" />
-                            </svg>
-                        </Link>
-                        <Link href="#" className="text-muted-foreground hover:text-foreground transition-colors">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z" />
-                            </svg>
-                        </Link>
+                <div className="pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <p className="text-[11px] text-slate-600">
+                        © {new Date().getFullYear()} OrgFlow Co. All rights reserved.
+                    </p>
+                    <div className="flex gap-8 text-[11px]">
+                        <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
                     </div>
                 </div>
             </div>
+
+            {/* Subtle Gradient Orbs */}
+            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#0fadaa]/5 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
         </footer>
     )
 }
+
