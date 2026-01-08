@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Briefcase, Calendar, Power, PowerOff } from "lucide-react"
+import { Briefcase, Calendar, Power, PowerOff, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { roleService } from "@/features/roles/services/roleService"
 import type { Role } from "@/features/roles/types"
@@ -15,6 +15,11 @@ interface RoleCardProps {
 export function RoleCard({ role: initialRole }: RoleCardProps) {
   const [role, setRole] = useState(initialRole)
   const [isUpdating, setIsUpdating] = useState(false)
+
+  // Sync state with props for bulk updates
+  useEffect(() => {
+    setRole(initialRole)
+  }, [initialRole])
 
   const isClosed = role.status === "closed"
 
@@ -48,7 +53,7 @@ export function RoleCard({ role: initialRole }: RoleCardProps) {
               <Briefcase size={20} />
             </div>
             <div>
-              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">{role.title}</h3>
+              <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{role.title}</h3>
               <p className="text-sm text-muted-foreground">{role.department}</p>
             </div>
           </div>
@@ -56,13 +61,17 @@ export function RoleCard({ role: initialRole }: RoleCardProps) {
           <button
             onClick={toggleStatus}
             disabled={isUpdating}
-            className={`p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 ${isClosed
+            className={`p-2 rounded-full transition-all cursor-pointer hover:scale-110 active:scale-95 flex items-center justify-center ${isClosed
               ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
               : 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20'
               }`}
             title={isClosed ? "Activate Role" : "Close Role"}
           >
-            {isClosed ? <PowerOff size={18} /> : <Power size={18} />}
+            {isUpdating ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              isClosed ? <PowerOff size={18} /> : <Power size={18} />
+            )}
           </button>
         </div>
 

@@ -115,6 +115,22 @@ export const roleService = {
     return data as Role
   },
 
+  async updateAllRolesStatus(organizationId: string, status: Role["status"]) {
+    const supabase = getSupabaseClient()
+
+    const { data, error } = await supabase
+      .from("roles")
+      .update({ status })
+      .eq("organization_id", organizationId)
+      .select()
+
+    if (error) {
+      console.error("Error updating all roles status:", error)
+      throw error
+    }
+    return data as Role[]
+  },
+
   async deleteRole(roleId: string) {
     const supabase = getSupabaseClient()
 
