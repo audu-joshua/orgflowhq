@@ -13,12 +13,15 @@ export async function POST(req: Request) {
         const supabaseAdmin = getSupabaseAdmin()
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
-        // Use resetPasswordForEmail instead of admin.generateLink
-        // This sends a recovery link that does NOT automatically create a session
-        // The link redirects to /auth/callback which exchanges the code for a session
-        // and then redirects to /reset-password
-        const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-            redirectTo: `${siteUrl}/auth/callback?type=recovery`
+        // Generate a recovery link using admin.generateLink
+        // This gives us full control over the email content
+        // The redirect goes to /auth/callback which will exchange the code and redirect to /reset-password
+        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+            type: "recovery",
+            email,
+            options: {
+                redirectTo: `${siteUrl}/auth/callback?type=recovery`
+            }
         })
 
         if (error) {
@@ -27,10 +30,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, message: "If an account exists, a reset link has been sent." })
         }
 
-        // Supabase sends the email automatically with resetPasswordForEmail
-        // No need to send a custom email
-        console.log(`[ForgotPassword] Password reset email sent to ${email}`)
+        const resetLink = data.properties?.action_link
 
+        if (!resetLink) {
+            throw new Error("Failed to generate reset link")
+        }
+
+        // Send our custom branded email
+        await mailService.sendPasswordResetEmail(email, resetLink)
+
+        console.log(`[ForgotPassword] Password reset email sent to ${email}`)
         return NextResponse.json({ success: true, message: "Reset link sent" })
 
     } catch (error: any) {
@@ -38,3 +47,4 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
     }
 }
+
