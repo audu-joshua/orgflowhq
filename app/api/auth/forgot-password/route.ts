@@ -15,9 +15,10 @@ export async function POST(req: Request) {
 
         // Use resetPasswordForEmail instead of admin.generateLink
         // This sends a recovery link that does NOT automatically create a session
-        // Users must complete the password reset form to gain access
+        // The link redirects to /auth/callback which exchanges the code for a session
+        // and then redirects to /reset-password
         const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
-            redirectTo: `${siteUrl}/reset-password`
+            redirectTo: `${siteUrl}/auth/callback?type=recovery`
         })
 
         if (error) {
