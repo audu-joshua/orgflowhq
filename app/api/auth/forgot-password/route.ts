@@ -11,8 +11,22 @@ export async function POST(req: Request) {
         }
 
         const supabaseAdmin = getSupabaseAdmin()
-        // Ensure siteUrl doesn't have a trailing slash
-        const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+
+        // Dynamic site URL detection for robustness
+        let siteUrl = process.env.NEXT_PUBLIC_SITE_URL
+
+        // If env var is missing or localhost (in prod), try to use the request origin/host
+        if (!siteUrl || (process.env.NODE_ENV === "production" && siteUrl.includes("localhost"))) {
+            const host = req.headers.get("host")
+            const protocol = host?.includes("localhost") ? "http" : "https"
+            if (host) {
+                siteUrl = `${protocol}://${host}`
+            }
+        }
+
+        // Fallback
+        siteUrl = (siteUrl || "http://localhost:3000").replace(/\/$/, "")
+
         const redirectUrl = `${siteUrl}/auth/callback?type=recovery`
 
         console.log(`[ForgotPassword] Generating link with redirect: ${redirectUrl}`)
