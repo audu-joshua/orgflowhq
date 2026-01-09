@@ -11,7 +11,11 @@ export async function POST(req: Request) {
         }
 
         const supabaseAdmin = getSupabaseAdmin()
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
+        // Ensure siteUrl doesn't have a trailing slash
+        const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000").replace(/\/$/, "")
+        const redirectUrl = `${siteUrl}/auth/callback?type=recovery`
+
+        console.log(`[ForgotPassword] Generating link with redirect: ${redirectUrl}`)
 
         // Generate a recovery link using admin.generateLink
         // This gives us full control over the email content
@@ -20,7 +24,7 @@ export async function POST(req: Request) {
             type: "recovery",
             email,
             options: {
-                redirectTo: `${siteUrl}/auth/callback?type=recovery`
+                redirectTo: redirectUrl
             }
         })
 

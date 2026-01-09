@@ -7,6 +7,12 @@ export async function GET(request: NextRequest) {
     const code = requestUrl.searchParams.get("code")
     const type = requestUrl.searchParams.get("type")
 
+    console.log(`[AuthCallback] Received request:`, {
+        url: request.url,
+        code: code ? "*****" : "missing",
+        type
+    })
+
     if (code) {
         const cookieStore = await cookies()
 
