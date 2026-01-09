@@ -13,33 +13,22 @@ export async function POST(req: Request) {
         const supabaseAdmin = getSupabaseAdmin()
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
-        // Generate a recovery link
-        // Note: We point the redirectTo to the reset-password page which handles the token exchange
-        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-            type: "recovery",
-            email,
-            options: {
-                redirectTo: `${siteUrl}/reset-password`
-            }
+        // Use resetPasswordForEmail instead of admin.generateLink
+        // This sends a recovery link that does NOT automatically create a session
+        // Users must complete the password reset form to gain access
+        const { error } = await supabaseAdmin.auth.resetPasswordForEmail(email, {
+            redirectTo: `${siteUrl}/reset-password`
         })
 
         if (error) {
             console.error("[ForgotPassword] Supabase error:", error)
-            // Be careful not to leak user existence if possible, but for now we follow standard flow
-            // Actually, suppressing error is better for security, but for debugging we log it.
-            // If user not found, Supabase might return error or success depending on config.
-            // But usually we return success to the client.
+            // Don't leak user existence - always return success
             return NextResponse.json({ success: true, message: "If an account exists, a reset link has been sent." })
         }
 
-        const resetLink = data.properties?.action_link
-
-        if (!resetLink) {
-            throw new Error("Failed to generate reset link")
-        }
-
-        // Send the custom email
-        await mailService.sendPasswordResetEmail(email, resetLink)
+        // Supabase sends the email automatically with resetPasswordForEmail
+        // No need to send a custom email
+        console.log(`[ForgotPassword] Password reset email sent to ${email}`)
 
         return NextResponse.json({ success: true, message: "Reset link sent" })
 

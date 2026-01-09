@@ -14,30 +14,36 @@ export default function ResetPasswordPage() {
     const [loading, setLoading] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const [error, setError] = useState("")
+    const [sessionReady, setSessionReady] = useState(false)
 
     useEffect(() => {
-        // Basic check to see if we have an active recovery session
-        const checkSession = async () => {
+        // Wait for Supabase to automatically exchange the recovery token from URL hash
+        // This creates a temporary session that's valid only for password reset
+        const initSession = async () => {
             const supabase = getSupabaseClient()
 
-            // Wait up to 2 seconds for session to initialize from hash
-            let session = null
-            for (let i = 0; i < 4; i++) {
-                const { data } = await supabase.auth.getSession()
-                if (data.session) {
-                    session = data.session
-                    break
+            // Wait up to 3 seconds for Supabase to process the hash and create a session
+            let attempts = 0
+            const maxAttempts = 6
+
+            while (attempts < maxAttempts) {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (session) {
+                    console.log("[ResetPassword] Recovery session established")
+                    setSessionReady(true)
+                    return
                 }
-                await new Promise(r => setTimeout(r, 500))
+                await new Promise(resolve => setTimeout(resolve, 500))
+                attempts++
             }
 
-            if (!session) {
-                console.warn("[ResetPassword] No session found after wait. Redirecting...")
-                toast.error("Invalid or expired reset link")
-                router.push("/login")
-            }
+            // If no session after waiting, show error
+            console.error("[ResetPassword] No recovery session found")
+            toast.error("Invalid or expired reset link. Please request a new one.")
+            setTimeout(() => router.push("/forgot-password"), 2000)
         }
-        checkSession()
+
+        initSession()
     }, [router])
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +84,16 @@ export default function ResetPasswordPage() {
             subtitle="Set your new security credentials"
         >
             <div className="space-y-6">
-                {!submitted ? (
+                {!sessionReady ? (
+                    <div className="text-center space-y-4">
+                        <div className="flex justify-center">
+                            <Loader2 className="w-12 h-12 animate-spin text-primary" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                            Verifying your reset link...
+                        </p>
+                    </div>
+                ) : !submitted ? (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <p className="text-sm text-muted-foreground">
                             Please enter your new password below.
