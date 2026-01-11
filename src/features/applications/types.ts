@@ -5,11 +5,14 @@ export interface Application {
   applicant_name: string
   applicant_email: string
   applicant_phone?: string
-  status: "new" | "shortlisted" | "interviewed" | "hired"
+  /** @deprecated Use current_stage instead */
+  status: "new" | "shortlisted" | "interviewed" | "hired" | string
+  current_stage: string
   resume_url?: string
   cover_letter?: string | null
   applicant_passport?: string | null
   additional_info?: any
+  metadata?: any
   source?: string
   tags?: string[]
   notes?: string

@@ -247,5 +247,45 @@ export const mailService = {
       html: this.wrapEmailHtml(body),
       fromName: "OrgFlow Team"
     })
+  },
+
+  async sendInterviewInvitation(to: string, candidateName: string, roleTitle: string, date: string, time: string, type: string, locationOrLink: string, orgName: string, orgEmail: string) {
+    const isVirtual = type === 'virtual'
+    const locationLabel = isVirtual ? "Meeting Link" : "Location"
+    const linkDisplay = isVirtual && locationOrLink.startsWith('http')
+      ? `<a href="${locationOrLink}" style="color: #0fadaa; text-decoration: underline;">Join Meeting</a>`
+      : locationOrLink
+
+    const body = `
+      <h2 style="color: #0d1e4c; margin-top: 0;">Interview Invitation</h2>
+      <p>Dear ${candidateName},</p>
+      
+      <p>We are pleased to invite you to an interview for the <strong>${roleTitle}</strong> position at <strong>${orgName}</strong>.</p>
+      
+      <div style="background-color: #f4f4f5; padding: 20px; border-radius: 12px; margin: 24px 0;">
+        <h3 style="margin-top: 0; font-size: 16px; color: #000;">Interview Details</h3>
+        <ul style="list-style: none; padding: 0; margin: 0;">
+          <li style="margin-bottom: 10px;"><strong>Date:</strong> ${date}</li>
+          <li style="margin-bottom: 10px;"><strong>Time:</strong> ${time}</li>
+          <li style="margin-bottom: 10px;"><strong>Type:</strong> ${isVirtual ? 'Virtual Interview' : 'In-Person Interview'}</li>
+          <li style="margin-bottom: 0;"><strong>${locationLabel}:</strong> ${linkDisplay}</li>
+        </ul>
+      </div>
+
+      <p>Please let us know if this time works for you.</p>
+
+      <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        <strong>${orgName} Team</strong><br>
+        <a href="mailto:${orgEmail}" style="color: #666; text-decoration: none;">${orgEmail}</a>
+      </p>
+    `
+
+    return this.sendEmail({
+      to,
+      subject: `Interview Invitation: ${roleTitle} at ${orgName}`,
+      html: this.wrapEmailHtml(body),
+      fromName: `${orgName} Team`
+    })
   }
 }

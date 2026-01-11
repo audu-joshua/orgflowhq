@@ -9,13 +9,17 @@ export const COLORS = {
 export const APPLICATION_STATUS = {
   NEW: "new",
   SHORTLISTED: "shortlisted",
+  INTERVIEW_SCHEDULED: "Interview Scheduled",
   INTERVIEWED: "interviewed",
   HIRED: "hired",
+  REJECTED: "rejected",
 } as const
 
 export const STATUS_LABELS = {
   [APPLICATION_STATUS.NEW]: "New",
   [APPLICATION_STATUS.SHORTLISTED]: "Shortlisted",
+  [APPLICATION_STATUS.INTERVIEW_SCHEDULED]: "Interview Scheduled",
   [APPLICATION_STATUS.INTERVIEWED]: "Interviewed",
   [APPLICATION_STATUS.HIRED]: "Hired",
+  [APPLICATION_STATUS.REJECTED]: "Rejected",
 } as const

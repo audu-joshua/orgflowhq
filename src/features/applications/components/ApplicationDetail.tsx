@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { applicationService } from "../services/applicationService"
 import { DocumentViewerModal } from "./DocumentViewerModal"
+import { ScheduleModal } from "@/features/interviews/components/ScheduleModal"
 import { APPLICATION_STATUS, STATUS_LABELS } from "@/lib/constants"
 import { formatDate } from "@/lib/utils"
 import type { Application } from "../types"
@@ -45,6 +46,43 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     const [isStatusOpen, setIsStatusOpen] = useState(false)
     const [dropUp, setDropUp] = useState(false)
     const dropdownRef = useRef<HTMLDivElement>(null)
+
+    const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
+
+    // ... existing status logic ...
+
+    // Auto-scroll dashboard main container to top when document is opened
+    // ...
+
+    const handleStageUpdate = async (newStage: string) => {
+        // If Interview Scheduled, open modal instead of direct update
+        if (newStage === "Interview Scheduled") {
+            setIsScheduleModalOpen(true)
+            setIsStatusOpen(false)
+            return
+        }
+
+        setUpdating(true)
+        setIsStatusOpen(false)
+        try {
+            await applicationService.updateApplicationStage(applicationId, newStage)
+
+            // Also update local state status mapping if possible, or reload
+            // For now, reload simple
+            const updated = await applicationService.getApplicationById(applicationId)
+            setApplication(updated)
+            setStatus(updated.status)
+        } catch (error) {
+            console.error("Failed to update stage:", error)
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    // Deprecate direct usage of handleStatusUpdate for UI except for legacy
+    // ...
+
+    // Replace handleStatusChange usage with handleStageUpdate in the UI mapping
 
     // Auto-scroll dashboard main container to top when document is opened
     useEffect(() => {
@@ -104,7 +142,25 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
 
     const handleStatusChange = async (newStatus: Application["status"]) => {
         setIsStatusOpen(false)
-        await handleStatusUpdate(newStatus)
+        // Check mapping: newStatus is roughly the stage? 
+        // We really want to use the stage management logic now.
+        // For "Interview Scheduled" -> that's a stage, but here newStatus is likely "interviewed".
+        // If the user selects "Interviewed" from dropdown, we assume they mean "Interviewed" stage?
+        // Or if we want to trigger the modal, we need "Interview Scheduled" stage.
+        // The dropdown currently lists STATUS_LABELS.
+
+        // Map status to Stage roughly
+        let stage = STATUS_LABELS[newStatus as keyof typeof STATUS_LABELS] || newStatus
+
+        // If they select "Interviewed" (which is likely just 'interviewed' key), 
+        // should we trigger the modal? 
+        // The mental model says: "HR moves applicant to: Interview Scheduled".
+        // The current dropdown has "Interviewed" (past tense).
+        // For MVP, let's treat "Interviewed" selection as "Trigger Scheduling"? 
+        // OR better: add "Interview Scheduled" to the dropdown OPTIONS in the UI loop below?
+
+        // Actually, let's just use handleStageUpdate.
+        await handleStageUpdate(stage)
     }
 
     const toggleStatusDropdown = () => {
@@ -140,6 +196,23 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
+            {application && (
+                <ScheduleModal
+                    isOpen={isScheduleModalOpen}
+                    onClose={() => setIsScheduleModalOpen(false)}
+                    applicantId={application.id}
+                    roleId={application.role_id}
+                    candidateName={application.applicant_name}
+                    candidateEmail={application.applicant_email}
+                    roleTitle={application.roles?.title || "Role"}
+                    onScheduled={async () => {
+                        // Refresh application data
+                        const updated = await applicationService.getApplicationById(applicationId)
+                        setApplication(updated)
+                        setStatus(updated.status)
+                    }}
+                />
+            )}
             {/* Navigation Header */}
             <div className="flex items-center justify-between">
                 <button
@@ -304,7 +377,11 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                                                                     className={`w-full text-left px-5 py-3 text-sm font-bold hover:bg-primary hover:text-white transition-all border-b border-border/40 last:border-none ${status === value ? 'bg-primary/10 text-primary' : ''}`}
                                                                 >
                                                                     <div className="flex items-center justify-between">
-                                                                        <span>{STATUS_LABELS[value]}</span>
+                                                                        <span>
+                                                                            {value === APPLICATION_STATUS.INTERVIEW_SCHEDULED
+                                                                                ? "Schedule Interview"
+                                                                                : STATUS_LABELS[value]}
+                                                                        </span>
                                                                         {status === value && <div className="w-2 h-2 bg-primary rounded-full" />}
                                                                     </div>
                                                                 </button>

@@ -10,7 +10,12 @@ export const applicationService = {
 
     const { error } = await supabase
       .from("applications")
-      .insert([{ ...applicationData, organization_id: organizationId, status: "new" }])
+      .insert([{
+        ...applicationData,
+        organization_id: organizationId,
+        status: "new",
+        current_stage: "New"
+      }])
 
     if (error) throw error
     return true
@@ -61,6 +66,33 @@ export const applicationService = {
     const { data, error } = await supabase
       .from("applications")
       .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", applicationId)
+      .select()
+      .single()
+
+    if (error) throw error
+    return data
+  },
+
+  async updateApplicationStage(applicationId: string, stage: string) {
+    const supabase = getSupabaseClient()
+
+    // We keep status in sync for now for backward compatibility, 
+    // but logic should rely on stage.
+    // Map stage to rough status if possible, or just keep status as is.
+    let status = "new"
+    const lowerStage = stage.toLowerCase()
+    if (lowerStage.includes("shortlist")) status = "shortlisted"
+    else if (lowerStage.includes("interview")) status = "interviewed"
+    else if (lowerStage.includes("hire") || lowerStage.includes("offer")) status = "hired"
+
+    const { data, error } = await supabase
+      .from("applications")
+      .update({
+        current_stage: stage,
+        status,
+        updated_at: new Date().toISOString()
+      })
       .eq("id", applicationId)
       .select()
       .single()

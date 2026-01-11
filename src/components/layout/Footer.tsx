@@ -69,8 +69,8 @@ export function Footer() {
                         © {new Date().getFullYear()} OrgFlow Co. All rights reserved.
                     </p>
                     <div className="flex gap-8 text-[11px]">
-                        <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>
-                        <Link href="#" className="hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+                        <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
                         <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
                     </div>
                 </div>

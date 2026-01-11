@@ -11,6 +11,76 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal"
 import { useAuth } from "@/features/auth/hooks/useAuth"
+import { disconnectGoogleAction } from "@/features/integrations/actions"
+import { createSupabaseServerClient } from "@/lib/supabaseServer"
+
+// Client component for the button (Inline for simplicity, or move to separate file)
+function GoogleIntegrationControl() {
+    const [isConnected, setIsConnected] = useState(false)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        // Fetch status client-side or check user metadata if stored there
+        //For simplicity, just check the API route or similar. 
+        // Or better yet, we can't easily use server component logic here without refactoring the whole page to server.
+        // So we will fetch via a client-side wrapper around a server action that merely checks status? 
+        // Actually, let's just use a simple fetch to an API route for status, OR just rely on prop drilling if this was a server page (it's not).
+        // Let's create a quick check func.
+        checkStatus()
+    }, [])
+
+    const checkStatus = async () => {
+        try {
+            // We can reuse the same table check but from client side using the standard client
+            const supabase = getSupabaseClient()
+            const { data: { user } } = await supabase.auth.getUser()
+            if (user) {
+                const { data } = await supabase
+                    .from('user_integrations')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .eq('provider', 'google_calendar')
+                    .single()
+                setIsConnected(!!data)
+            }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleDisconnect = async () => {
+        setLoading(true)
+        try {
+            await disconnectGoogleAction()
+            toast.success("Disconnected Google Calendar")
+            setIsConnected(false)
+        } catch (e) {
+            toast.error("Failed to disconnect")
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleConnect = () => {
+        window.location.href = "/api/auth/google/connect"
+    }
+
+    if (loading) return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+
+    if (isConnected) {
+        return (
+            <Button variant="outline" onClick={handleDisconnect} className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
+                Disconnect
+            </Button>
+        )
+    }
+
+    return (
+        <Button variant="outline" onClick={handleConnect}>
+            Connect
+        </Button>
+    )
+}
 
 export default function SettingsPage() {
     const { organization, setOrganization } = useAppStore()
@@ -426,6 +496,30 @@ export default function SettingsPage() {
                         >
                             Change Password
                         </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Integrations Settings */}
+            <Card className="mt-8 border-border/60 shadow-sm">
+                <CardHeader className="border-b border-border/40 bg-muted/20 pb-8">
+                    <CardTitle>Integrations</CardTitle>
+                    <CardDescription>
+                        Manage external services connected to your account.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-8">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white p-2 rounded-lg border shadow-sm">
+                                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <h3 className="text-sm font-medium">Google Calendar</h3>
+                                <p className="text-xs text-muted-foreground">Sync interviews and auto-generate Meet links.</p>
+                            </div>
+                        </div>
+                        <GoogleIntegrationControl />
                     </div>
                 </CardContent>
             </Card>

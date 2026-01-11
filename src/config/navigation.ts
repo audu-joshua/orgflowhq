@@ -1,4 +1,4 @@
-import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, Banknote } from "lucide-react"
+import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, Banknote, Calendar } from "lucide-react"
 
 export interface NavItem {
     href: string
@@ -43,6 +43,12 @@ export const navItems: NavItem[] = [
         label: "Timesheets",
         icon: Clock,
         allowedRoles: ["owner", "admin", "hr", "manager", "finance"]
+    },
+    {
+        href: "/dashboard/interviews",
+        label: "Interviews",
+        icon: Calendar,
+        allowedRoles: ["owner", "admin", "hr", "manager"]
     },
     {
         href: "/dashboard/settings",

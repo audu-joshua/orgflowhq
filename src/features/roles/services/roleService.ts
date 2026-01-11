@@ -41,7 +41,12 @@ export const roleService = {
 
     const { data, error } = await supabase
       .from("roles")
-      .insert([{ ...roleData, organization_id: organizationId, slug }])
+      .insert([{
+        ...roleData,
+        organization_id: organizationId,
+        slug,
+        stages: roleData.stages || ["New", "Shortlisted", "Interview Scheduled", "Interviewed", "Offer", "Hired", "Rejected"]
+      }])
       .select()
       .single()
 

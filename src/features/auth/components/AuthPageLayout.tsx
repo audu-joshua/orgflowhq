@@ -40,6 +40,39 @@ export function AuthPageLayout({
                     </div>
 
                     {children}
+
+                    <div className="mt-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-border" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                            </div>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                const { getSupabaseClient } = await import("@/lib/supabaseClient")
+                                const supabase = getSupabaseClient()
+                                await supabase.auth.signInWithOAuth({
+                                    provider: 'google',
+                                    options: {
+                                        redirectTo: `${window.location.origin}/auth/callback`,
+                                        queryParams: {
+                                            access_type: 'offline', // Request refresh token
+                                            prompt: 'consent',
+                                        },
+                                    },
+                                })
+                            }}
+                            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl hover:bg-muted/50 transition-colors font-medium text-sm"
+                        >
+                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                            Sign in with Google
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -6,6 +6,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth"
 import { useTheme } from "@/providers/ThemeProvider"
 import { useState, useEffect } from "react"
 import { Sun, Moon, X, ArrowRight } from "lucide-react"
+import { NotificationBell } from "./NotificationBell"
 
 import { animate, motion, AnimatePresence } from "framer-motion"
 
@@ -209,6 +210,8 @@ export function Navbar() {
 
             {/* Right Actions */}
             <div className="flex items-center gap-3">
+              {user && <NotificationBell />}
+
               {/* Theme Toggle */}
               <button
                 onClick={toggleTheme}

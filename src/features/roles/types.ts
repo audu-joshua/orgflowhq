@@ -8,6 +8,8 @@ export interface Role {
   employment_type: string | null
   slug: string
   status: 'active' | 'closed' | 'draft'
+  stages: string[]
+  hiring_manager?: string
   created_by: string | null
   created_at: string
   updated_at: string
