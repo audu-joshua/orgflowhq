@@ -9,6 +9,8 @@ export interface Interview {
     duration: number // minutes
     meeting_link?: string
     location?: string
+    organizer_id?: string
+    google_event_id?: string
     created_at: string
     updated_at: string
 }

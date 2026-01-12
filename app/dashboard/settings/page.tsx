@@ -87,8 +87,11 @@ export default function SettingsPage() {
     const { signOut } = useAuth()
 
     const [name, setName] = useState("")
+    const [address, setAddress] = useState("")
     const [logo, setLogo] = useState<File | null>(null)
     const [logoPreview, setLogoPreview] = useState<string | null>(null)
+    const [welcomeDoc, setWelcomeDoc] = useState<File | null>(null)
+    const [welcomeDocUrl, setWelcomeDocUrl] = useState<string | null>(null)
     const [loading, setLoading] = useState(false)
     const [isCopied, setIsCopied] = useState(false)
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
@@ -103,7 +106,9 @@ export default function SettingsPage() {
     useEffect(() => {
         if (organization) {
             setName(organization.name || "")
+            setAddress(organization.address || "")
             setLogoPreview(organization.logo_url || null)
+            setWelcomeDocUrl(organization.welcome_doc_url || null)
         }
     }, [organization])
 
@@ -175,13 +180,42 @@ export default function SettingsPage() {
                     .from("organization_logo")
                     .getPublicUrl(fileName)
 
-                console.log("Logo uploaded successfully. URL:", publicUrl)
                 logoUrl = publicUrl
+            }
+
+            let finalWelcomeDocUrl = welcomeDocUrl
+
+            // Upload Welcome Doc if changed
+            if (welcomeDoc) {
+                const fileExt = welcomeDoc.name.split('.').pop()
+                const fileName = `${organization.id}/welcome-doc-${Date.now()}.${fileExt}`
+
+                console.log("Uploading welcome doc to:", fileName)
+
+                const { error: uploadError } = await supabase.storage
+                    .from("organization_docs")
+                    .upload(fileName, welcomeDoc, {
+                        upsert: true,
+                        cacheControl: '3600'
+                    })
+
+                if (uploadError) {
+                    console.error("Welcome doc upload error:", uploadError)
+                    throw new Error(`Failed to upload welcome document: ${uploadError.message}`)
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from("organization_docs")
+                    .getPublicUrl(fileName)
+
+                finalWelcomeDocUrl = publicUrl
             }
 
             // Prepare update data
             const updateData: any = {
                 name: name.trim(),
+                address: address.trim(),
+                welcome_doc_url: finalWelcomeDocUrl,
                 updated_at: new Date().toISOString()
             }
 
@@ -212,6 +246,7 @@ export default function SettingsPage() {
 
             toast.success("Organization settings updated successfully")
             setLogo(null)
+            setWelcomeDoc(null)
 
         } catch (error: any) {
             console.error("Error updating settings:", error)
@@ -297,7 +332,10 @@ export default function SettingsPage() {
         )
     }
 
-    const hasChanges = (logo !== null) || (name !== (organization.name || ""))
+    const hasChanges = (logo !== null) ||
+        (name !== (organization.name || "")) ||
+        (address !== (organization.address || "")) ||
+        (welcomeDoc !== null)
 
     return (
         <div className="container max-w-4xl py-10 px-4">
@@ -395,7 +433,26 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
-                        {/* Clock Portal Link Section (New) */}
+                        {/* Address Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
+                            <div className="space-y-1">
+                                <label htmlFor="address" className="text-sm font-medium leading-none">Office Address</label>
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                    Your organization address will be contained in the mail. You can always change this from the settings page.
+                                </p>
+                            </div>
+                            <div className="max-w-md">
+                                <Input
+                                    id="address"
+                                    value={address}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    placeholder="e.g., 123 Innovation Dr, Suite 100"
+                                    className="h-11"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Clock Portal Link Section (Restored) */}
                         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
                             <div className="space-y-1">
                                 <label className="text-sm font-medium leading-none">Clock Portal Link</label>
@@ -405,7 +462,7 @@ export default function SettingsPage() {
                             </div>
                             <div className="max-w-md space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <div className="flex-1 bg-muted/40 border border-border rounded-lg px-3 py-2.5 font-mono text-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                                    <div className="flex-1 bg-muted/40 border border-border rounded-lg px-3 py-2.5 font-mono text-xs overflow-hidden text-ellipsis whitespace-nowrap text-muted-foreground">
                                         {`${typeof window !== 'undefined' ? window.location.origin : ''}/org/${organization.slug}/clock`}
                                     </div>
                                     <Button
@@ -436,9 +493,46 @@ export default function SettingsPage() {
                                         <ExternalLink className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground italic">
-                                    Employees will need after their Email and unique Employee ID to login here.
+                            </div>
+                        </div>
+
+                        {/* Company Welcome Document Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
+                            <div className="space-y-1">
+                                <label htmlFor="welcome-doc" className="text-sm font-medium leading-none">Welcome Document</label>
+                                <p className="text-xs text-muted-foreground mt-1.5">
+                                    Upload a handbook or welcome doc to be sent to hired candidates.
                                 </p>
+                            </div>
+                            <div className="max-w-md space-y-4">
+                                <Input
+                                    id="welcome-doc"
+                                    type="file"
+                                    accept=".pdf,.doc,.docx"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file) setWelcomeDoc(file)
+                                    }}
+                                    className="cursor-pointer file:cursor-pointer"
+                                />
+                                {(welcomeDoc || welcomeDocUrl) && (
+                                    <div className="flex items-center gap-2 text-xs text-primary bg-primary/5 px-3 py-2 rounded-lg border border-primary/10">
+                                        <Copy className="w-3 h-3" />
+                                        <span className="truncate">
+                                            {welcomeDoc ? welcomeDoc.name : "Current Welcome Document Uploaded"}
+                                        </span>
+                                        {welcomeDocUrl && (
+                                            <a
+                                                href={welcomeDocUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="ml-auto text-primary hover:underline font-bold"
+                                            >
+                                                View
+                                            </a>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
 
@@ -450,8 +544,11 @@ export default function SettingsPage() {
                                 disabled={!hasChanges}
                                 onClick={() => {
                                     setName(organization.name || "")
+                                    setAddress(organization.address || "")
                                     setLogo(null)
                                     setLogoPreview(organization.logo_url || null)
+                                    setWelcomeDoc(null)
+                                    setWelcomeDocUrl(organization.welcome_doc_url || null)
                                 }}
                                 className="cursor-pointer"
                             >

@@ -249,7 +249,17 @@ export const mailService = {
     })
   },
 
-  async sendInterviewInvitation(to: string, candidateName: string, roleTitle: string, date: string, time: string, type: string, locationOrLink: string, orgName: string, orgEmail: string) {
+  async sendInterviewInvitation(
+    to: string,
+    candidateName: string,
+    roleTitle: string,
+    date: string,
+    time: string,
+    type: string,
+    locationOrLink: string,
+    orgName: string,
+    orgEmail: string
+  ) {
     const isVirtual = type === 'virtual'
     const locationLabel = isVirtual ? "Meeting Link" : "Location"
     const linkDisplay = isVirtual && locationOrLink.startsWith('http')
@@ -280,8 +290,7 @@ export const mailService = {
 
       <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
         Best regards,<br>
-        <strong>OrgFlow Team</strong><br>
-        <a href="mailto:support@orgflowhq.com" style="color: #666; text-decoration: none;">support@orgflowhq.com</a>
+        <strong>${orgName} Team</strong>
       </p>
     `
 
@@ -290,6 +299,88 @@ export const mailService = {
       subject: `Interview Invitation: ${roleTitle} at ${orgName}`,
       html: this.wrapEmailHtml(body),
       fromName: `${orgName} Team`
+    })
+  },
+
+  async sendCongratulatoryEmail(to: string, candidateName: string, roleTitle: string, orgName: string, welcomeDocUrl?: string) {
+    const body = `
+      <h2 style="color: #0d1e4c; margin-top: 0;">Congratulations, ${candidateName}! 🎉</h2>
+      <p>We are absolutely thrilled to offer you the position of <strong>${roleTitle}</strong> at <strong>${orgName}</strong>!</p>
+      
+      <p>Our team was incredibly impressed with your skills and experience during the interview process, and we believe you'll be a fantastic addition to our team.</p>
+      
+      ${welcomeDocUrl ? `
+      <div style="background-color: #f0fdf4; border: 1px solid #dcfce7; padding: 20px; border-radius: 12px; margin: 24px 0; text-align: center;">
+        <p style="margin: 0 0 15px 0; color: #166534; font-weight: 500;">We've attached our Company Welcome Document for you to read through before you start.</p>
+        <a href="${welcomeDocUrl}" style="background-color: #0fadaa; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">View Welcome Document</a>
+      </div>
+      ` : `
+      <p>We will be reaching out shortly with further details regarding your onboarding and next steps.</p>
+      `}
+      
+      <p>Once again, congratulations! We can't wait to have you on board.</p>
+      
+      <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        <strong>${orgName} Team</strong>
+      </p>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Congratulations! Your offer from ${orgName}`,
+      html: this.wrapEmailHtml(body),
+      fromName: `${orgName} Team`
+    })
+  },
+
+  async sendRejectionEmail(to: string, candidateName: string, roleTitle: string, orgName: string) {
+    const body = `
+      <h2 style="color: #4a5568; margin-top: 0;">Update on your Application</h2>
+      <p>Dear ${candidateName},</p>
+      <p>Thank you for giving us the opportunity to review your application for the <strong>${roleTitle}</strong> position at <strong>${orgName}</strong>.</p>
+      
+      <p>After careful consideration, we have decided to move forward with other candidates at this time. This was a difficult decision as we received many strong applications from qualified individuals such as yourself.</p>
+      
+      <p>We wish you the very best in your job search and future professional endeavors.</p>
+      
+      <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        <strong>${orgName} Team</strong>
+      </p>
+      
+      <div style="margin-top: 20px; text-align: center; color: #718096; font-size: 12px;">
+        <p><em>* Please do not reply to this email, as this inbox is not monitored.</em></p>
+      </div>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Application Update: ${roleTitle} at ${orgName}`,
+      html: this.wrapEmailHtml(body),
+      fromName: `${orgName} Team`
+    })
+  },
+
+  async sendFeedbackRequestEmail(to: string, interviewerName: string, candidateName: string, roleTitle: string, orgName: string) {
+    const body = `
+      <h2 style="color: #0fadaa; margin-top: 0;">Feedback Required: ${candidateName}</h2>
+      <p>Hi ${interviewerName},</p>
+      <p>The interview with <strong>${candidateName}</strong> for the <strong>${roleTitle}</strong> position has concluded.</p>
+      
+      <div style="background-color: #f0fdfa; border: 1px solid #ccfbf1; padding: 20px; border-radius: 12px; margin: 24px 0; text-align: center;">
+        <p style="margin: 0 0 15px 0; color: #134e4a; font-weight: 500;">Please submit your feedback and recommendation to help with the hiring decision.</p>
+        <a href="${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/applications" style="background-color: #0fadaa; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Submit Feedback</a>
+      </div>
+      
+      <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        <strong>OrgFlow Team</strong>
+      </p>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Feedback Request: Interview with ${candidateName}`,
+      html: this.wrapEmailHtml(body),
+      fromName: "OrgFlow Team"
     })
   }
 }

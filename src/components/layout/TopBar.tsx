@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { useRouter } from "next/navigation"
 import { ChangePasswordModal } from "@/features/auth/components/ChangePasswordModal"
+import { NotificationBell } from "./NotificationBell"
 
 export function TopBar() {
   const { user, organization } = useAppStore()
@@ -62,7 +63,8 @@ export function TopBar() {
           </span>
         </div>
 
-        <div className="flex items-center gap-4" ref={dropdownRef}>
+        <div className="flex items-center gap-2 sm:gap-4" ref={dropdownRef}>
+          <NotificationBell />
           <div className="relative">
             <button
               onClick={() => setIsOpen(!isOpen)}

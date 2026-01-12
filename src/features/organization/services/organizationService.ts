@@ -70,5 +70,33 @@ export const organizationService = {
 
         if (error) throw error
         return data as Organization
+    },
+
+    async getOrganizationStaff(organizationId: string) {
+        const supabase = getSupabaseClient()
+
+        // Fetch users linked to the organization via users_organizations
+        const { data, error } = await supabase
+            .from("users_organizations")
+            .select(`
+                user_id,
+                role,
+                users (
+                    id,
+                    email,
+                    full_name
+                )
+            `)
+            .eq("organization_id", organizationId)
+
+        if (error) throw error
+
+        // Transform into a cleaner list of staff members
+        return data.map((item: any) => ({
+            id: item.user_id,
+            email: item.users?.email,
+            name: item.users?.full_name || item.users?.email?.split('@')[0] || "Team Member",
+            role: item.role
+        }))
     }
 }

@@ -66,7 +66,7 @@ export async function scheduleInterviewAction(formData: FormData) {
                             description: `Interview with ${candidateName} (${candidateEmail}). Role: ${roleTitle}.`,
                             start: scheduledAt.toISOString(),
                             end: endTime.toISOString(),
-                            attendees: [candidateEmail]
+                            attendees: [candidateEmail, ...formData.getAll("attendeeEmails") as string[]]
                         }
                     )
 
@@ -99,7 +99,9 @@ export async function scheduleInterviewAction(formData: FormData) {
             duration,
             meeting_link: meetingLinkToSave,
             location,
-            status: 'scheduled'
+            attendee_emails: formData.getAll("attendeeEmails") as string[],
+            status: 'scheduled',
+            organizer_id: userId
         }
 
         if (googleEventId) {
@@ -114,9 +116,10 @@ export async function scheduleInterviewAction(formData: FormData) {
             .single()
 
         if (initialError) {
-            // Self-healing: if column missing, retry
-            if (initialError.message.includes("google_event_id")) {
+            // Self-healing: if column missing (google_event_id or attendee_emails), retry
+            if (initialError.message.includes("google_event_id") || initialError.message.includes("attendee_emails")) {
                 delete interviewData.google_event_id
+                delete interviewData.attendee_emails
                 const { data: retryData, error: retryError } = await supabase
                     .from("interviews")
                     .insert([interviewData])
@@ -171,7 +174,7 @@ export async function scheduleInterviewAction(formData: FormData) {
         // 1. Fetch Org Name
         const { data: orgData, error: orgError } = await supabaseAdmin
             .from('organizations')
-            .select('name')
+            .select('name, address')
             .eq('id', organizationId)
             .single()
 
@@ -180,6 +183,7 @@ export async function scheduleInterviewAction(formData: FormData) {
         }
 
         const orgName = orgData?.name || "OrgFlow"
+        const orgAddress = orgData?.address || location || "TBD"
 
         // 2. Fetch Owner Email (Organization Email fallback)
         let orgEmail = "support@orgflowhq.com"
@@ -220,10 +224,26 @@ export async function scheduleInterviewAction(formData: FormData) {
                 dateFormatted,
                 timeFormatted,
                 type,
-                (type === 'virtual' ? meetingLinkToSave : location) || 'TBD',
+                (type === 'virtual' ? meetingLinkToSave : orgAddress) || 'TBD',
                 orgName,
                 orgEmail
             )
+
+            // Also send to additional attendees
+            const additionalAttendees = formData.getAll("attendeeEmails") as string[]
+            for (const attendeeEmail of additionalAttendees) {
+                await mailService.sendInterviewInvitation(
+                    attendeeEmail,
+                    "Team Member",
+                    roleTitle,
+                    dateFormatted,
+                    timeFormatted,
+                    type,
+                    (type === 'virtual' ? meetingLinkToSave : orgAddress) || 'TBD',
+                    orgName,
+                    orgEmail
+                )
+            }
         } catch (emailError) {
             console.error("Failed to send email invite:", emailError)
         }

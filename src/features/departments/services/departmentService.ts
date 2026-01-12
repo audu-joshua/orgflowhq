@@ -347,8 +347,8 @@ export const departmentService = {
     return data
   },
 
-  async generateNextEmployeeId(organizationId: string, organizationName: string) {
-    const supabase = getSupabaseClient()
+  async generateNextEmployeeId(organizationId: string, organizationName: string, client?: any) {
+    const supabase = client || getSupabaseClient()
 
     // 1. Get count of existing employees
     const { count, error } = await supabase

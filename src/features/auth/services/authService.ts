@@ -82,7 +82,7 @@ export const authService = {
     // 1. Check for privileged role in specific organization
     let roleQuery = supabase
       .from("users_organizations")
-      .select("role, organization_id, organizations(id, slug, name, logo_url)")
+      .select("role, organization_id, organizations(id, slug, name, logo_url, address, welcome_doc_url)")
       .eq("user_id", userId)
 
     if (scopedOrgId) {

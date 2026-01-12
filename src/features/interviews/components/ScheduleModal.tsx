@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { scheduleInterviewAction } from "../actions"
 import { useAppStore } from "@/store/useAppStore"
+import { organizationService } from "@/features/organization/services/organizationService"
 import { toast } from "sonner"
+import { useEffect } from "react"
 
 interface ScheduleModalProps {
     isOpen: boolean
@@ -43,6 +45,24 @@ export function ScheduleModal({
     const [time, setTime] = useState("10:00")
     const [duration, setDuration] = useState(30)
     const [linkOrLocation, setLinkOrLocation] = useState("")
+    const [staff, setStaff] = useState<{ id: string, email: string, name: string }[]>([])
+    const [selectedAttendees, setSelectedAttendees] = useState<string[]>([])
+
+    useEffect(() => {
+        if (isOpen && organization) {
+            loadStaff()
+        }
+    }, [isOpen, organization])
+
+    const loadStaff = async () => {
+        try {
+            const data = await organizationService.getOrganizationStaff(organization!.id)
+            // Filter out the current user if they are the one scheduling
+            setStaff(data.filter((s: any) => s.id !== user?.id))
+        } catch (error) {
+            console.error("Failed to load staff:", error)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -70,6 +90,11 @@ export function ScheduleModal({
             formData.append("roleTitle", roleTitle)
             formData.append("candidateEmail", candidateEmail)
             formData.append("performedBy", user.id)
+
+            // Additional Attendees
+            selectedAttendees.forEach(email => {
+                formData.append("attendeeEmails", email)
+            })
 
             const result = await scheduleInterviewAction(formData)
 
@@ -176,6 +201,37 @@ export function ScheduleModal({
                         </div>
                     </div>
                 </div>
+                <div className="space-y-3 pb-2 border-b border-border/50">
+                    <label className="text-xs font-bold uppercase text-muted-foreground ml-1">Additional Attendees (Staff)</label>
+                    <div className="bg-muted/10 border border-border rounded-xl p-4 max-h-40 overflow-y-auto space-y-2.5">
+                        {staff.length === 0 ? (
+                            <p className="text-xs text-muted-foreground italic">No other team members found.</p>
+                        ) : (
+                            staff.map(member => (
+                                <div key={member.id} className="flex items-center gap-3 group">
+                                    <div className="flex items-center h-5">
+                                        <input
+                                            type="checkbox"
+                                            id={`staff-${member.id}`}
+                                            checked={selectedAttendees.includes(member.email)}
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    setSelectedAttendees([...selectedAttendees, member.email])
+                                                } else {
+                                                    setSelectedAttendees(selectedAttendees.filter(e => e !== member.email))
+                                                }
+                                            }}
+                                            className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+                                        />
+                                    </div>
+                                    <label htmlFor={`staff-${member.id}`} className="text-sm font-medium text-foreground cursor-pointer flex-1 group-hover:text-primary transition-colors">
+                                        {member.name} <span className="text-xs text-muted-foreground ml-1">({member.email})</span>
+                                    </label>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
 
                 <div className="space-y-2">
                     <label className="text-xs font-bold uppercase text-muted-foreground ml-1">
@@ -205,10 +261,10 @@ export function ScheduleModal({
                 </div>
 
                 <div className="flex gap-3 pt-2 mt-6 border-t border-border sticky bottom-0 bg-background pb-2">
-                    <Button type="button" variant="outline" onClick={onClose} className="flex-1" disabled={loading}>
+                    <Button type="button" variant="outline" onClick={onClose} className="flex-1 cursor-pointer" disabled={loading}>
                         Cancel
                     </Button>
-                    <Button type="submit" className="flex-1 font-bold" disabled={loading}>
+                    <Button type="submit" className="flex-1 font-bold cursor-pointer" disabled={loading}>
                         {loading ? "Scheduling..." : "Confirm & Send"}
                     </Button>
                 </div>

@@ -130,12 +130,12 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
 
                 <div className="flex items-center gap-3">
                     {isGoogleConnected ? (
-                        <Button variant="outline" onClick={handleDisconnectGoogle} className="gap-2 shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-all">
+                        <Button variant="outline" onClick={handleDisconnectGoogle} className="gap-2 shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-all cursor-pointer">
                             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 opacity-50 grayscale" />
                             Disconnect Calendar
                         </Button>
                     ) : (
-                        <Button variant="outline" onClick={handleConnectGoogle} className="gap-2 shadow-sm hover:bg-white hover:text-black transition-all">
+                        <Button variant="outline" onClick={handleConnectGoogle} className="gap-2 shadow-sm hover:bg-white hover:text-black transition-all cursor-pointer">
                             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
                             Connect Google Calendar
                         </Button>
@@ -225,8 +225,8 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                                     </p>
                                 </div>
                                 <div className="flex gap-3 justify-center pt-2 mt-6 border-t border-border sticky bottom-1 bg-background pb-1">
-                                    <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-[100px]">Cancel</Button>
-                                    <Button variant="destructive" onClick={handleDelete} className="w-[100px]">Delete</Button>
+                                    <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-[100px] cursor-pointer">Cancel</Button>
+                                    <Button variant="destructive" onClick={handleDelete} className="w-[100px] cursor-pointer">Delete</Button>
                                 </div>
                             </div>
                         ) : (
@@ -260,7 +260,7 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                                     </div>
                                 </div>
 
-                                <div className="bg-muted p-4 rounded-xl space-y-2">
+                                <div className="p-4 rounded-xl space-y-2">
                                     <p className="text-xs font-bold uppercase text-muted-foreground">
                                         {selectedInterview.type === 'virtual' ? 'Meeting Link' : 'Location'}
                                     </p>
@@ -280,10 +280,10 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                                 </div>
 
                                 <div className="flex gap-3 pt-2 mt-6 border-t border-border sticky bottom-1 bg-background pb-1">
-                                    <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteConfirm(true)}>Delete</Button>
-                                    <Button variant="outline" className="flex-1" onClick={() => setSelectedInterview(null)}>Close</Button>
+                                    <Button variant="destructive" className="flex-1 cursor-pointer" onClick={() => setShowDeleteConfirm(true)}>Delete</Button>
+                                    <Button variant="outline" className="flex-1 cursor-pointer" onClick={() => setSelectedInterview(null)}>Close</Button>
                                     {selectedInterview.type === 'virtual' && selectedInterview.meeting_link && (
-                                        <Button className="flex-1 font-bold" onClick={() => window.open(selectedInterview.meeting_link, '_blank')}>
+                                        <Button className="flex-1 font-bold cursor-pointer" onClick={() => window.open(selectedInterview.meeting_link, '_blank')}>
                                             Join Meeting
                                         </Button>
                                     )}

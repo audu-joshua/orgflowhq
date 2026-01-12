@@ -6,8 +6,8 @@ export interface Application {
   applicant_email: string
   applicant_phone?: string
   /** @deprecated Use current_stage instead */
-  status: "new" | "shortlisted" | "interviewed" | "hired" | string
-  current_stage: string
+  status: "new" | "shortlisted" | "interviewed" | "hired" | "rejected" | string
+  current_stage: "New" | "Shortlisted" | "Interview Scheduled" | "Interview Completed" | "Hired" | "Rejected" | string
   resume_url?: string
   cover_letter?: string | null
   applicant_passport?: string | null

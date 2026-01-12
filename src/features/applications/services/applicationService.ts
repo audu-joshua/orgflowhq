@@ -74,8 +74,8 @@ export const applicationService = {
     return data
   },
 
-  async updateApplicationStage(applicationId: string, stage: string) {
-    const supabase = getSupabaseClient()
+  async updateApplicationStage(applicationId: string, stage: string, client?: any) {
+    const supabase = client || getSupabaseClient()
 
     // We keep status in sync for now for backward compatibility, 
     // but logic should rely on stage.
@@ -83,8 +83,11 @@ export const applicationService = {
     let status = "new"
     const lowerStage = stage.toLowerCase()
     if (lowerStage.includes("shortlist")) status = "shortlisted"
+    else if (lowerStage === "interview scheduled") status = "interviewed"
+    else if (lowerStage === "interview completed") status = "interviewed"
     else if (lowerStage.includes("interview")) status = "interviewed"
     else if (lowerStage.includes("hire") || lowerStage.includes("offer")) status = "hired"
+    else if (lowerStage.includes("reject")) status = "rejected"
 
     const { data, error } = await supabase
       .from("applications")

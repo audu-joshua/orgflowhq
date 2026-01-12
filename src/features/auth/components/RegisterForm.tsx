@@ -138,10 +138,6 @@ export function RegisterForm() {
     }
   }
 
-  const handleSocialSignup = (provider: string) => {
-    // Placeholder for social signup implementation
-    console.log(`Sign up with ${provider}`)
-  }
 
   return (
     <div className="space-y-6">
@@ -190,15 +186,12 @@ export function RegisterForm() {
             className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
             placeholder="you@company.com"
           />
-          {email && !validateCompanyEmail(email) ? (
-            <p className="mt-1 text-xs text-amber-600 font-medium">
-              Note: Work emails are recommended for better organization features.
+          <div className="mt-2 p-2.5 bg-primary/5 border border-primary/10 rounded-lg">
+            <p className="text-[11px] text-primary font-medium flex items-center gap-1.5 leading-tight">
+              <span className="flex-shrink-0 w-1 h-1 rounded-full bg-primary" />
+              Register with Gmail to enable Google Calendar & Meet integration.
             </p>
-          ) : (
-            <p className="mt-1 text-xs text-muted-foreground">
-              We recommend using your company email address.
-            </p>
-          )}
+          </div>
         </div>
 
         <div>

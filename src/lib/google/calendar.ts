@@ -92,5 +92,26 @@ export const googleCalendarService = {
             htmlLink: response.data.htmlLink,
             hangoutLink: response.data.hangoutLink
         };
+    },
+
+    // 4. Get Event Details (Status, Time)
+    getEvent: async (
+        eventId: string,
+        authTokens: { access_token: string; refresh_token?: string; expiry_date?: number }
+    ) => {
+        const client = getOAuth2Client();
+        client.setCredentials({
+            access_token: authTokens.access_token,
+            refresh_token: authTokens.refresh_token,
+            expiry_date: authTokens.expiry_date
+        });
+
+        const calendar = google.calendar({ version: "v3", auth: client });
+        const response = await calendar.events.get({
+            calendarId: "primary",
+            eventId: eventId
+        });
+
+        return response.data;
     }
 };
