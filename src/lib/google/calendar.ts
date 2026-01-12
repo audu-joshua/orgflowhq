@@ -67,12 +67,25 @@ export const googleCalendarService = {
                 attendees: eventDetails.attendees.map(email => ({ email })),
                 conferenceData: {
                     createRequest: {
-                        requestId: crypto.randomUUID(), // Unique ID for request
+                        requestId: Math.random().toString(36).substring(2, 11),
                         conferenceSolutionKey: { type: "hangoutsMeet" }
                     }
                 }
             }
         });
+
+        // If hangoutLink is missing, check conferenceData deep structure (sometimes it's here)
+        if (!response.data.hangoutLink && response.data.conferenceData) {
+            const entryPoints = response.data.conferenceData.entryPoints;
+            const videoLink = entryPoints?.find(ep => ep.entryPointType === 'video')?.uri;
+            if (videoLink) {
+                return {
+                    id: response.data.id,
+                    htmlLink: response.data.htmlLink,
+                    hangoutLink: videoLink
+                };
+            }
+        }
 
         return {
             id: response.data.id,

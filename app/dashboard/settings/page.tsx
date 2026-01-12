@@ -39,7 +39,7 @@ function GoogleIntegrationControl() {
                     .from('user_integrations')
                     .select('id')
                     .eq('user_id', user.id)
-                    .eq('provider', 'google_calendar')
+                    .eq('provider', 'google')
                     .single()
                 setIsConnected(!!data)
             }

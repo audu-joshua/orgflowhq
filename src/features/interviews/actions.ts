@@ -48,13 +48,11 @@ export async function scheduleInterviewAction(formData: FormData) {
                 .select("*")
                 .eq("user_id", userId)
                 .eq("provider", "google")
-                .single()
+                .maybeSingle()
 
-            if (integration && integration.access_token) {
+            if (integration?.access_token) {
                 try {
-                    const { googleCalendarService } = await import("@/lib/google/calendar") // Dyn import to avoid build issues if lib missing
-
-                    // Formatted End Time
+                    const { googleCalendarService } = await import("@/lib/google/calendar")
                     const endTime = new Date(scheduledAt.getTime() + duration * 60000)
 
                     console.log("Creating Google Calendar Event...")
@@ -72,14 +70,11 @@ export async function scheduleInterviewAction(formData: FormData) {
                         }
                     )
 
-                    console.log("Google Event Created:", event)
-
                     if (event.hangoutLink) {
                         meetingLinkToSave = event.hangoutLink
                     } else if (event.htmlLink) {
                         // Fallback to calendar link if meet link is missing
-                        console.warn("No hangoutLink found, falling back to htmlLink")
-                        // meetingLinkToSave = event.htmlLink // Only if we want to show cal link
+                        meetingLinkToSave = event.htmlLink
                     }
 
                     if (event.id) {
@@ -95,26 +90,46 @@ export async function scheduleInterviewAction(formData: FormData) {
 
 
         // 2. Create Interview Record
-        const { data: interview, error } = await supabase
+        const interviewData: any = {
+            organization_id: organizationId,
+            applicant_id: applicantId,
+            role_id: roleId,
+            type,
+            scheduled_at: scheduledAt.toISOString(),
+            duration,
+            meeting_link: meetingLinkToSave,
+            location,
+            status: 'scheduled'
+        }
+
+        if (googleEventId) {
+            interviewData.google_event_id = googleEventId
+        }
+
+        let interview: any = null
+        const { data: initialData, error: initialError } = await supabase
             .from("interviews")
-            .insert([{
-                organization_id: organizationId,
-                applicant_id: applicantId,
-                role_id: roleId,
-                type,
-                scheduled_at: scheduledAt.toISOString(),
-                duration,
-                meeting_link: meetingLinkToSave,
-                location,
-                status: 'scheduled',
-                // google_event_id: googleEventId // Column missing in DB
-            }])
+            .insert([interviewData])
             .select()
             .single()
 
-        if (error) {
-            console.error("Error creating interview record:", error)
-            throw new Error(`Database Error: ${error.message}`)
+        if (initialError) {
+            // Self-healing: if column missing, retry
+            if (initialError.message.includes("google_event_id")) {
+                delete interviewData.google_event_id
+                const { data: retryData, error: retryError } = await supabase
+                    .from("interviews")
+                    .insert([interviewData])
+                    .select()
+                    .single()
+
+                if (retryError) throw new Error(`Database Error: ${retryError.message}`)
+                interview = retryData
+            } else {
+                throw new Error(`Database Error: ${initialError.message}`)
+            }
+        } else {
+            interview = initialData
         }
 
         // 2. Update Applicant Stage
@@ -152,9 +167,11 @@ export async function scheduleInterviewAction(formData: FormData) {
 
         // Fetch Organization Details for Email (Use Admin to bypass RLS)
         const supabaseAdmin = getSupabaseAdmin()
+
+        // 1. Fetch Org Name
         const { data: orgData, error: orgError } = await supabaseAdmin
             .from('organizations')
-            .select('name, email')
+            .select('name')
             .eq('id', organizationId)
             .single()
 
@@ -163,10 +180,30 @@ export async function scheduleInterviewAction(formData: FormData) {
         }
 
         const orgName = orgData?.name || "OrgFlow"
-        const orgEmail = orgData?.email || "support@orgflowhq.com"
+
+        // 2. Fetch Owner Email (Organization Email fallback)
+        let orgEmail = "support@orgflowhq.com"
+        try {
+            const { data: ownerRelation } = await supabaseAdmin
+                .from('users_organizations')
+                .select('user_id')
+                .eq('organization_id', organizationId)
+                .eq('role', 'owner')
+                .maybeSingle()
+
+            if (ownerRelation?.user_id) {
+                const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(ownerRelation.user_id)
+                if (userData?.user?.email) {
+                    orgEmail = userData.user.email
+                }
+            }
+        } catch (e) {
+            console.error("Failed to fetch owner email:", e)
+        }
 
         console.log("Creating email invite with:", {
             orgName,
+            orgEmail,
             meetingLink: meetingLinkToSave,
             isVirtual: type === 'virtual'
         })

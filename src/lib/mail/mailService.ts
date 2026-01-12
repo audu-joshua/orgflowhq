@@ -274,10 +274,14 @@ export const mailService = {
 
       <p>Please let us know if this time works for you.</p>
 
+      <p style="font-size: 14px; color: #4b5563;">
+        Feel free to reach us here: <a href="mailto:${orgEmail}" style="color: #0fadaa; text-decoration: underline;">${orgEmail}</a>
+      </p>
+
       <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
         Best regards,<br>
-        <strong>${orgName} Team</strong><br>
-        <a href="mailto:${orgEmail}" style="color: #666; text-decoration: none;">${orgEmail}</a>
+        <strong>OrgFlow Team</strong><br>
+        <a href="mailto:support@orgflowhq.com" style="color: #666; text-decoration: none;">support@orgflowhq.com</a>
       </p>
     `
 

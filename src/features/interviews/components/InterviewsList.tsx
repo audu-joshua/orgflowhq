@@ -11,6 +11,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Modal } from "@/components/ui/modal"
+import { disconnectGoogleAction } from "@/features/integrations/actions"
 
 interface InterviewsListProps {
     isGoogleConnected: boolean
@@ -83,6 +84,18 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
         window.location.href = "/api/auth/google/connect"
     }
 
+    const handleDisconnectGoogle = async () => {
+        try {
+            const result = await disconnectGoogleAction()
+            if (result.success) {
+                toast.success("Disconnected Google Calendar")
+                router.refresh() // Refresh to update isGoogleConnected prop
+            }
+        } catch (error) {
+            toast.error("Failed to disconnect")
+        }
+    }
+
     const handleDelete = async () => {
         if (!selectedInterview) return
 
@@ -116,7 +129,12 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {!isGoogleConnected && (
+                    {isGoogleConnected ? (
+                        <Button variant="outline" onClick={handleDisconnectGoogle} className="gap-2 shadow-sm text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 transition-all">
+                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4 opacity-50 grayscale" />
+                            Disconnect Calendar
+                        </Button>
+                    ) : (
                         <Button variant="outline" onClick={handleConnectGoogle} className="gap-2 shadow-sm hover:bg-white hover:text-black transition-all">
                             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
                             Connect Google Calendar
@@ -206,7 +224,7 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                                         <br />This action cannot be undone.
                                     </p>
                                 </div>
-                                <div className="flex gap-3 justify-center pt-2">
+                                <div className="flex gap-3 justify-center pt-2 mt-6 border-t border-border sticky bottom-1 bg-background pb-1">
                                     <Button variant="outline" onClick={() => setShowDeleteConfirm(false)} className="w-[100px]">Cancel</Button>
                                     <Button variant="destructive" onClick={handleDelete} className="w-[100px]">Delete</Button>
                                 </div>
@@ -261,11 +279,11 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                                     )}
                                 </div>
 
-                                <div className="flex gap-3 pt-2">
+                                <div className="flex gap-3 pt-2 mt-6 border-t border-border sticky bottom-1 bg-background pb-1">
                                     <Button variant="destructive" className="flex-1" onClick={() => setShowDeleteConfirm(true)}>Delete</Button>
                                     <Button variant="outline" className="flex-1" onClick={() => setSelectedInterview(null)}>Close</Button>
                                     {selectedInterview.type === 'virtual' && selectedInterview.meeting_link && (
-                                        <Button className="flex-1" onClick={() => window.open(selectedInterview.meeting_link, '_blank')}>
+                                        <Button className="flex-1 font-bold" onClick={() => window.open(selectedInterview.meeting_link, '_blank')}>
                                             Join Meeting
                                         </Button>
                                     )}

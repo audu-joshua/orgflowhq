@@ -14,7 +14,7 @@ export async function disconnectGoogleAction() {
             .from("user_integrations")
             .delete()
             .eq("user_id", user.id)
-            .eq("provider", "google_calendar")
+            .eq("provider", "google")
 
         if (error) throw error
 

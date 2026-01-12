@@ -12,7 +12,7 @@ export default async function InterviewsPage() {
             .from('user_integrations')
             .select('id')
             .eq('user_id', user.id)
-            .eq('provider', 'google_calendar')
+            .eq('provider', 'google')
             .single()
 
         isGoogleConnected = !!data
