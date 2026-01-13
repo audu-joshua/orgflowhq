@@ -6,7 +6,6 @@ export default function RegisterPage() {
     <AuthPageLayout
       title="Register"
       subtitle="Create your account to get started"
-      showSocialAuth={false}
     >
       <RegisterForm />
     </AuthPageLayout>

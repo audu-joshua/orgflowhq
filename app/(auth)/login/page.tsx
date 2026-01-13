@@ -7,7 +7,6 @@ export default function LoginPage() {
       title="Login"
       imagePath="/login_image.jpg"
       subtitle="Login to you Account"
-      showSocialAuth={false}
     >
       <LoginForm />
     </AuthPageLayout>
