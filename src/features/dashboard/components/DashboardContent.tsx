@@ -26,8 +26,13 @@ export function DashboardContent() {
   useEffect(() => {
     if (authLoading) return
 
-    if (!user || !organization) {
+    if (!user) {
       router.push("/login")
+      return
+    }
+
+    if (!organization) {
+      router.push("/onboarding/complete-profile")
       return
     }
 

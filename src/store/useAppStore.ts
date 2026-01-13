@@ -31,6 +31,11 @@ export const useAppStore = create<AppStore>()(
     {
       name: "app-store", // name of the item in localStorage
       storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        user: state.user,
+        organization: state.organization,
+        isSidebarCollapsed: state.isSidebarCollapsed,
+      }),
     }
   )
 )
