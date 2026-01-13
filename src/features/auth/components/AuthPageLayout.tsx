@@ -9,6 +9,7 @@ interface AuthPageLayoutProps {
     subtitle: string
     imageMessage?: string
     imagePath?: string
+    showSocialAuth?: boolean
 }
 
 export function AuthPageLayout({
@@ -16,7 +17,8 @@ export function AuthPageLayout({
     title,
     subtitle,
     imageMessage,
-    imagePath = "/auth_image.webp"
+    imagePath = "/auth_image.webp",
+    showSocialAuth = true
 }: AuthPageLayoutProps) {
     return (
         <div className="min-h-screen flex flex-col lg:flex-row">
@@ -41,38 +43,44 @@ export function AuthPageLayout({
 
                     {children}
 
-                    <div className="mt-6">
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-border" />
+                    {showSocialAuth && (
+                        <div className="mt-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className="w-full border-t border-border" />
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                                </div>
                             </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                            </div>
-                        </div>
 
-                        <button
-                            type="button"
-                            onClick={async () => {
-                                const { getSupabaseClient } = await import("@/lib/supabaseClient")
-                                const supabase = getSupabaseClient()
-                                await supabase.auth.signInWithOAuth({
-                                    provider: 'google',
-                                    options: {
-                                        redirectTo: `${window.location.origin}/auth/callback`,
-                                        queryParams: {
-                                            access_type: 'offline', // Request refresh token
-                                            prompt: 'consent',
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const { getSupabaseClient } = await import("@/lib/supabaseClient")
+                                    const supabase = getSupabaseClient()
+                                    await supabase.auth.signInWithOAuth({
+                                        provider: 'google',
+                                        options: {
+                                            redirectTo: `${window.location.origin}/auth/callback`,
+                                            queryParams: {
+                                                access_type: 'offline', // Request refresh token
+                                                prompt: 'consent',
+                                            },
                                         },
-                                    },
-                                })
-                            }}
-                            className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl hover:bg-muted/50 transition-colors font-medium text-sm"
-                        >
-                            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                            Sign in with Google
-                        </button>
-                    </div>
+                                    })
+                                }}
+                                className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl hover:bg-muted/50 transition-colors font-medium text-sm cursor-pointer"
+                            >
+                                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                                Sign in with Google
+                            </button>
+                        </div>
+                    )}
+
+                    <p className="text-center text-sm text-muted-foreground mt-8">
+                        &copy; {new Date().getFullYear()} OrgFlow. All Rights Reserved.
+                    </p>
                 </div>
             </div>
 

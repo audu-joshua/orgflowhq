@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
 
 // Common free email providers to reject
 const FREE_EMAIL_PROVIDERS = [
@@ -37,10 +38,11 @@ export function RegisterForm() {
     setFormError("")
     setLocalLoading(true)
 
-    const isFreeEmail = !validateCompanyEmail(email)
+    // const isFreeEmail = !validateCompanyEmail(email) // Temporarily disabling strict check or using for warning if needed
 
     if (password.length < 6) {
       setFormError("Password must be at least 6 characters")
+      setLocalLoading(false)
       return
     }
 
@@ -52,7 +54,6 @@ export function RegisterForm() {
         console.log("Signup initial attempt failed code:", err.code, "msg:", err.message)
 
         // Robust check for Supabase "User already registered" error (422)
-        // Error object might be structured differently depending on client version
         const isUserExists =
           err.code === "user_already_exists" ||
           err.message?.includes("already registered") ||
@@ -60,27 +61,37 @@ export function RegisterForm() {
 
         if (isUserExists) {
           console.log("[RegisterForm] User exists, attempting silent recovery...")
-          clearError() // Remove the shared error so the UI stays clean
+          clearError()
+
+          // Attempt silent login
+          const { getSupabaseClient } = await import("@/lib/supabaseClient")
+          const supabase = getSupabaseClient()
+
+          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          })
+
+          if (signInError || !signInData.session) {
+            // WRONG PASSWORD -> Show specific toast
+            toast.error("Account Previously Registered", {
+              description: "Please use your last working password to re-register this organization, or use Forgot Password.",
+              duration: 8000,
+              closeButton: true,
+            })
+            throw new Error("Account previously registered. Use your old password or reset it.")
+          }
+
+          // SUCCESS -> Proceed to provision (Silent login worked)
         } else {
           throw err
         }
       }
 
-      // If signUp failed because user exists, we need to sign in to get a session
+      // If we reach here, we have a session (either from fresh signup or silent login)
       const { getSupabaseClient } = await import("@/lib/supabaseClient")
       const supabase = getSupabaseClient()
-
       let { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        console.log("[RegisterForm] No session, attempting manual sign-in...")
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        })
-        if (signInError) throw new Error("This email is already registered. Please sign in or use a different email.")
-        session = signInData.session
-      }
 
       if (!session) {
         throw new Error("Authentication failed. Please try again.")
@@ -98,7 +109,6 @@ export function RegisterForm() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        // If they already have an org, maybe we should tell them
         if (errorData.error?.includes("already linked")) {
           throw new Error("You are already a member of an organization. Please log in.")
         }
@@ -117,22 +127,24 @@ export function RegisterForm() {
         name: organizationName
       })
 
-      // Ensure user has the org id AND the default owner role for the transition
       if (store.user) {
         store.setUser({
           ...store.user,
           organization_id: provisionData.organizationId,
-          role: "owner", // Critical: prevents ProtectedRoute from redirecting to login during sync
+          role: "owner",
           full_name: fullName
         })
       }
 
-      // 4. Force a profile sync to ensure all data-driven components (Sidebar, TopBar) are ready
+      // 4. Force a profile sync
       await refreshProfile(session.user.id, provisionData.organizationId)
 
       router.push("/dashboard")
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Registration failed")
+      // Don't duplicate error if we already toasted
+      if (err instanceof Error && !err.message.includes("Account previously registered")) {
+        setFormError(err.message)
+      }
     } finally {
       setLocalLoading(false)
     }
@@ -186,12 +198,7 @@ export function RegisterForm() {
             className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
             placeholder="you@company.com"
           />
-          <div className="mt-2 p-2.5 bg-primary/5 border border-primary/10 rounded-lg">
-            <p className="text-[11px] text-primary font-medium flex items-center gap-1.5 leading-tight">
-              <span className="flex-shrink-0 w-1 h-1 rounded-full bg-primary" />
-              Register with Gmail to enable Google Calendar & Meet integration.
-            </p>
-          </div>
+          {/* Removed Google Hint Box */}
         </div>
 
         <div>
@@ -249,12 +256,6 @@ export function RegisterForm() {
         </Link>
       </div>
 
-      {/* Copyright */}
-      <div className="pt-6 border-t border-border">
-        <p className="text-center text-xs text-muted-foreground">
-          ©2025 HR All Right Reserved
-        </p>
-      </div>
     </div>
   )
 }

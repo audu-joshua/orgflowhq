@@ -26,7 +26,7 @@ export async function updateApplicationStatusAction(
 
         const { data: appData } = await supabaseAdmin
             .from('applications')
-            .select('applicant_name, applicant_email, roles(title, department)')
+            .select('applicant_name, applicant_email, applicant_passport, roles(title, department)')
             .eq('id', applicationId)
             .single()
 
@@ -37,21 +37,7 @@ export async function updateApplicationStatusAction(
 
         // 3. Trigger Email Notifications & Automation if necessary
         if (newStage === "Hired") {
-            // A. Automate Employee Record Creation & Invitation
-            try {
-                await onboardingService.onboardHiredCandidate({
-                    applicantName: appData.applicant_name,
-                    applicantEmail: appData.applicant_email,
-                    roleTitle: roleTitle,
-                    organizationId: organizationId,
-                    departmentName: (appData as any).roles?.department
-                })
-            } catch (e) {
-                console.error("Failed to automate onboarding:", e)
-                // We continue even if this fails, so the hire process isn't blocked
-            }
-
-            // B. Send Enriched Congratulatory Email
+            // A. Send Enriched Congratulatory Email FIRST
             await mailService.sendCongratulatoryEmail(
                 appData.applicant_email,
                 appData.applicant_name,
@@ -59,6 +45,28 @@ export async function updateApplicationStatusAction(
                 orgName,
                 orgData?.welcome_doc_url
             )
+
+            // Wait 3 seconds to let the candidate enjoy the good news first!
+            await new Promise(resolve => setTimeout(resolve, 3000))
+
+            // B. Automate Employee Record Creation & Invitation
+            try {
+                await onboardingService.onboardHiredCandidate({
+                    applicantName: appData.applicant_name,
+                    applicantEmail: appData.applicant_email,
+                    roleTitle: roleTitle,
+                    organizationId: organizationId,
+                    departmentName: (appData as any).roles?.department,
+                    applicantPassport: appData.applicant_passport
+                })
+            } catch (e: any) {
+                console.error("Failed to automate onboarding:", e)
+                return {
+                    success: true,
+                    application,
+                    onboardingError: e.message || "Failed to automate onboarding"
+                }
+            }
         } else if (newStage === "Rejected") {
             await mailService.sendRejectionEmail(
                 appData.applicant_email,
@@ -133,6 +141,57 @@ export async function bulkRejectRemainingAction(roleId: string, organizationId: 
         return { success: true, count: pendingApps.length }
     } catch (error: any) {
         console.error("Bulk rejection failed:", error)
+        return { success: false, error: error.message }
+    }
+}
+
+export async function submitApplicationAction(
+    organizationId: string,
+    applicationData: any
+) {
+    try {
+        const supabase = await createSupabaseServerClient()
+        const supabaseAdmin = getSupabaseAdmin()
+
+        // 1. Create Application
+        const { error } = await supabase
+            .from("applications")
+            .insert([{
+                ...applicationData,
+                organization_id: organizationId,
+                status: "new",
+                current_stage: "New"
+            }])
+
+        if (error) throw error
+
+        // 2. Fetch Org and Role details for Email
+        const { data: org } = await supabaseAdmin
+            .from("organizations")
+            .select("name")
+            .eq("id", organizationId)
+            .single()
+
+        const { data: role } = await supabaseAdmin
+            .from("roles")
+            .select("title")
+            .eq("id", applicationData.role_id)
+            .single()
+
+        const orgName = org?.name || "OrgFlow"
+        const roleTitle = role?.title || "Position"
+
+        // 3. Send Acknowledgement Email (Non-blocking)
+        mailService.sendAcknowledgementEmail(
+            applicationData.applicant_email,
+            applicationData.applicant_name,
+            roleTitle,
+            orgName
+        ).catch(e => console.error("Failed to send ack email:", e))
+
+        return { success: true }
+    } catch (error: any) {
+        console.error("Application submission failed:", error)
         return { success: false, error: error.message }
     }
 }

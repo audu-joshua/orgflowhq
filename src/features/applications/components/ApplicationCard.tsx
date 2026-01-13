@@ -54,6 +54,13 @@ export function ApplicationCard({ application, onStatusUpdate, onDelete }: Appli
       )
       if (result.success) {
         toast.success(`${application.applicant_name} marked as ${actionType === "hired" ? "Hired" : "Rejected"}`)
+
+        if ((result as any).onboardingError) {
+          toast.warning(`Onboarding Note: ${(result as any).onboardingError}`, {
+            duration: 6000
+          })
+        }
+
         if (onStatusUpdate) {
           onStatusUpdate(application.id, actionType === "hired" ? "Hired" : "Rejected")
         }

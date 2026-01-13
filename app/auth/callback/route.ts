@@ -43,19 +43,25 @@ export async function GET(request: NextRequest) {
         )
 
         // Exchange the code for a session
-        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
 
         if (error) {
             console.error("[AuthCallback] Error exchanging code:", error)
             return NextResponse.redirect(new URL("/login?error=invalid_code", requestUrl.origin))
         }
 
+        console.log("[AuthCallback] Session exchanged successfully")
+        console.log("[AuthCallback] User Metadata:", data.session?.user?.user_metadata)
+        console.log("[AuthCallback] Session User ID:", data.session?.user?.id)
+
         // If this is a recovery flow, redirect to reset-password
         if (type === "recovery") {
+            console.log("[AuthCallback] Redirecting to reset-password (recovery)")
             return NextResponse.redirect(new URL("/reset-password", requestUrl.origin))
         }
 
         // For other auth flows (signup, invite, etc.), redirect to dashboard
+        console.log("[AuthCallback] Redirecting to dashboard")
         return NextResponse.redirect(new URL("/dashboard", requestUrl.origin))
     }
 

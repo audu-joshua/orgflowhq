@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, Phone, User, Mail, FileText, Camera } from "lucide-react"
 import { applicationService } from "../services/applicationService"
+import { submitApplicationAction } from "../actions"
 import { compressImage } from "@/lib/imageUtils"
 import type { Application } from "../types"
 
@@ -116,7 +117,7 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
         applicationService.uploadResume("passports", passportPhoto)
       ])
 
-      const applicationData: Omit<Application, "id" | "created_at" | "updated_at" | "organization_id"> = {
+      const applicationData = {
         role_id: roleId,
         applicant_name: applicantName,
         applicant_email: applicantEmail,
@@ -124,10 +125,13 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
         resume_url: resumeUrl,
         cover_letter: coverLetterUrl || null,
         applicant_passport: passportUrl || null,
-        status: "new"
       }
 
-      await applicationService.createApplication(organizationId, applicationData)
+      const result = await submitApplicationAction(organizationId, applicationData)
+
+      if (!result.success) {
+        throw new Error(result.error)
+      }
 
       setSuccess(true)
       setApplicantName("")

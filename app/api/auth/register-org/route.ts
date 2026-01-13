@@ -115,6 +115,17 @@ export async function POST(req: Request) {
 
         if (empError) throw empError
 
+        // G. Sync Organization ID to Auth Metadata (Critical for Middleware)
+        const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(
+            user.id,
+            { user_metadata: { organization_id: orgData.id } }
+        )
+
+        if (metaError) {
+            console.error("[Provision-Org] Failed to sync auth metadata:", metaError)
+            // We don't block flow, but middleware might be delayed until next refresh
+        }
+
         // 3. Send Welcome Email
         try {
             await mailService.sendOrgWelcomeEmail(
@@ -135,10 +146,10 @@ export async function POST(req: Request) {
 
     } catch (error: any) {
         console.error("[Provision-Org] Unexpected error:", error)
-        
+
         // Map technical database errors to friendly messages
         let errorMessage = error.message || "Internal Server Error"
-        
+
         if (errorMessage.includes("employees_employee_id_key")) {
             errorMessage = "This account is already registered as an employee. Please attempt to sign in."
         } else if (errorMessage.includes("organizations_slug_key")) {

@@ -85,12 +85,6 @@ export function LoginForm() {
             className="w-full px-4 py-3 border-2 border-border bg-background text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent placeholder:text-muted-foreground transition-all"
             placeholder="batukra312@||"
           />
-          <div className="mt-2 p-2.5 bg-primary/5 border border-primary/10 rounded-lg">
-            <p className="text-[11px] text-primary font-medium flex items-center gap-1.5 leading-tight">
-              <span className="flex-shrink-0 w-1 h-1 rounded-full bg-primary" />
-              Sign in with Gmail to access Calendar & Meet features.
-            </p>
-          </div>
         </div>
 
         <div>
@@ -151,12 +145,6 @@ export function LoginForm() {
         </Link>
       </div>
 
-      {/* Copyright */}
-      <div className="pt-6 border-t border-border">
-        <p className="text-center text-xs text-muted-foreground">
-          © {new Date().getFullYear()} OrgFlow. All Rights Reserved.
-        </p>
-      </div>
     </div>
   )
 }

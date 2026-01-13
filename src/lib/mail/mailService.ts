@@ -6,6 +6,7 @@ interface MailOptions {
   html: string
   replyTo?: string
   fromName?: string
+  fromEmail?: string
 }
 
 const transporter = nodemailer.createTransport({
@@ -13,15 +14,23 @@ const transporter = nodemailer.createTransport({
   port: Number(process.env.SMTP_PORT) || 465,
   secure: true,
   auth: {
-    user: process.env.SMTP_USER || "support@orgflowhq.com",
+    user: process.env.SMTP_USER || "audu@orgflowhq.com",
     pass: process.env.SMTP_PASSWORD,
   },
 })
 
+// Email Addresses
+const EMAILS = {
+  SUPPORT: process.env.NEXT_PUBLIC_SUPPORT_EMAIL || "help@orgflowhq.com",
+  FOUNDER: process.env.FOUNDER_EMAIL || "audu@orgflowhq.com",
+  RECRUITMENT: process.env.RECRUITMENT_EMAIL || "hiring@orgflowhq.com",
+  WELCOME: process.env.WELCOME_EMAIL || "welcome@orgflowhq.com"
+}
+
 export const mailService = {
-  async sendEmail({ to, subject, html, replyTo, fromName }: MailOptions) {
+  async sendEmail({ to, subject, html, replyTo, fromName, fromEmail }: MailOptions) {
     const senderName = fromName || "OrgFlow Team"
-    const senderAddress = process.env.SMTP_USER || "support@orgflowhq.com"
+    const senderAddress = fromEmail || EMAILS.SUPPORT
 
     try {
       const info = await transporter.sendMail({
@@ -49,30 +58,33 @@ export const mailService = {
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; line-height: 1.6; color: #1a202c;">
         <h2 style="color: #000; margin-top: 0;">Hi ${ownerName},</h2>
         
-        <p>I wanted to personally write to you to say how excited we are to welcome <strong>${orgName}</strong> to <strong>OrgFlow</strong>.</p>
+        <p>Welcome to <strong>OrgFlow</strong>, we're excited to have <strong>${orgName}</strong> on board.</p>
         
-        <p>OrgFlow was built with growing teams like yours in mind; to take the weight of HR structure and process off your shoulders, so you can focus more on leading, building, and doing the work that truly matters.</p>
+        <p>OrgFlow is a modern HR and recruitment platform designed to help teams:</p>
         
-        <p>As you get started, know that you're not just using a tool, you're joining a platform designed to grow with you. If you ever have questions, need clarity, or want to share feedback, my team and I are always happy to listen.</p>
+        <ul style="padding-left: 20px;">
+          <li style="margin-bottom: 8px;"><strong>Manage hiring, time tracking, and employee data in one place</strong></li>
+          <li style="margin-bottom: 8px;"><strong>Streamline HR processes</strong>, so leaders can focus on building and scaling their teams</li>
+        </ul>
         
-        <p>We're grateful to be part of your journey, and we're looking forward to supporting Mercy International every step of the way.</p>
-
+        <p>As you get started, you'll find everything you need to track applicants, manage your team, and stay organized as you grow. If you have questions, need support, or want to explore features, our team is always here to help.</p>
+        
         <div style="margin: 30px 0; text-align: center;">
           <a href="${dashboardUrl}" style="background-color: #0fadaa; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Get Started</a>
         </div>
         
         <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
           Warm regards,<br>
-          <strong>Audu Joshua Adinoyi</strong><br>
-          Founder, OrgFlow
+          <strong>The OrgFlow Team</strong>
         </p>
       </div>
     `
     return this.sendEmail({
       to,
-      subject: `Welcome to OrgFlow 🎉`,
+      subject: `Welcome to OrgFlow`,
       html: this.wrapEmailHtml(html),
-      fromName: "OrgFlow Team"
+      fromName: "OrgFlow Team",
+      fromEmail: EMAILS.WELCOME
     })
   },
 
@@ -94,7 +106,8 @@ export const mailService = {
       to,
       subject: `Your account at ${orgName} is active!`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
     })
   },
 
@@ -124,7 +137,8 @@ export const mailService = {
       to,
       subject: `Invitation to join ${orgName} on OrgFlow`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
     })
   },
 
@@ -142,7 +156,8 @@ export const mailService = {
       to: ownerEmail,
       subject: `Notice: Employee self-termination (${employeeName})`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: "OrgFlow Team",
+      fromEmail: EMAILS.SUPPORT
     })
   },
 
@@ -169,7 +184,8 @@ export const mailService = {
       to,
       subject: `Action Required: Organization Deletion PIN`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: "OrgFlow Team",
+      fromEmail: EMAILS.SUPPORT
     })
   },
 
@@ -245,7 +261,8 @@ export const mailService = {
       to,
       subject: `Reset your OrgFlow password`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: "OrgFlow Team",
+      fromEmail: EMAILS.SUPPORT
     })
   },
 
@@ -298,7 +315,8 @@ export const mailService = {
       to,
       subject: `Interview Invitation: ${roleTitle} at ${orgName}`,
       html: this.wrapEmailHtml(body),
-      fromName: `${orgName} Team`
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
     })
   },
 
@@ -329,7 +347,8 @@ export const mailService = {
       to,
       subject: `Congratulations! Your offer from ${orgName}`,
       html: this.wrapEmailHtml(body),
-      fromName: `${orgName} Team`
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
     })
   },
 
@@ -356,7 +375,32 @@ export const mailService = {
       to,
       subject: `Application Update: ${roleTitle} at ${orgName}`,
       html: this.wrapEmailHtml(body),
-      fromName: `${orgName} Team`
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
+    })
+  },
+
+  async sendAcknowledgementEmail(to: string, candidateName: string, roleTitle: string, orgName: string) {
+    const body = `
+      <h2 style="color: #0d1e4c; margin-top: 0;">Application Received!</h2>
+      <p>Dear ${candidateName},</p>
+      <p>Thank you for applying for the <strong>${roleTitle}</strong> position at <strong>${orgName}</strong>.</p>
+      
+      <p>We've successfully received your application. Our team will review your qualifications and experience carefully. If your background matches our current needs, we will be in touch to discuss the next steps in our hiring process.</p>
+      
+      <p>In the meantime, thank you for your interest in joining <strong>${orgName}</strong>.</p>
+      
+      <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; color: #666;">
+        Best regards,<br>
+        <strong>${orgName} Team</strong>
+      </p>
+    `
+    return this.sendEmail({
+      to,
+      subject: `Application Received: ${roleTitle} at ${orgName}`,
+      html: this.wrapEmailHtml(body),
+      fromName: `${orgName} Team`,
+      fromEmail: EMAILS.RECRUITMENT
     })
   },
 
@@ -380,7 +424,8 @@ export const mailService = {
       to,
       subject: `Feedback Request: Interview with ${candidateName}`,
       html: this.wrapEmailHtml(body),
-      fromName: "OrgFlow Team"
+      fromName: "OrgFlow Team",
+      fromEmail: EMAILS.RECRUITMENT
     })
   }
 }

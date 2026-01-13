@@ -1,3 +1,4 @@
+import "server-only"
 import { Employee } from "../types"
 import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 
@@ -7,10 +8,23 @@ export const onboardingService = {
         applicantEmail: string,
         roleTitle: string,
         organizationId: string,
-        departmentName?: string
+        departmentName?: string,
+        applicantPassport?: string | null
     }) {
-        const { applicantName, applicantEmail, roleTitle, organizationId, departmentName } = data
+        const { applicantName, applicantEmail, roleTitle, organizationId, departmentName, applicantPassport } = data
         const supabaseAdmin = getSupabaseAdmin()
+
+        // 0. Check if already an employee in this organization
+        const { data: existingEmp } = await supabaseAdmin
+            .from("employees")
+            .select("id")
+            .eq("organization_id", organizationId)
+            .eq("email", applicantEmail)
+            .maybeSingle()
+
+        if (existingEmp) {
+            throw new Error("Employee already exists in this organization")
+        }
 
         // 1. Resolve or Create Target department
         const targetDeptName = departmentName || "Management"
@@ -69,8 +83,17 @@ export const onboardingService = {
 
         let userId = userData?.user?.id
         if (createError) {
-            if (createError.message.includes("already exists")) {
-                const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+            // Check specifically for email_exists error code or message
+            const isEmailExists = (createError as any).code === 'email_exists' ||
+                createError.status === 422 ||
+                createError.message.toLowerCase().includes("already registered") ||
+                createError.message.toLowerCase().includes("already exists")
+
+            if (isEmailExists) {
+                // Try to find the existing user to link them
+                const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+                if (listError) throw listError
+
                 const existingUser = users.users.find(u => u.email?.toLowerCase() === applicantEmail.toLowerCase())
                 if (existingUser) {
                     userId = existingUser.id
@@ -84,6 +107,38 @@ export const onboardingService = {
 
         if (!userId) throw new Error("Could not resolve User ID")
 
+        // 4.5 Ensure public user record exists (Satisfy FK for employees)
+        // This bridges the race condition with the handle_new_user trigger
+        const { error: profileError } = await supabaseAdmin
+            .from("users")
+            .upsert({
+                id: userId,
+                email: applicantEmail,
+                organization_id: organizationId,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'id' })
+
+        if (profileError) {
+            console.error("[onboardHiredCandidate] Profile upsert failed:", profileError)
+        }
+
+        // 4.6 Link user to organization (Grant Access)
+        const { error: linkError } = await supabaseAdmin
+            .from("users_organizations")
+            .insert([{
+                user_id: userId,
+                organization_id: organizationId,
+                role: "employee"
+            }])
+
+        if (linkError) {
+            if (linkError.message.includes("already exists")) {
+                console.log("[onboardHiredCandidate] User already linked to organization")
+            } else {
+                console.error("[onboardHiredCandidate] Organization linking failed:", linkError)
+            }
+        }
+
         // 5. Create Employee Record
         const { data: employee, error: empError } = await supabaseAdmin
             .from("employees")
@@ -95,6 +150,7 @@ export const onboardingService = {
                 email: applicantEmail,
                 employee_id: employeeId,
                 position: roleTitle,
+                profile_image_url: applicantPassport || null,
                 status: "invited",
                 hire_date: new Date().toISOString().split('T')[0]
             }])
