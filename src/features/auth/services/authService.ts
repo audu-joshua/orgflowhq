@@ -79,6 +79,42 @@ export const authService = {
     const supabase = getSupabaseClient()
     console.log(`[getUserProfile] Fetching for userId: ${userId}, scopedOrgId: ${scopedOrgId}`)
 
+    // 0. Check for Platform-Level Role (Super Admin)
+    const { data: publicUser } = await supabase
+      .from("users")
+      .select("id, email, full_name, profile_image_url, role")
+      .eq("id", userId)
+      .single()
+
+    // Even if SUPER ADMIN, check for organization links to populate context
+    // This allows them to "use" the app as a normal user if they choose
+    let adminOrgData = null;
+    if (publicUser?.role === 'super_admin') {
+      console.log(`[getUserProfile] Found SUPER ADMIN: ${userId}`)
+
+      const { data: orgLink } = await supabase
+        .from("users_organizations")
+        .select("role, organization_id, organizations(id, slug, name, logo_url, address, welcome_doc_url)")
+        .eq("user_id", userId)
+        .maybeSingle()
+
+      if (orgLink) {
+        adminOrgData = {
+          organization_id: orgLink.organization_id,
+          organizations: orgLink.organizations
+        }
+      }
+
+      return {
+        ...publicUser,
+        organization_id: adminOrgData?.organization_id || "",
+        role: 'super_admin', // Keep their high-level role
+        status: 'active',
+        organizations: adminOrgData?.organizations || [],
+        is_employee_only: false
+      }
+    }
+
     // 1. Check for privileged role in specific organization
     let roleQuery = supabase
       .from("users_organizations")
@@ -96,12 +132,6 @@ export const authService = {
     if (roleLink) {
       console.log(`[getUserProfile] Found privileged role: ${roleLink.role} for org: ${roleLink.organization_id}`)
 
-      const { data: userDetails } = await supabase
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle()
-
       // Also try to get employee details for name/image
       const { data: employeeDetails } = await supabase
         .from("employees")
@@ -111,12 +141,14 @@ export const authService = {
         .maybeSingle()
 
       return {
-        ...userDetails,
+        id: userId,
+        email: publicUser?.email || "",
+        created_at: "", // Not strictly needed for auth check
+        full_name: employeeDetails?.full_name || publicUser?.full_name,
+        profile_image_url: employeeDetails?.profile_image_url || publicUser?.profile_image_url,
         organization_id: roleLink.organization_id,
         role: roleLink.role,
-        full_name: employeeDetails?.full_name || userDetails?.full_name,
-        profile_image_url: employeeDetails?.profile_image_url,
-        status: employeeDetails?.status,
+        status: employeeDetails?.status || 'active',
         organizations: roleLink.organizations,
         is_employee_only: false
       }

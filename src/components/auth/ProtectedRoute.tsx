@@ -55,6 +55,17 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
                 }
             }
 
+            // check if user is a super_admin and needs to select a portal
+            // We redirect to /select-portal if they are hitting /dashboard directly
+            // and haven't explicitly chosen the organization view via query param
+            const isChoosingOrg = pathname === '/dashboard' && new URLSearchParams(window.location.search).get('portal') === 'org'
+
+            if (user.role === 'super_admin' && pathname === '/dashboard' && !isChoosingOrg) {
+                console.log("[ProtectedRoute] Super Admin detected on dashboard - Redirecting to portal selection")
+                router.push("/select-portal")
+                return
+            }
+
             // check if user is trying to access a dashboard route
             if (pathname.startsWith("/dashboard")) {
                 // Find the exact matching navigation item or the closest parent
@@ -95,7 +106,7 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
                 }
 
                 // Global admin check for generic /dashboard access if not specifically in navItems
-                const hasAnyAdminRole = ["owner", "admin", "hr", "manager", "finance"].includes(userRole)
+                const hasAnyAdminRole = ["owner", "admin", "hr", "manager", "finance", "super_admin"].includes(userRole)
                 if (!hasAnyAdminRole) {
                     router.push(getSafeLandingPage())
                     return

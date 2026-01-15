@@ -52,9 +52,11 @@ export function LoginForm() {
       }
 
       // Check for privileged roles
-      const privilegedRoles = ["owner", "admin", "hr", "manager", "finance"]
+      const privilegedRoles = ["owner", "admin", "hr", "manager", "finance", "super_admin"]
 
-      if (privilegedRoles.includes(profile.role)) {
+      if (profile.role === 'super_admin') {
+        router.push("/select-portal")
+      } else if (privilegedRoles.includes(profile.role)) {
         router.push("/dashboard")
       } else if (profile.organizations?.slug) {
         // If employee or other role, redirect to clock (or block)

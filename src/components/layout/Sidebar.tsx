@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, LogOut, Sun, Moon, ChevronLeft, ChevronRight, ExternalLink, Copy, Check } from "lucide-react"
+import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, LogOut, Sun, Moon, ChevronLeft, ChevronRight, ExternalLink, Copy, Check, ShieldCheck } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useTheme } from "@/providers/ThemeProvider"
 import { getSupabaseClient } from "@/lib/supabaseClient"
@@ -75,7 +75,7 @@ export function Sidebar() {
 
           // Special rendering for Settings to show disabled state if not owner
           const isSettings = item.label === "Settings"
-          const effectivelyAllowed = isSettings ? (user?.role === "owner") : isAllowed
+          const effectivelyAllowed = isSettings ? (user?.role === "owner" || user?.role === "super_admin") : isAllowed
 
           if (item.label === "Settings") {
             return (
@@ -233,6 +233,21 @@ export function Sidebar() {
           {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
           {!isSidebarCollapsed && <span className="font-medium text-sm">Theme</span>}
         </button>
+
+        {/* Super Admin Switcher */}
+        {user?.role === 'super_admin' && (
+          <Link
+            href="/admin"
+            className={`
+              flex items-center gap-3 w-full px-3 py-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 rounded-lg transition-colors
+              ${isSidebarCollapsed ? "justify-center" : ""}
+            `}
+            title="Switch to Admin Portal"
+          >
+            <ShieldCheck size={20} />
+            {!isSidebarCollapsed && <span className="font-medium text-sm">Admin Portal</span>}
+          </Link>
+        )}
 
         {/* Logout Button */}
         <button

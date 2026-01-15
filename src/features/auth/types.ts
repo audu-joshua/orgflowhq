@@ -3,7 +3,7 @@ export interface User {
   email: string
   organization_id: string
   created_at: string
-  role?: string
+  role?: string | null // 'super_admin' | 'org_admin' | 'employee' | etc
   full_name?: string
   profile_image_url?: string
   status?: string
