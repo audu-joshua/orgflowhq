@@ -98,5 +98,21 @@ export const organizationService = {
             name: item.users?.full_name || item.users?.email?.split('@')[0] || "Team Member",
             role: item.role
         }))
+    },
+
+    async getOrganizationSubscription(organizationId: string) {
+        const supabase = getSupabaseClient()
+
+        const { data, error } = await supabase
+            .from("subscriptions")
+            .select(`
+                *,
+                plan:plans(*)
+            `)
+            .eq("organization_id", organizationId)
+            .maybeSingle()
+
+        if (error) throw error
+        return data
     }
 }

@@ -6,7 +6,7 @@ import { motion } from "framer-motion"
 
 export function Pricing() {
     const [isAnnual, setIsAnnual] = useState(false)
-    const [currency, setCurrency] = useState<"USD" | "NGN">("USD")
+    const [currency, setCurrency] = useState<"USD" | "NGN">("NGN")
 
     const pricing = {
         free: {

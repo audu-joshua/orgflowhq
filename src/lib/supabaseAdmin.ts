@@ -1,17 +1,17 @@
 import { createClient } from "@supabase/supabase-js"
 
-export function getSupabaseAdmin() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!supabaseUrl || !supabaseServiceKey) {
-        throw new Error("Missing Supabase Admin environment variables")
-    }
-
-    return createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-            autoRefreshToken: false,
-            persistSession: false
-        }
-    })
+if (!supabaseUrl || !supabaseServiceRoleKey) {
+    throw new Error("Missing Supabase Service Role Key environment variables")
 }
+
+export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
+    auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+    },
+})
+
+export const getSupabaseAdmin = () => supabaseAdmin
