@@ -8,6 +8,15 @@ export async function middleware(request: NextRequest) {
         },
     })
 
+    // 0. Redirect non-www to www for SEO consistency
+    // Only apply in production or when not localhost
+    const hostname = request.headers.get('host') || ''
+    if (process.env.NODE_ENV === 'production' && hostname === 'orgflowhq.com') {
+        const url = request.nextUrl.clone()
+        url.hostname = 'www.orgflowhq.com'
+        return NextResponse.redirect(url)
+    }
+
     // 1. Initialize Supabase Client
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,

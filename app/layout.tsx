@@ -9,6 +9,10 @@ import { ToastProvider } from "@/components/shared/ToastProvider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.orgflowhq.com'),
+  alternates: {
+    canonical: '/',
+  },
   title: "OrgFlow | HR & Recruitment Software",
   description: "Manage hiring, payroll, timesheets, and your team, all in one platform with OrgFlow.",
   icons: {
