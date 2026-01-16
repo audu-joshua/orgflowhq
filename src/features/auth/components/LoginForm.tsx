@@ -57,6 +57,11 @@ export function LoginForm() {
       if (profile.role === 'super_admin') {
         router.push("/select-portal")
       } else if (privilegedRoles.includes(profile.role)) {
+        // Privileged roles need an organization
+        if (!profile.organization_id) {
+          setFormError("No active organization found for this account. If you just signed up, your organization might still be provisioning. Otherwise, please register a new organization.")
+          return
+        }
         router.push("/dashboard")
       } else if (profile.organizations?.slug) {
         // If employee or other role, redirect to clock (or block)

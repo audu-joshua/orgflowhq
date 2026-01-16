@@ -82,7 +82,7 @@ export const authService = {
     // 0. Check for Platform-Level Role (Super Admin)
     const { data: publicUser } = await supabase
       .from("users")
-      .select("id, email, full_name, profile_image_url, role")
+      .select("id, email, full_name, profile_image_url, role, organization_id")
       .eq("id", userId)
       .single()
 
@@ -116,6 +116,7 @@ export const authService = {
     }
 
     // 1. Check for privileged role in specific organization
+    // If scopedOrgId is provided, use it. Otherwise query without org filter to get primary role
     let roleQuery = supabase
       .from("users_organizations")
       .select("role, organization_id, organizations(id, slug, name, logo_url, address, welcome_doc_url)")
