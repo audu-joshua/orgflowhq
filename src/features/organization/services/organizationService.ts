@@ -110,6 +110,8 @@ export const organizationService = {
                 plan:plans(*)
             `)
             .eq("organization_id", organizationId)
+            .order("created_at", { ascending: false })
+            .limit(1)
             .maybeSingle()
 
         if (error) throw error

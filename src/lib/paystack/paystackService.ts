@@ -15,21 +15,26 @@ export const paystackService = {
         amount: number, // in kobo/cents
         callbackUrl: string,
         plan?: string, // paystack plan code
-        metadata?: any
+        metadata?: any,
+        quantity?: number
     ): Promise<PaystackTransactionInitializeResponse> {
+        const payload = {
+            email,
+            amount: amount * 100, // convert to smallest currency unit (kobo)
+            plan,
+            callback_url: callbackUrl,
+            metadata,
+            quantity
+        };
+        console.log("[PaystackService] Initializing:", JSON.stringify(payload, null, 2));
+
         const response = await fetch(`${PAYSTACK_BASE_URL}/transaction/initialize`, {
             method: "POST",
             headers: {
                 Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-                email,
-                amount: amount * 100, // convert to smallest currency unit (kobo)
-                plan,
-                callback_url: callbackUrl,
-                metadata
-            }),
+            body: JSON.stringify(payload),
         })
 
         if (!response.ok) {

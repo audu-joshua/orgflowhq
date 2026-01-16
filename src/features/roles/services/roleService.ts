@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient"
+import { planLimitsService } from "@/lib/subscription/planLimits"
 import type { Role } from "../types"
 
 // Type for role with additional computed fields
@@ -21,6 +22,12 @@ export interface RoleWithImages extends Role {
 export const roleService = {
   async createRole(organizationId: string, roleData: Omit<Role, "id" | "created_at" | "updated_at" | "slug">) {
     const supabase = getSupabaseClient()
+
+    // Check Plan Limits
+    const limitCheck = await planLimitsService.checkRoleLimit(organizationId)
+    if (!limitCheck.allowed) {
+      throw new Error(limitCheck.message)
+    }
 
     // Fetch organization name to include in slug
     const { data: org } = await supabase

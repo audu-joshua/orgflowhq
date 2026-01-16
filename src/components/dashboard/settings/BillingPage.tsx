@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { useAppStore } from "@/store/useAppStore"
 import { Organization } from "@/features/organization/types"
 import { organizationService } from "@/features/organization/services/organizationService"
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -44,7 +45,6 @@ export function BillingPage() {
                 toast.success("Payment successful! Subscription active.")
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname)
-                loadSubscription()
             } else {
                 toast.error("Payment verification failed")
             }
@@ -53,6 +53,7 @@ export function BillingPage() {
             toast.error("Error verifying payment")
         } finally {
             setProcessingPlan(null)
+            await loadSubscription()
         }
     }
 
@@ -104,7 +105,7 @@ export function BillingPage() {
     }
 
     if (loading) {
-        return <div className="flex justify-center p-10"><Loader2 className="animate-spin" /></div>
+        return <div className="flex h-[50vh] w-full items-center justify-center"><LoadingSpinner /></div>
     }
 
     const currentPlanSlug = subscription?.plan?.slug || 'free'
@@ -165,19 +166,19 @@ export function BillingPage() {
                 </div>
             </div>
 
-            {subscription && subscription.status === 'active' && (
-                <Card className="mb-8 border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            Current Plan: <span className="text-primary">{subscription.plan?.name || "Free Tier"}</span>
-                            <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
-                        </CardTitle>
-                        <CardDescription>
-                            Your plan renews on {new Date(subscription.current_period_end).toLocaleDateString()}.
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
-            )}
+            <Card className="mb-8 border-primary/20 bg-primary/5">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        Current Plan: <span className="text-primary">{subscription?.plan?.name || "Free Tier"}</span>
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                        {subscription?.current_period_end
+                            ? `Your plan renews on ${new Date(subscription.current_period_end).toLocaleDateString()}.`
+                            : "You are currently on the free tier."}
+                    </CardDescription>
+                </CardHeader>
+            </Card>
 
             <div className="grid md:grid-cols-3 gap-8">
                 {plans.map((plan) => {

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabaseClient"
+import { planLimitsService } from "@/lib/subscription/planLimits"
 import type { Department, Employee } from "../types"
 
 export const departmentService = {
@@ -69,6 +70,12 @@ export const departmentService = {
   // Employee management
   async createEmployee(organizationId: string, employeeData: Omit<Employee, "id" | "organization_id" | "created_at" | "updated_at">) {
     const supabase = getSupabaseClient()
+
+    // Check Plan Limits
+    const limitCheck = await planLimitsService.checkEmployeeLimit(organizationId)
+    if (!limitCheck.allowed) {
+      throw new Error(limitCheck.message)
+    }
 
     // 1. Provision Auth Account via Admin API
     // This ensures they can log in to the clock portal immediately with their employee ID

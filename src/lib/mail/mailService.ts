@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer"
+import PDFDocument from "pdfkit"
 
 interface MailOptions {
   to: string
@@ -7,6 +8,7 @@ interface MailOptions {
   replyTo?: string
   fromName?: string
   fromEmail?: string
+  attachments?: { filename: string; content: Buffer }[]
 }
 
 const transporter = nodemailer.createTransport({
@@ -28,7 +30,7 @@ const EMAILS = {
 }
 
 export const mailService = {
-  async sendEmail({ to, subject, html, replyTo, fromName, fromEmail }: MailOptions) {
+  async sendEmail({ to, subject, html, replyTo, fromName, fromEmail, attachments }: MailOptions) {
     const senderName = fromName || "OrgFlow Team"
     const senderAddress = fromEmail || EMAILS.SUPPORT
 
@@ -42,6 +44,7 @@ export const mailService = {
         subject,
         html,
         replyTo: replyTo || senderAddress,
+        attachments: attachments
       })
       console.log(`[MailService] Email sent to ${to}: ${info.messageId}`)
       return { success: true, messageId: info.messageId }
@@ -49,6 +52,61 @@ export const mailService = {
       console.error("[MailService] Error sending email:", error)
       return { success: false, error }
     }
+  },
+
+  async sendSubscriptionReminder(email: string, name: string, daysUntilExpiration: number, renewUrl: string) {
+    let subject = "Subscription Reminder"
+    let message = ""
+
+    if (daysUntilExpiration === 1) {
+      subject = "Urgent: Your Subscription Expires Tomorrow"
+      message = "Your OrgFlow subscription is expiring in 24 hours. Please renew now to maintain uninterrupted access to your features."
+    } else if (daysUntilExpiration < 0) {
+      subject = "Action Required: Subscription Expired"
+      message = `Your subscription expired ${Math.abs(daysUntilExpiration)} day(s) ago. Your account will be suspended in ${3 + daysUntilExpiration} days if payment is not received.`
+    } else {
+      subject = "Subscription Reminder"
+      message = `Your subscription will expire in ${daysUntilExpiration} days.`
+    }
+
+    return await this.sendEmail({
+      to: email,
+      subject: subject,
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #0FADAA;">${subject}</h2>
+          <p>Hi ${name},</p>
+          <p>${message}</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${renewUrl}" style="background-color: #0FADAA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Renew Subscription</a>
+          </div>
+          <p>If you have already made payment, please ignore this message.</p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #888;">© ${new Date().getFullYear()} OrgFlow. All rights reserved.</p>
+        </div>
+      `,
+    })
+  },
+
+  async sendSubscriptionCancellation(email: string, name: string, planName: string) {
+    return await this.sendEmail({
+      to: email,
+      subject: "Account Discontinued - Subscription Expired",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #e11d48;">Service Discontinued</h2>
+          <p>Hi ${name},</p>
+          <p>We haven't received payment for your <strong>${planName}</strong> subscription despite our reminders.</p>
+          <p>As a result, your account has been downgraded to the Free Tier (or suspended), and access to premium features has been restricted.</p>
+          <p>To restore access, please log in and upgrade your plan.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="https://www.orgflowhq.com/dashboard/billing" style="background-color: #0FADAA; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Restore Access</a>
+          </div>
+          <hr style="border: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #888;">© ${new Date().getFullYear()} OrgFlow. All rights reserved.</p>
+        </div>
+      `,
+    })
   },
 
   async sendOrgWelcomeEmail(to: string, orgName: string, ownerName: string) {
@@ -139,6 +197,92 @@ export const mailService = {
       html: this.wrapEmailHtml(body),
       fromName: `${orgName} Team`,
       fromEmail: EMAILS.RECRUITMENT
+    })
+  },
+
+  async sendPaymentConfirmation(email: string, name: string, planName: string, amount: string, date: string) {
+    // Generate PDF Invoice
+    const invoiceBuffer = await new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ margin: 50 });
+      const buffers: Buffer[] = [];
+
+      doc.on('data', (buffer) => buffers.push(buffer));
+      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('error', reject);
+
+      // Header
+      doc.fillColor('#444444')
+        .fontSize(20)
+        .text('OrgFlow Inc.', 110, 57)
+        .fontSize(10)
+        .text('123 Business Rd.', 200, 65, { align: 'right' })
+        .text('Lagos, Nigeria', 200, 80, { align: 'right' })
+        .moveDown();
+
+      // Invoice Title
+      doc.fillColor('#000000')
+        .fontSize(20)
+        .text('INVOICE', 50, 160);
+
+      doc.fontSize(10)
+        .text(`Invoice Date: ${date}`, 50, 200)
+        .text(`Balance Due: 0.00`, 50, 215)
+        .text(`Bill To: ${name}`, 300, 200, { align: 'right' })
+        .text(email, 300, 215, { align: 'right' })
+        .moveDown();
+
+      // Table Header
+      const invoiceTableTop = 330;
+      doc.font("Helvetica-Bold");
+      doc.text("Description", 50, invoiceTableTop)
+        .text("Amount", 0, invoiceTableTop, { align: "right" });
+      doc.moveTo(50, invoiceTableTop + 15).lineTo(550, invoiceTableTop + 15).stroke();
+
+      // Table Rows
+      doc.font("Helvetica");
+      const position = invoiceTableTop + 30;
+      doc.text(`Subscription: ${planName}`, 50, position)
+        .text(amount, 0, position, { align: "right" });
+
+      // Total
+      const subtotalPosition = invoiceTableTop + 80;
+      doc.font("Helvetica-Bold");
+      doc.text("Total Paid", 300, subtotalPosition, { align: "right" })
+        .text(amount, 0, subtotalPosition, { align: "right" });
+
+      // Footer
+      doc.fontSize(10)
+        .text('Thank you for your business.', 50, 700, { align: 'center', width: 500 });
+
+      doc.end();
+    });
+
+    return await this.sendEmail({
+      to: email,
+      subject: "Payment Receipt & Invoice",
+      html: `
+        <div style="font-family: Arial, sans-serif; color: #333;">
+          <h2 style="color: #0FADAA;">Payment Successful!</h2>
+          <p>Hi ${name},</p>
+          <p>Thank you for your payment. Please find your invoice attached.</p>
+          
+          <div style="background-color: #f4f4f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Plan:</strong> ${planName}</p>
+            <p style="margin: 5px 0;"><strong>Amount:</strong> ${amount}</p>
+            <p style="margin: 5px 0;"><strong>Date:</strong> ${date}</p>
+          </div>
+
+          <p>If you have any questions, feel free to reply to this email.</p>
+          <hr style="border: 1px solid #eee; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #888;">© ${new Date().getFullYear()} OrgFlow. All rights reserved.</p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `Invoice-${Date.now()}.pdf`,
+          content: invoiceBuffer
+        }
+      ]
     })
   },
 

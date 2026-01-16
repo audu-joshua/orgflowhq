@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createSupabaseServerClient } from "@/lib/supabaseServer"
+import { supabaseAdmin } from "@/lib/supabaseAdmin"
 import { paystackService } from "@/lib/paystack/paystackService"
+import { mailService } from "@/lib/mail/mailService"
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,17 +12,30 @@ export async function POST(req: NextRequest) {
         }
 
         const verification = await paystackService.verifyTransaction(reference)
+        console.log(`[Payment Verify] Reference: ${reference}, Status: ${verification.data.status}`)
 
         if (verification.data.status === 'success') {
             // Transaction verified. 
             // We should ensure the database is updated.
-            const supabase = await createSupabaseServerClient()
+            const supabase = supabaseAdmin // Use service role to bypass RLS for writes
 
             // Logic similar to webhook: update subscription/payment
             // We can trust this verification to update the DB immediately to avoid webhook delay.
 
             // 1. Log Payment if not exists
-            await supabase.from("payments").upsert({
+            // 1. Log Payment if not exists
+            const { data: existingPayment } = await supabase
+                .from("payments")
+                .select("id")
+                .eq("reference", reference)
+                .maybeSingle()
+
+            if (existingPayment) {
+                console.log(`[Payment Verify] Payment already processed: ${reference}`)
+                return NextResponse.json(verification)
+            }
+
+            await supabase.from("payments").insert({
                 organization_id: organizationId, // We might need org ID passed or derived
                 amount: verification.data.amount / 100,
                 currency: verification.data.currency,
@@ -29,32 +43,101 @@ export async function POST(req: NextRequest) {
                 reference: reference,
                 paystack_transaction_id: String(verification.data.id),
                 metadata: verification.data.metadata
-            }, { onConflict: 'reference' })
+            })
 
             // 2. Update Subscription
-            // If verification data contains plan info or we know the context
-            // verification.data.metadata usually has organization_id if we passed it.
-            const orgId = organizationId || verification.data.metadata?.organization_id
+            // Parse metadata if it's a string (common issue with some providers/payloads)
+            let metadata = verification.data.metadata
+            if (typeof metadata === 'string') {
+                try {
+                    metadata = JSON.parse(metadata)
+                } catch (e) {
+                    console.error('[Payment Verify] Failed to parse metadata string:', e)
+                }
+            }
 
-            if (orgId && verification.data.plan) {
-                // Update subscription
-                // Use plan code to find internal plan id... same logic as webhook
-                const { data: plan } = await supabase
-                    .from("plans")
-                    .select("id")
-                    .eq("paystack_plan_code", verification.data.plan) // verify returns plan code string? Check types.
-                    // Types said: plan?: string
-                    .single()
+            const orgId = organizationId || metadata?.organization_id
+            const planSlug = metadata?.plan_slug
 
-                if (plan) {
-                    await supabase.from("subscriptions").upsert({
+            console.log(`[Payment Verify] OrgId: ${orgId}, PlanSlug: ${planSlug}`)
+
+            if (orgId) {
+                let planId = null;
+                let planName = "Subscription"; // Default name
+
+                // Priority 1: Use Plan Slug from Metadata (Most Reliable)
+                if (planSlug) {
+                    const { data: planBySlug } = await supabase
+                        .from("plans")
+                        .select("id, name")
+                        .eq("slug", planSlug)
+                        .single()
+                    if (planBySlug) {
+                        planId = planBySlug.id
+                        planName = planBySlug.name
+                    }
+                }
+
+                // Priority 2: Fallback to Paystack Plan Code
+                if (!planId && verification.data.plan) {
+                    const { data: planByCode } = await supabase
+                        .from("plans")
+                        .select("id, name")
+                        .eq("paystack_plan_code", verification.data.plan)
+                        .single()
+                    if (planByCode) {
+                        planId = planByCode.id
+                        planName = planByCode.name
+                    }
+                }
+
+                if (planId) {
+                    // Check if subscription exists
+                    const { data: existingSub } = await supabase
+                        .from("subscriptions")
+                        .select("id")
+                        .eq("organization_id", orgId)
+                        .maybeSingle()
+
+                    const subData = {
                         organization_id: orgId,
-                        plan_id: plan.id,
+                        plan_id: planId,
                         status: 'active',
-                    }, { onConflict: 'organization_id' }) // Assuming one sub per list? Table constraint might differ.
-                    // Subscriptions table logic: usually one active. 
-                    // Update where organization_id = ...
-                    // If we use upsert on a specific ID it's safer.
+                        current_period_start: new Date().toISOString(),
+                        current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+                    }
+
+                    if (existingSub) {
+                        await supabase
+                            .from("subscriptions")
+                            .update(subData)
+                            .eq("id", existingSub.id)
+                    } else {
+                        await supabase
+                            .from("subscriptions")
+                            .insert([subData])
+                    }
+
+                    // Send Email Notification
+                    const { data: userOrg } = await supabase
+                        .from("users_organizations")
+                        .select("users(email, full_name)")
+                        .eq("organization_id", orgId)
+                        .eq("role", "owner")
+                        .maybeSingle()
+
+                    if (userOrg?.users) {
+                        const { email, full_name } = userOrg.users as any
+                        const amountFormatted = verification.data.currency + " " + (verification.data.amount / 100).toLocaleString()
+
+                        await mailService.sendPaymentConfirmation(
+                            email,
+                            full_name || "Valued Customer",
+                            planName,
+                            amountFormatted,
+                            new Date().toLocaleDateString()
+                        )
+                    }
                 }
             }
         }
@@ -62,6 +145,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json(verification)
 
     } catch (error: any) {
+        console.error('[Payment Verify] Error:', error)
         return NextResponse.json({ error: error.message }, { status: 500 })
     }
 }
