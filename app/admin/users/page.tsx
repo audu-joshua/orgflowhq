@@ -4,10 +4,11 @@ import { format } from "date-fns"
 export default async function AdminUsersPage({
     searchParams
 }: {
-    searchParams: { page?: string, q?: string }
+    searchParams: Promise<{ page?: string, q?: string }>
 }) {
-    const page = Number(searchParams.page) || 1
-    const { data: users, count } = await getAllUsers(page, 20, searchParams.q)
+    const { page: searchPage, q } = await searchParams
+    const page = Number(searchPage) || 1
+    const { data: users, count } = await getAllUsers(page, 20, q)
 
     return (
         <div className="space-y-6">
@@ -16,15 +17,7 @@ export default async function AdminUsersPage({
                     <h1 className="text-2xl font-bold text-slate-900">Users</h1>
                     <p className="text-slate-500">Global user registry.</p>
                 </div>
-                {/* Simple server-side search form */}
-                <form className="max-w-sm w-full">
-                    <input
-                        name="q"
-                        placeholder="Search by name or email..."
-                        className="w-full px-4 py-2 rounded-lg border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                        defaultValue={searchParams.q}
-                    />
-                </form>
+                {/* Search moved to Global Header */}
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
