@@ -7,7 +7,7 @@ import { organizationService } from "@/features/organization/services/organizati
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 

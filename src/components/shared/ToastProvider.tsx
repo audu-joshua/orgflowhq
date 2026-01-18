@@ -9,9 +9,11 @@ export function ToastProvider() {
     return (
         <Toaster
             position="top-center"
-            richColors
-            closeButton
             theme={theme === "dark" ? "dark" : "light"}
+            toastOptions={{
+                unstyled: true,
+                className: "w-full flex justify-center",
+            }}
         />
     )
 }

@@ -6,7 +6,7 @@ import { timesheetService } from "@/features/timesheets/services/timesheetServic
 import { departmentService } from "@/features/departments/services/departmentService"
 import { useAppStore } from "@/store/useAppStore"
 import { CustomSelect } from "@/components/ui/CustomSelect"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import type { Employee } from "@/features/departments/types"
 
 interface CreateTimesheetModalProps {

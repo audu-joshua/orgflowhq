@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { scheduleInterviewAction } from "../actions"
 import { useAppStore } from "@/store/useAppStore"
 import { organizationService } from "@/features/organization/services/organizationService"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { useEffect } from "react"
 
 interface ScheduleModalProps {

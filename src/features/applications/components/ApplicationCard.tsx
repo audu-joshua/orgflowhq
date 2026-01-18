@@ -7,7 +7,7 @@ import type { Application } from "../types"
 import { useState } from "react"
 import { StatusActionModal } from "./StatusActionModal"
 import { updateApplicationStatusAction, deleteApplicationAction } from "../actions"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { useAppStore } from "@/store/useAppStore"
 import { ConfirmationModal } from "@/components/ui/ConfirmationModal"
 

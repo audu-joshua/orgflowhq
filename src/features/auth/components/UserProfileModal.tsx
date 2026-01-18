@@ -6,7 +6,7 @@ import { formatDate } from "@/lib/utils"
 import { departmentService } from "@/features/departments/services/departmentService"
 import { useAppStore } from "@/store/useAppStore"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 import { useAuth } from "@/features/auth/hooks/useAuth"
 import { ChangePasswordModal } from "./ChangePasswordModal"

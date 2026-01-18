@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useAppStore } from "@/store/useAppStore"
 import { getSupabaseClient } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { Loader2, ShieldCheck, Users } from "lucide-react"
 
 export function MigrationHelper() {

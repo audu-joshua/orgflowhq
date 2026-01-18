@@ -32,7 +32,7 @@ export function DashboardContent() {
     }
 
     if (!organization) {
-      router.push("/onboarding/complete-profile")
+      console.log("[DashboardContent] Organization not found in store, waiting...")
       return
     }
 

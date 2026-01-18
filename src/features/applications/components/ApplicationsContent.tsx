@@ -9,7 +9,7 @@ import { useAuth } from "@/features/auth/hooks/useAuth"
 import { roleService } from "@/features/roles/services/roleService"
 import { applicationService } from "../services/applicationService"
 import { bulkRejectRemainingAction } from "../actions"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { ApplicationCard } from "./ApplicationCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
@@ -119,7 +119,7 @@ export function ApplicationsContent() {
 
   const roleOptions = [
     { value: "all", label: "All Roles" },
-    ...roles.filter(r => r.status === 'open').map(r => ({ value: r.id, label: r.title }))
+    ...roles.filter(r => r.status === 'active').map(r => ({ value: r.id, label: r.title }))
   ]
 
   return (

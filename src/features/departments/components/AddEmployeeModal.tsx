@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { X, Sparkles, Loader2 } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { departmentService } from "../services/departmentService"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import type { Department } from "../types"
 

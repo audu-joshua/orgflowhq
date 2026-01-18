@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { X, Mail, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
 import { authService } from "../services/authService"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 interface ForgotPasswordModalProps {
     isOpen: boolean

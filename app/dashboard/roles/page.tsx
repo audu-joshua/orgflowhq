@@ -12,7 +12,7 @@ import { EmptyState } from "@/components/shared/EmptyState"
 import type { Role } from "@/features/roles/types"
 import { MigrationHelper } from "@/components/admin/MigrationHelper"
 import { roleService } from "@/features/roles/services/roleService"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 export default function RolesPage() {
   const router = useRouter()

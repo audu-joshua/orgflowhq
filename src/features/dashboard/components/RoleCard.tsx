@@ -6,7 +6,7 @@ import { Briefcase, Calendar, Power, PowerOff, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { roleService } from "@/features/roles/services/roleService"
 import type { Role } from "@/features/roles/types"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 interface RoleCardProps {
   role: Role & { application_count?: number }

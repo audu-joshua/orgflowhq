@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Clock, FileText, CheckCircle2, Lock } from "lucide-react"
 import { timesheetService } from "@/features/timesheets/services/timesheetService"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import type { Timesheet } from "@/features/timesheets/services/timesheetService"
 import { format } from "date-fns"
 

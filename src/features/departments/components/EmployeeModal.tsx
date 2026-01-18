@@ -10,7 +10,7 @@ import { CustomSelect } from "@/components/ui/CustomSelect"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useAppStore } from "@/store/useAppStore"
 import type { Employee } from "../types"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 interface EmployeeModalProps {
   employee: Employee

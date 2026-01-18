@@ -10,7 +10,7 @@ import { departmentService } from "@/features/departments/services/departmentSer
 import { useAppStore } from "@/store/useAppStore"
 import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2 } from "lucide-react"
 import { ForgotPasswordModal } from "@/features/auth/components/ForgotPasswordModal"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import { isSameWeek, isSameMonth, parseISO } from "date-fns"
 
 export default function ClockPage() {

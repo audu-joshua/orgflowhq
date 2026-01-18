@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { AuthPageLayout } from "@/features/auth/components/AuthPageLayout"
 import { getSupabaseClient } from "@/lib/supabaseClient"
 import { Loader2, CheckCircle2 } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 export default function ResetPasswordPage() {
     const router = useRouter()

@@ -77,30 +77,14 @@ export async function middleware(request: NextRequest) {
         const orgId = user.user_metadata?.organization_id
         const portalParam = request.nextUrl.searchParams.get('portal')
         const isExplicitlyChoosingOrg = portalParam === 'org'
-        
+
         console.log(`[Middleware] User authenticated. OrgID: ${orgId}, Path: ${path}, Portal: ${portalParam}, isExplicitlyChoosingOrg: ${isExplicitlyChoosingOrg}`)
 
         // Scenario A: Missing Organization (Orphaned)
-        // If user has no org and is NOT on onboarding (and NOT hitting API), redirect to onboarding
-        // EXCEPTION: If they're explicitly choosing org portal (?portal=org), let them through - NEVER redirect
+        // Allowing them to stay on auth/public pages or dashboard. 
+        // We no longer redirect to onboarding as it can obstruct the flow.
         if (!orgId && !isOnboardingRoute && !isApiRoute) {
-            // CRITICAL: If explicitly choosing org, do NOT redirect
-            if (isExplicitlyChoosingOrg) {
-                console.log(`[Middleware] Super Admin explicitly choosing org portal (?portal=org) - Allowing through`)
-                return response
-            }
-
-            // Allow them to stay on auth/public pages if they want, but block dashboard
-            if (isDashboardRoute || path === '/') {
-                console.log(`[Middleware] Orphaned user on dashboard/root -> Redirecting to onboarding`)
-                const url = request.nextUrl.clone()
-                url.pathname = '/onboarding/complete-profile'
-                // Preserve the portal parameter when redirecting
-                if (portalParam) {
-                    url.searchParams.set('portal', portalParam)
-                }
-                return NextResponse.redirect(url)
-            }
+            console.log(`[Middleware] Orphaned user on ${path} - Allowing through without redirection`)
         }
 
         // Scenario B: Has Organization

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 // Common free email providers to reject
 const FREE_EMAIL_PROVIDERS = [
@@ -77,7 +77,6 @@ export function RegisterForm() {
             toast.error("Account Previously Registered", {
               description: "Please use your last working password to re-register this organization, or use Forgot Password.",
               duration: 8000,
-              closeButton: true,
             })
             throw new Error("Account previously registered. Use your old password or reset it.")
           }

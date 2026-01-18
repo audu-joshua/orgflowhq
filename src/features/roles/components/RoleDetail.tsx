@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import type { Application } from "@/features/applications/types"
 import { Modal } from "@/components/ui/modal"
 import { RoleForm } from "./RoleForm"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 import {
   AlertDialog,
   AlertDialogAction,

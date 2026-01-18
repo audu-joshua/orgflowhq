@@ -12,7 +12,7 @@ import { CustomSelect } from "@/components/ui/CustomSelect"
 import { Modal } from "@/components/ui/modal"
 import type { Department } from "@/features/departments/types"
 import type { Role, RoleImage } from "../types"
-import { toast } from "sonner"
+import { toast } from "@/lib/toast"
 
 interface RoleFormProps {
     mode: "create" | "edit"
@@ -215,6 +215,7 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
                     status: "active",
                     organization_id: organization.id,
                     created_by: null,
+                    stages: ["New", "Shortlisted", "Interview", "Hired", "Rejected"],
                 })
             } else {
                 if (!initialData) throw new Error("Missing initial data for edit")
