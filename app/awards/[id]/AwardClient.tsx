@@ -26,59 +26,58 @@ export default function AwardClient({ winner, org }: AwardClientProps) {
                     <p className="text-slate-500 font-medium">Celebrating exceptional talent at {org?.name}</p>
                 </div>
 
-                {/* The Certificate */}
-                <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-8 sm:p-14 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.08)] border-8 border-amber-500/5 relative overflow-hidden flex flex-col items-center">
+                <div id="award-card" className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-[0_32px_80px_-20px_rgba(0,0,0,0.08)] border-8 border-amber-500/5 relative overflow-hidden flex flex-col items-center w-full max-w-[600px] aspect-[4/5] sm:aspect-auto justify-center">
 
                     {/* Watermark Logo Background */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none p-12">
+                    <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none p-16">
                         {org?.logo_url ? (
                             <img src={org.logo_url} className="w-full h-full object-contain grayscale" />
                         ) : (
-                            <span className="text-[20rem] font-black">{org?.name?.[0]}</span>
+                            <span className="text-[15rem] font-black">{org?.name?.[0]}</span>
                         )}
                     </div>
 
-                    <div className="flex flex-col items-center text-center relative z-10 w-full">
-                        <div className="relative mb-10 sm:mb-14">
-                            <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-150" />
+                    <div className="flex flex-col items-center text-center relative z-10 w-full space-y-4 sm:space-y-6">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-125" />
                             {winner.employee?.profile_image_url ? (
                                 <img
                                     src={winner.employee.profile_image_url}
                                     alt={winner.employee.full_name}
-                                    className="w-64 h-64 sm:w-[24rem] sm:h-[24rem] rounded-[4rem] sm:rounded-[5rem] object-cover ring-[16px] ring-white shadow-2xl"
+                                    className="w-48 h-48 sm:w-64 sm:h-64 rounded-[3rem] sm:rounded-[4rem] object-cover ring-[12px] ring-white shadow-2xl"
                                 />
                             ) : (
-                                <div className="w-64 h-64 sm:w-[24rem] sm:h-[24rem] bg-amber-500/10 rounded-[4rem] sm:rounded-[5rem] flex items-center justify-center text-amber-500 font-bold text-7xl sm:text-[8rem] ring-[16px] ring-white shadow-2xl">
+                                <div className="w-48 h-48 sm:w-64 sm:h-64 bg-amber-500/10 rounded-[3rem] sm:rounded-[4rem] flex items-center justify-center text-amber-500 font-bold text-6xl sm:text-8xl ring-[12px] ring-white shadow-2xl">
                                     {winner.employee?.full_name?.[0]}
                                 </div>
                             )}
                         </div>
 
-                        <div className="space-y-3 mb-10 sm:mb-12 w-full">
-                            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs">
+                        <div className="space-y-1 sm:space-y-2">
+                            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[9px] sm:text-[10px]">
                                 Employee of the Month — {new Date(winner.reveal_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </p>
-                            <h2 className="text-4xl sm:text-6xl font-black text-slate-900 px-2 leading-tight">{winner.employee?.full_name}</h2>
+                            <h2 className="text-3xl sm:text-5xl font-black text-slate-900 px-2 leading-tight">{winner.employee?.full_name}</h2>
                         </div>
 
-                        <div className="w-full h-px bg-slate-100 mb-8 sm:mb-10" />
+                        <div className="w-[80%] h-px bg-slate-100" />
 
                         {/* Footer Branding */}
-                        <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full px-2 gap-8">
-                            <div className="text-center sm:text-left">
-                                <p className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Awarded By</p>
-                                <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                    {org?.logo_url && <img src={org.logo_url} className="h-5 w-5 rounded-md object-contain" />}
-                                    <p className="text-sm font-black text-slate-900 leading-none">{org?.name}</p>
+                        <div className="flex flex-row items-center justify-between w-full px-2 gap-4">
+                            <div className="text-left">
+                                <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Awarded By</p>
+                                <div className="flex items-center gap-2">
+                                    {org?.logo_url && <img src={org.logo_url} className="h-4 w-4 rounded-sm object-contain" />}
+                                    <p className="text-[10px] sm:text-xs font-black text-slate-900 leading-none">{org?.name}</p>
                                 </div>
                             </div>
-                            <div className="text-center sm:text-right">
-                                <p className="text-[9px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Powered By</p>
-                                <div className="flex items-center gap-1.5 justify-center sm:justify-end">
-                                    <div className="w-5 h-5 bg-primary rounded-md flex items-center justify-center">
-                                        <span className="text-[10px] font-black text-white">O</span>
+                            <div className="text-right">
+                                <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Powered By</p>
+                                <div className="flex items-center gap-1.5 justify-end">
+                                    <div className="w-4 h-4 bg-primary rounded-sm flex items-center justify-center">
+                                        <span className="text-[8px] font-black text-white">O</span>
                                     </div>
-                                    <span className="text-sm font-black tracking-tighter text-primary leading-none">OrgFlow</span>
+                                    <span className="text-[10px] sm:text-xs font-black tracking-tighter text-primary leading-none">OrgFlow</span>
                                 </div>
                             </div>
                         </div>

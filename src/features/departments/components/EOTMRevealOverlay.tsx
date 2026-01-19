@@ -133,53 +133,57 @@ export function EOTMRevealOverlay({
                     </div>
 
                     {/* Winner Card - Target for capture */}
-                    <div id="award-card" className="bg-white rounded-[2rem] p-8 sm:p-14 shadow-2xl relative overflow-hidden text-slate-900 border-[12px] border-amber-500/10 mb-8 w-full flex flex-col items-center">
+                    <div id="award-card" className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-900 border-[10px] border-amber-500/5 mb-8 w-full flex flex-col items-center aspect-[4/5] sm:aspect-auto justify-center">
 
                         {/* Watermark Logo Background */}
-                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none p-12">
+                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none p-16">
                             {organizationLogo ? (
                                 <img src={organizationLogo} className="w-full h-full object-contain grayscale" />
                             ) : (
-                                <span className="text-[20rem] font-black">{organizationName[0]}</span>
+                                <span className="text-[15rem] font-black">{organizationName[0]}</span>
                             )}
                         </div>
 
+                        <div className="flex flex-col items-center relative z-10 w-full space-y-4 sm:space-y-6">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-125" />
+                                {winner.employee?.profile_image_url ? (
+                                    <img
+                                        src={winner.employee.profile_image_url}
+                                        alt={winner.employee.full_name}
+                                        className="w-48 h-48 sm:w-64 sm:h-64 rounded-[3rem] sm:rounded-[4rem] object-cover ring-[12px] ring-white shadow-2xl"
+                                    />
+                                ) : (
+                                    <div className="w-48 h-48 sm:w-64 sm:h-64 bg-amber-500/10 rounded-[3rem] sm:rounded-[4rem] flex items-center justify-center text-amber-500 font-bold text-6xl sm:text-8xl ring-[12px] ring-white shadow-2xl">
+                                        {winner.employee?.full_name?.[0]}
+                                    </div>
+                                )}
+                            </div>
 
-                        <div className="flex flex-col items-center relative z-10 w-full">
-                            {winner.employee?.profile_image_url ? (
-                                <img
-                                    src={winner.employee.profile_image_url}
-                                    alt={winner.employee.full_name}
-                                    className="w-72 h-72 sm:w-96 sm:h-96 rounded-[3.5rem] sm:rounded-[4.5rem] object-cover ring-[16px] ring-amber-500/20 shadow-2xl mb-8"
-                                />
-                            ) : (
-                                <div className="w-72 h-72 sm:w-96 sm:h-96 bg-amber-500/10 rounded-[3.5rem] sm:rounded-[4.5rem] flex items-center justify-center text-amber-500 font-bold text-8xl sm:text-9xl ring-[16px] ring-amber-500/5 mb-8">
-                                    {winner.employee?.full_name?.[0]}
-                                </div>
-                            )}
+                            <div className="space-y-1 sm:space-y-2 text-center">
+                                <h3 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight">{winner.employee?.full_name}</h3>
+                                <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[9px] sm:text-[10px]">
+                                    Employee of the Month — {new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                                </p>
+                            </div>
 
-                            <h3 className="text-4xl sm:text-5xl font-black mb-2 text-center text-slate-900 leading-tight">{winner.employee?.full_name}</h3>
-                            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs mb-8">
-                                Employee of the Month — {new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                            </p>
+                            <div className="w-[80%] h-px bg-slate-100" />
 
-                            <div className="w-full h-px bg-slate-100 mb-8" />
-
-                            <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full px-2 gap-8">
-                                <div className="text-center sm:text-left">
-                                    <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Awarded By</p>
-                                    <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                        {organizationLogo && <img src={organizationLogo} className="h-5 w-5 rounded-md object-contain" />}
-                                        <p className="text-sm font-black text-slate-900 leading-none">{organizationName}</p>
+                            <div className="flex flex-row items-center justify-between w-full px-2 gap-4">
+                                <div className="text-left">
+                                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Awarded By</p>
+                                    <div className="flex items-center gap-2">
+                                        {organizationLogo && <img src={organizationLogo} className="h-4 w-4 rounded-sm object-contain" />}
+                                        <p className="text-[10px] sm:text-xs font-black text-slate-900 leading-none">{organizationName}</p>
                                     </div>
                                 </div>
-                                <div className="text-center sm:text-right">
-                                    <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Powered By</p>
-                                    <div className="flex items-center gap-1.5 justify-center sm:justify-end">
-                                        <div className="w-5 h-5 bg-primary rounded-md flex items-center justify-center">
-                                            <span className="text-[10px] font-black text-white">O</span>
+                                <div className="text-right">
+                                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Powered By</p>
+                                    <div className="flex items-center gap-1.5 justify-end">
+                                        <div className="w-4 h-4 bg-primary rounded-sm flex items-center justify-center">
+                                            <span className="text-[8px] font-black text-white">O</span>
                                         </div>
-                                        <span className="text-sm font-black tracking-tighter text-primary leading-none">OrgFlow</span>
+                                        <span className="text-[10px] sm:text-xs font-black tracking-tighter text-primary leading-none">OrgFlow</span>
                                     </div>
                                 </div>
                             </div>

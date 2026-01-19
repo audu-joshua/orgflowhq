@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import AwardClient from './AwardClient'
 import { organizationService } from "@/features/organization/services/organizationService"
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { headers } from 'next/headers'
 
 interface Props {
     params: Promise<{ id: string }>
@@ -33,6 +34,11 @@ async function getAwardData(id: string) {
 export async function generateMetadata(
     { params }: Props
 ): Promise<Metadata> {
+    const headerList = await headers()
+    const host = headerList.get('host') || 'orgflowhq.com'
+    const protocol = host.includes('localhost') ? 'http' : 'https'
+    const baseUrl = `${protocol}://${host}`
+
     const { id } = await params
     const data = await getAwardData(id)
 
@@ -42,22 +48,32 @@ export async function generateMetadata(
     const month = new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     const title = `Employee of the Month: ${winner.employee.full_name}`
     const description = `Celebrating excellence at ${org?.name}. ${winner.employee.full_name} has been awarded Employee of the Month for ${month}.`
-    const image = winner.employee.profile_image_url || '/og-award.png'
+
+    let imageUrl = winner.employee.profile_image_url || `${baseUrl}/og-award.png`
+    if (imageUrl.startsWith('/')) {
+        imageUrl = `${baseUrl}${imageUrl}`
+    }
 
     return {
+        metadataBase: new URL(baseUrl),
         title,
         description,
         openGraph: {
             title,
             description,
-            images: [image],
+            images: [{
+                url: imageUrl,
+                width: 1200,
+                height: 630,
+                alt: title,
+            }],
             type: 'article',
         },
         twitter: {
             card: 'summary_large_image',
             title,
             description,
-            images: [image],
+            images: [imageUrl],
         },
     }
 }
