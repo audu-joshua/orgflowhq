@@ -49,7 +49,7 @@ export async function generateMetadata(
     const title = `Employee of the Month: ${winner.employee.full_name}`
     const description = `Celebrating excellence at ${org?.name}. ${winner.employee.full_name} has been awarded Employee of the Month for ${month}.`
 
-    let imageUrl = winner.employee.profile_image_url || `${baseUrl}/og-award.png`
+    let imageUrl = winner.employee.profile_image_url || `${baseUrl}/og-image.png`
     if (imageUrl.startsWith('/')) {
         imageUrl = `${baseUrl}${imageUrl}`
     }
@@ -61,13 +61,8 @@ export async function generateMetadata(
         openGraph: {
             title,
             description,
-            images: [{
-                url: imageUrl,
-                width: 1200,
-                height: 630,
-                alt: title,
-            }],
-            type: 'article',
+            images: [imageUrl],
+            type: 'website',
         },
         twitter: {
             card: 'summary_large_image',

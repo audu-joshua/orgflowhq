@@ -169,19 +169,19 @@ export function EOTMRevealOverlay({
 
                             <div className="w-[80%] h-px bg-slate-100" />
 
-                            <div className="flex flex-row items-center justify-between w-full px-2 gap-4">
-                                <div className="text-left">
-                                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Awarded By</p>
+                            <div className="flex flex-row items-center justify-between w-full px-4 sm:px-6 gap-4">
+                                <div className="flex flex-col items-start text-left">
+                                    <p className="text-[7px] sm:text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Awarded By</p>
                                     <div className="flex items-center gap-2">
-                                        {organizationLogo && <img src={organizationLogo} className="h-4 w-4 rounded-sm object-contain" />}
+                                        {organizationLogo && <img src={organizationLogo} className="h-5 w-5 sm:h-6 sm:w-6 rounded-md object-contain" />}
                                         <p className="text-[10px] sm:text-xs font-black text-slate-900 leading-none">{organizationName}</p>
                                     </div>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-1.5 leading-none">Powered By</p>
+                                <div className="flex flex-col items-end text-right">
+                                    <p className="text-[7px] sm:text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Powered By</p>
                                     <div className="flex items-center gap-1.5 justify-end">
-                                        <div className="w-4 h-4 bg-primary rounded-sm flex items-center justify-center">
-                                            <span className="text-[8px] font-black text-white">O</span>
+                                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-primary rounded-md flex items-center justify-center">
+                                            <span className="text-[10px] font-black text-white">O</span>
                                         </div>
                                         <span className="text-[10px] sm:text-xs font-black tracking-tighter text-primary leading-none">OrgFlow</span>
                                     </div>
