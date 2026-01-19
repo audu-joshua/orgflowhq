@@ -39,7 +39,7 @@ export async function generateMetadata(
     if (!data) return { title: 'Award Not Found' }
 
     const { winner, org } = data
-    const month = new Date(winner.revel_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+    const month = new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     const title = `Employee of the Month: ${winner.employee.full_name}`
     const description = `Celebrating excellence at ${org?.name}. ${winner.employee.full_name} has been awarded Employee of the Month for ${month}.`
     const image = winner.employee.profile_image_url || '/og-award.png'

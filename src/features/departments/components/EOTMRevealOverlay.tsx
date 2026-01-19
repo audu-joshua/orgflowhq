@@ -133,19 +133,17 @@ export function EOTMRevealOverlay({
                     </div>
 
                     {/* Winner Card - Target for capture */}
-                    <div id="award-card" className="bg-white rounded-[2rem] p-8 sm:p-12 shadow-2xl relative overflow-hidden text-slate-900 border-[12px] border-amber-500/10 mb-8 w-full flex flex-col items-center">
+                    <div id="award-card" className="bg-white rounded-[2rem] p-8 sm:p-14 shadow-2xl relative overflow-hidden text-slate-900 border-[12px] border-amber-500/10 mb-8 w-full flex flex-col items-center">
 
-                        {/* Org Logo Header */}
-                        <div className="flex justify-center mb-6">
+                        {/* Watermark Logo Background */}
+                        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none p-12">
                             {organizationLogo ? (
-                                <img src={organizationLogo} alt={organizationName} className="max-h-24 object-contain rounded-2xl shadow-sm" />
+                                <img src={organizationLogo} className="w-full h-full object-contain grayscale" />
                             ) : (
-                                <div className="flex items-center gap-2">
-                                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black text-3xl">O</div>
-                                    <span className="text-3xl font-black tracking-tighter text-slate-900">{organizationName}</span>
-                                </div>
+                                <span className="text-[20rem] font-black">{organizationName[0]}</span>
                             )}
                         </div>
+
 
                         <div className="flex flex-col items-center relative z-10 w-full">
                             {winner.employee?.profile_image_url ? (
@@ -161,7 +159,7 @@ export function EOTMRevealOverlay({
                             )}
 
                             <h3 className="text-4xl sm:text-5xl font-black mb-2 text-center text-slate-900 leading-tight">{winner.employee?.full_name}</h3>
-                            <p className="text-amber-500 font-black uppercase tracking-[0.4em] text-[10px] sm:text-xs mb-8">
+                            <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[10px] sm:text-xs mb-8">
                                 Employee of the Month — {new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                             </p>
 
