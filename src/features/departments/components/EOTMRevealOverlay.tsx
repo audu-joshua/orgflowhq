@@ -133,7 +133,7 @@ export function EOTMRevealOverlay({
                     </div>
 
                     {/* Winner Card - Target for capture */}
-                    <div id="award-card" className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden text-slate-900 border-[10px] border-amber-500/5 mb-8 w-full flex flex-col items-center aspect-[4/5] sm:aspect-auto justify-center">
+                    <div id="award-card" className="bg-white rounded-[1.5rem] sm:rounded-[2.5rem] p-5 pt-3 sm:p-10 shadow-2xl relative overflow-hidden text-slate-900 border-[10px] border-amber-500/5 mb-8 w-full flex flex-col items-center aspect-[4/5.1] sm:aspect-auto justify-between">
 
                         {/* Watermark Logo Background */}
                         <div className="absolute inset-0 flex items-center justify-center opacity-[0.04] pointer-events-none p-16">
@@ -144,49 +144,56 @@ export function EOTMRevealOverlay({
                             )}
                         </div>
 
-                        <div className="flex flex-col items-center relative z-10 w-full space-y-4 sm:space-y-6">
-                            <div className="relative">
+                        <div className="flex flex-col items-center relative z-10 w-full flex-grow justify-start pt-2 sm:pt-4">
+                            {/* Organization Name at Top */}
+                            <h4 className="text-slate-900 font-black uppercase tracking-widest text-[10px] sm:text-sm mb-2 sm:mb-8 text-center px-4 leading-tight">
+                                {organizationName}
+                            </h4>
+
+                            <div className="relative mb-3 sm:mb-6">
                                 <div className="absolute inset-0 bg-amber-500/10 blur-3xl rounded-full scale-125" />
                                 {winner.employee?.profile_image_url ? (
                                     <img
                                         src={winner.employee.profile_image_url}
                                         alt={winner.employee.full_name}
-                                        className="w-48 h-48 sm:w-64 sm:h-64 rounded-[3rem] sm:rounded-[4rem] object-cover ring-[12px] ring-white shadow-2xl"
+                                        className="w-32 h-32 sm:w-56 sm:h-56 rounded-[2rem] sm:rounded-[3.5rem] object-cover ring-[8px] ring-white shadow-2xl"
                                     />
                                 ) : (
-                                    <div className="w-48 h-48 sm:w-64 sm:h-64 bg-amber-500/10 rounded-[3rem] sm:rounded-[4rem] flex items-center justify-center text-amber-500 font-bold text-6xl sm:text-8xl ring-[12px] ring-white shadow-2xl">
+                                    <div className="w-32 h-32 sm:w-56 sm:h-56 bg-amber-500/10 rounded-[2rem] sm:rounded-[3.5rem] flex items-center justify-center text-amber-500 font-bold text-5xl sm:text-7xl ring-[8px] ring-white shadow-2xl">
                                         {winner.employee?.full_name?.[0]}
                                     </div>
                                 )}
                             </div>
 
-                            <div className="space-y-1 sm:space-y-2 text-center">
-                                <h3 className="text-3xl sm:text-5xl font-black text-slate-900 leading-tight">{winner.employee?.full_name}</h3>
-                                <p className="text-amber-600 font-black uppercase tracking-[0.3em] text-[9px] sm:text-[10px]">
+                            <div className="space-y-1 sm:space-y-2 text-center w-full px-4">
+                                <h3 className="text-lg sm:text-3xl font-black text-slate-900 leading-tight line-clamp-2">{winner.employee?.full_name}</h3>
+                                <p className="text-amber-600 font-black uppercase tracking-[0.25em] text-[7px] sm:text-[9px]">
                                     Employee of the Month — {new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                 </p>
                             </div>
+                        </div>
 
-                            <div className="w-[80%] h-px bg-slate-100" />
+                        <div className="w-[85%] h-px bg-slate-100 my-3 sm:my-4" />
 
-                            <div className="flex flex-row items-center justify-between w-full px-4 sm:px-6 gap-4">
-                                <div className="flex flex-col items-start text-left">
-                                    <p className="text-[7px] sm:text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Awarded By</p>
-                                    <div className="flex items-center gap-2">
-                                        {organizationLogo && <img src={organizationLogo} className="h-5 w-5 sm:h-6 sm:w-6 rounded-md object-contain" />}
-                                        <p className="text-[10px] sm:text-xs font-black text-slate-900 leading-none">{organizationName}</p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col items-end text-right">
-                                    <p className="text-[7px] sm:text-[8px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Powered By</p>
-                                    <div className="flex items-center gap-1.5 justify-end">
-                                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-primary rounded-md flex items-center justify-center">
-                                            <span className="text-[10px] font-black text-white">O</span>
-                                        </div>
-                                        <span className="text-[10px] sm:text-xs font-black tracking-tighter text-primary leading-none">OrgFlow</span>
-                                    </div>
+                        {/* Simplified Logo Footer */}
+                        <div className="flex flex-col items-center w-full gap-2 sm:gap-3 relative z-20">
+                            <div className="flex flex-row items-center justify-center w-full gap-5 opacity-80 mix-blend-multiply">
+                                {/* Organization Logo */}
+                                {organizationLogo && (
+                                    <img src={organizationLogo} className="h-8 w-auto max-w-[100px] object-contain rounded-lg" />
+                                )}
+
+                                {/* Separator Dot */}
+                                {organizationLogo && <div className="w-1 h-1 rounded-full bg-slate-300" />}
+
+                                {/* OrgFlow Icon */}
+                                <div className="w-8 h-8 bg-primary rounded-xl flex items-center justify-center shadow-sm">
+                                    <span className="text-sm font-black text-white">O</span>
                                 </div>
                             </div>
+
+                            {/* Bottom Tip Branding */}
+                            <p className="text-[9px] font-bold text-[#14d4d0] tracking-widest lowercase">orgflowhq.com</p>
                         </div>
                     </div>
 
