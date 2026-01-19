@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Trash2, Edit3, Share2, MapPin, Briefcase, Users as UsersIcon, Link2, CheckCircle2 } from "lucide-react"
+import { ArrowLeft, Trash2, Edit3, Share2, MapPin, Briefcase, Users as UsersIcon, Link2, CheckCircle2, LayoutDashboard, Settings } from "lucide-react"
+import Link from "next/link"
 import { roleService } from "../services/roleService"
 import { applicationService } from "@/features/applications/services/applicationService"
 import { ApplicationCard } from "@/features/applications/components/ApplicationCard"
@@ -119,15 +120,28 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Stylistic Back Button */}
+      {/* Navigation Header */}
       <div className="flex items-center justify-between">
-        <button
-          onClick={() => router.back()}
-          className="group flex items-center gap-2.5 px-4 py-2 bg-background/50 backdrop-blur-md border border-border rounded-xl hover:bg-primary hover:border-primary transition-all duration-300 shadow-sm cursor-pointer"
-        >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 group-hover:text-white transition-transform" />
-          <span className="font-semibold text-foreground/80 group-hover:text-white transition-colors">Back to Roles</span>
-        </button>
+        <div className="flex items-center gap-6">
+          <Link
+            href="/dashboard/roles"
+            className="group flex items-center gap-2.5 px-4 py-2 bg-background/50 backdrop-blur-md border border-border rounded-xl hover:bg-primary hover:border-primary transition-all duration-300 shadow-sm cursor-pointer"
+          >
+            <ArrowLeft size={18} className="group-hover:-translate-x-1 group-hover:text-white transition-all" />
+            <span className="font-semibold text-foreground/80 group-hover:text-white transition-colors">Back</span>
+          </Link>
+
+          <div className="hidden md:flex items-center gap-2 text-muted-foreground text-sm font-medium">
+            <LayoutDashboard size={14} />
+            <span>Dashboard</span>
+            <span>/</span>
+            <Briefcase size={14} />
+            <span>Roles</span>
+            <span>/</span>
+            <Settings size={14} />
+            <span className="text-primary font-bold">Role Details</span>
+          </div>
+        </div>
 
         <div className="flex items-center gap-3">
           <button
@@ -285,6 +299,6 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
       </div>
 
       {/* Document Viewer Modal */}
-    </div>
+    </div >
   )
 }

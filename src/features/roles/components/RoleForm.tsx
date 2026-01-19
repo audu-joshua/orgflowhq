@@ -10,9 +10,11 @@ import { departmentService } from "@/features/departments/services/departmentSer
 import { compressImages, compressImage } from "@/lib/imageUtils"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import { Modal } from "@/components/ui/modal"
+import { CreateDepartmentModal } from "@/features/departments/components/CreateDepartmentModal"
 import type { Department } from "@/features/departments/types"
 import type { Role, RoleImage } from "../types"
 import { toast } from "@/lib/toast"
+import { Plus } from "lucide-react"
 
 interface RoleFormProps {
     mode: "create" | "edit"
@@ -44,13 +46,21 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
     const [error, setError] = useState("")
     const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null)
     const [replacingIndex, setReplacingIndex] = useState<number | null>(null)
+    const [isCreateDeptModalOpen, setIsCreateDeptModalOpen] = useState(false)
+
+    const fetchDepartments = async () => {
+        if (organization) {
+            try {
+                const depts = await departmentService.getDepartmentsByOrganization(organization.id)
+                setDepartments(depts)
+            } catch (err) {
+                console.error("Failed to load departments:", err)
+            }
+        }
+    }
 
     useEffect(() => {
-        if (organization) {
-            departmentService.getDepartmentsByOrganization(organization.id)
-                .then(setDepartments)
-                .catch(err => console.error("Failed to load departments:", err))
-        }
+        fetchDepartments()
     }, [organization])
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -251,10 +261,13 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
         }
     }
 
-    const departmentOptions = departments.map(dept => ({
-        value: dept.name,
-        label: dept.name
-    }))
+    const departmentOptions = [
+        ...departments.map(dept => ({
+            value: dept.name,
+            label: dept.name
+        })),
+        { value: "create-new", label: "+ Create New Department" }
+    ]
 
     const employmentTypeOptions = [
         { value: "full-time", label: "Full-time" },
@@ -289,10 +302,27 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
                     <CustomSelect
                         id="department"
                         value={department}
-                        onChange={setDepartment}
+                        onChange={(val) => {
+                            if (val === "create-new") {
+                                setIsCreateDeptModalOpen(true)
+                            } else {
+                                setDepartment(val)
+                            }
+                        }}
                         options={departmentOptions}
                         placeholder="Select a department"
                         required
+                    />
+                    <CreateDepartmentModal
+                        isOpen={isCreateDeptModalOpen}
+                        onClose={() => setIsCreateDeptModalOpen(false)}
+                        onSuccess={(newDept) => {
+                            // Instant update: manual append to avoid re-fetch lag
+                            setDepartments(prev => [newDept, ...prev])
+                            setDepartment(newDept.name)
+                            setIsCreateDeptModalOpen(false)
+                            toast.success("New department created and selected.")
+                        }}
                     />
                 </div>
 

@@ -146,15 +146,43 @@ export const roleService = {
   async deleteRole(roleId: string) {
     const supabase = getSupabaseClient()
 
-    const { error } = await supabase
+    // 1. Delete role images first (manual cascade)
+    try {
+      await supabase
+        .from("role_images")
+        .delete()
+        .eq("role_id", roleId)
+    } catch (err) {
+      console.warn("Error deleting role images:", err)
+    }
+
+    // 2. Delete applications first (manual cascade)
+    try {
+      await supabase
+        .from("applications")
+        .delete()
+        .eq("role_id", roleId)
+    } catch (err) {
+      console.warn("Error deleting applications:", err)
+    }
+
+    // 3. Delete the role itself
+    const { data, error } = await supabase
       .from("roles")
       .delete()
       .eq("id", roleId)
+      .select()
 
     if (error) {
       console.error("Error deleting role:", error)
       throw error
     }
+
+    if (!data || data.length === 0) {
+      throw new Error("Unable to delete role. It may have already been removed or you don't have sufficient permissions.")
+    }
+
+    return data
   },
 
   async getRoleById(roleId: string) {

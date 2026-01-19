@@ -12,6 +12,10 @@ import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2 }
 import { ForgotPasswordModal } from "@/features/auth/components/ForgotPasswordModal"
 import { toast } from "@/lib/toast"
 import { isSameWeek, isSameMonth, parseISO } from "date-fns"
+import { eotmService } from "@/features/departments/services/eotmService"
+import { EOTMVoteOverlay } from "@/features/departments/components/EOTMVoteOverlay"
+import { EOTMRevealOverlay } from "@/features/departments/components/EOTMRevealOverlay"
+import type { EOTMCompetition, EOTMWinner } from "@/features/departments/types/eotm"
 
 export default function ClockPage() {
     const { slug } = useParams() as { slug: string }
@@ -28,6 +32,12 @@ export default function ClockPage() {
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
     const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all')
     const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'rejected'>('all')
+
+    // EOTM State
+    const [eotmCompetition, setEotmCompetition] = useState<EOTMCompetition | null>(null)
+    const [eotmWinner, setEotmWinner] = useState<EOTMWinner | null>(null)
+    const [showVoteOverlay, setShowVoteOverlay] = useState(false)
+    const [showRevealOverlay, setShowRevealOverlay] = useState(false)
 
     useEffect(() => {
         const initPage = async () => {
@@ -135,6 +145,39 @@ export default function ClockPage() {
             setLoading(false)
         }
     }
+
+    useEffect(() => {
+        if (!organization || !employee) return
+
+        const checkEOTM = async () => {
+            try {
+                const competition = await eotmService.ensureCompetitionInitialized(organization.id)
+                setEotmCompetition(competition)
+
+                if (competition.status === 'VOTING_OPEN') {
+                    const { getSupabaseClient } = await import("@/lib/supabaseClient")
+                    const supabase = getSupabaseClient()
+                    const { data } = await supabase
+                        .from('eotm_votes')
+                        .select('id')
+                        .eq('competition_id', competition.id)
+                        .eq('voter_id', employee.id)
+                        .maybeSingle()
+
+                    if (!data) setShowVoteOverlay(true)
+                } else if (competition.status === 'REVEALED') {
+                    const winner = await eotmService.getWinner(competition.id)
+                    if (winner) {
+                        setEotmWinner(winner)
+                        setShowRevealOverlay(true)
+                    }
+                }
+            } catch (err) {
+                console.error("EOTM check failed:", err)
+            }
+        }
+        checkEOTM()
+    }, [organization?.id, employee?.id])
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -559,6 +602,26 @@ export default function ClockPage() {
                 <div className="p-4 bg-destructive/10 border border-destructive/20 text-destructive rounded-xl flex items-center justify-center gap-2 text-sm font-bold animate-in shake duration-500">
                     <AlertCircle size={16} /> {error}
                 </div>
+            )}
+
+            {eotmCompetition && employee && (
+                <>
+                    <EOTMVoteOverlay
+                        isOpen={showVoteOverlay}
+                        onClose={() => setShowVoteOverlay(false)}
+                        competitionId={eotmCompetition.id}
+                        voterId={employee.id}
+                        voterRole={employee.system_role || 'employee'}
+                        organizationId={organization!.id}
+                    />
+                    <EOTMRevealOverlay
+                        isOpen={showRevealOverlay}
+                        onClose={() => setShowRevealOverlay(false)}
+                        winner={eotmWinner}
+                        organizationName={organization!.name}
+                        organizationLogo={organization?.logo_url}
+                    />
+                </>
             )}
 
         </div>

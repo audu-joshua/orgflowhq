@@ -9,6 +9,7 @@ import { EditEmployeeModal } from "./EditEmployeeModal"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { useAppStore } from "@/store/useAppStore"
+import { RolePromotionModal } from "./RolePromotionModal"
 import type { Employee } from "../types"
 import { toast } from "@/lib/toast"
 
@@ -29,8 +30,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   const [emailBody, setEmailBody] = useState("")
 
   const [systemRole, setSystemRole] = useState<string | null>(employee.system_role || null)
-  const [pendingRole, setPendingRole] = useState<string | null>(null)
-  const [showRoleConfirm, setShowRoleConfirm] = useState(false)
+  const [showPromotionModal, setShowPromotionModal] = useState(false)
   const [isUpdatingRole, setIsUpdatingRole] = useState(false)
   const [copiedDetails, setCopiedDetails] = useState(false)
 
@@ -229,36 +229,32 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
               </div>
 
               {canManageSecurity && (
-                <div className="space-y-4">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block border-l-4 border-primary pl-3">System Access Promotion</label>
-                  <div className="space-y-3">
-                    <p className="text-sm text-foreground font-medium">Select System Role</p>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <CustomSelect
-                          value={systemRole || ""}
-                          onChange={(val) => {
-                            setPendingRole(val as string)
-                            setShowRoleConfirm(true)
-                          }}
-                          options={roleOptions}
-                          placeholder="Select Role..."
-                          disabled={isUpdatingRole}
-                        />
+                <div className="p-4 bg-muted/10 border border-border/50 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-border pb-3">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Access Status</label>
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-tighter ${systemRole ? 'bg-primary/10 text-primary border border-primary/20' : 'bg-muted text-muted-foreground border border-border'}`}>
+                      {systemRole ? 'Active Access' : 'No Dashboard Access'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${systemRole ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
+                        <Shield size={20} />
                       </div>
-                      {systemRole && employee.system_role !== 'owner' && employee.position?.toLowerCase() !== 'owner' && (
-                        <button
-                          onClick={() => {
-                            setPendingRole(null)
-                            setShowRoleConfirm(true)
-                          }}
-                          disabled={isUpdatingRole}
-                          className="px-3 py-2 text-xs font-bold text-destructive bg-destructive/10 hover:bg-destructive/20 rounded-lg transition-all"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
+                      <div>
+                        <p className="text-sm font-bold text-foreground capitalize">{systemRole || "Employee"}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium">Designated System Role</p>
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => setShowPromotionModal(true)}
+                      className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl hover:bg-primary/90 transition-all font-bold text-xs shadow-sm active:scale-95 cursor-pointer"
+                    >
+                      <UserPlus size={14} />
+                      <span>Promote Staff</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -323,31 +319,13 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
           description={`Are you sure you want to remove ${employee.full_name}? This will permanently delete their records.`}
         />
 
-        <AlertDialog open={showRoleConfirm} onOpenChange={setShowRoleConfirm}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm Role Change</AlertDialogTitle>
-              <AlertDialogDescription>
-                {pendingRole
-                  ? `Are you sure you want to promote ${employee.full_name} to ${pendingRole.toUpperCase()}? This will grant them system access.`
-                  : `Are you sure you want to revoke system access for ${employee.full_name}? They will only be able to use the Clock Portal.`
-                }
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setPendingRole(null)}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  handleUpdateRole(pendingRole)
-                  setShowRoleConfirm(false)
-                }}
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-              >
-                Confirm Update
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <RolePromotionModal
+          isOpen={showPromotionModal}
+          onClose={() => setShowPromotionModal(false)}
+          onConfirm={handleUpdateRole}
+          currentRole={systemRole}
+          employeeName={employee.full_name || employee.email || "Employee"}
+        />
       </div>
     </div>
   )

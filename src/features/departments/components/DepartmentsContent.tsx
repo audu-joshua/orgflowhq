@@ -9,6 +9,7 @@ import { DepartmentCard } from "./DepartmentCard"
 import { CreateDepartmentModal } from "./CreateDepartmentModal"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
+import { EOTMManager } from "./EOTMManager"
 import type { Department } from "../types"
 
 export function DepartmentsContent() {
@@ -38,6 +39,12 @@ export function DepartmentsContent() {
     loadDepartments()
   }
 
+  const handleDeleted = (id: string) => {
+    setDepartments(prev => prev.filter(d => d.id !== id))
+    // Silent background refresh to ensure consistency
+    loadDepartments()
+  }
+
   if (authLoading || loading) return <LoadingSpinner />
 
   return (
@@ -54,6 +61,8 @@ export function DepartmentsContent() {
           </button>
         </div>
 
+        <EOTMManager />
+
         {departments.length === 0 ? (
           <EmptyState
             title="No departments yet"
@@ -66,15 +75,19 @@ export function DepartmentsContent() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {departments.map((department) => (
-              <DepartmentCard key={department.id} department={department} />
+              <DepartmentCard
+                key={department.id}
+                department={department}
+                onDeleted={handleDeleted}
+              />
             ))}
           </div>
         )}
       </div>
 
-      <CreateDepartmentModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <CreateDepartmentModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         onSuccess={handleDepartmentCreated}
       />
     </>

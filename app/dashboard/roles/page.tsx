@@ -22,22 +22,31 @@ export default function RolesPage() {
   const [loading, setLoading] = useState(true)
   const [updatingStatus, setUpdatingStatus] = useState<Role["status"] | null>(null)
 
+  const loadRoles = async () => {
+    if (!organization) return
+    try {
+      setLoading(true)
+      const data = await dashboardService.getRoles(organization.id)
+      setRoles(data)
+    } catch (error) {
+      console.error("Failed to load roles:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (authLoading || !organization) return
-
-    const loadRoles = async () => {
-      try {
-        const data = await dashboardService.getRoles(organization.id)
-        setRoles(data)
-      } catch (error) {
-        console.error("Failed to load roles:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     loadRoles()
   }, [organization, authLoading])
+
+  const handleDeleted = (roleId: string) => {
+    setRoles(prev => prev.filter(r => r.id !== roleId))
+    // Optional: refresh background data without loading spinner
+    dashboardService.getRoles(organization!.id)
+      .then(setRoles)
+      .catch(console.error)
+  }
 
   const handleBulkStatusUpdate = async (status: Role["status"]) => {
     if (!organization) return
@@ -120,7 +129,7 @@ export default function RolesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {roles.map((role) => (
-            <RoleCard key={role.id} role={role} />
+            <RoleCard key={role.id} role={role} onDeleted={handleDeleted} />
           ))}
         </div>
       )}
