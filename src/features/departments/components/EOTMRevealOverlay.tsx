@@ -133,48 +133,50 @@ export function EOTMRevealOverlay({
                     </div>
 
                     {/* Winner Card - Target for capture */}
-                    <div id="award-card" className="bg-white dark:bg-slate-900 rounded-[3rem] p-8 pb-12 space-y-6 shadow-2xl relative group overflow-hidden text-slate-900 dark:text-white border-8 border-amber-500/10 mb-8">
+                    <div id="award-card" className="bg-white rounded-[2rem] p-8 sm:p-12 shadow-2xl relative overflow-hidden text-slate-900 border-[12px] border-amber-500/10 mb-8 w-full flex flex-col items-center">
 
                         {/* Org Logo Header */}
-                        <div className="flex justify-center mb-4">
+                        <div className="flex justify-center mb-6">
                             {organizationLogo ? (
-                                <img src={organizationLogo} alt={organizationName} className="max-h-20 object-contain rounded-2xl shadow-sm" />
+                                <img src={organizationLogo} alt={organizationName} className="max-h-24 object-contain rounded-2xl shadow-sm" />
                             ) : (
                                 <div className="flex items-center gap-2">
-                                    <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center text-primary font-black text-2xl">O</div>
-                                    <span className="text-2xl font-black tracking-tighter">{organizationName}</span>
+                                    <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center text-primary font-black text-3xl">O</div>
+                                    <span className="text-3xl font-black tracking-tighter text-slate-900">{organizationName}</span>
                                 </div>
                             )}
                         </div>
 
-                        <div className="flex flex-col items-center relative z-10">
+                        <div className="flex flex-col items-center relative z-10 w-full">
                             {winner.employee?.profile_image_url ? (
                                 <img
                                     src={winner.employee.profile_image_url}
                                     alt={winner.employee.full_name}
-                                    className="w-40 h-40 sm:w-56 sm:h-56 rounded-[2.5rem] sm:rounded-[3rem] object-cover ring-8 ring-amber-500/20 shadow-2xl mb-6 sm:mb-8"
+                                    className="w-72 h-72 sm:w-96 sm:h-96 rounded-[3.5rem] sm:rounded-[4.5rem] object-cover ring-[16px] ring-amber-500/20 shadow-2xl mb-8"
                                 />
                             ) : (
-                                <div className="w-40 h-40 sm:w-56 sm:h-56 bg-amber-500/10 rounded-[2.5rem] sm:rounded-[3rem] flex items-center justify-center text-amber-500 font-bold text-6xl sm:text-8xl ring-8 ring-amber-500/5 mb-6 sm:mb-8">
+                                <div className="w-72 h-72 sm:w-96 sm:h-96 bg-amber-500/10 rounded-[3.5rem] sm:rounded-[4.5rem] flex items-center justify-center text-amber-500 font-bold text-8xl sm:text-9xl ring-[16px] ring-amber-500/5 mb-8">
                                     {winner.employee?.full_name?.[0]}
                                 </div>
                             )}
 
-                            <h3 className="text-3xl sm:text-4xl font-black mb-1 text-center">{winner.employee?.full_name}</h3>
-                            <p className="text-amber-500 font-black uppercase tracking-[0.4em] text-[8px] sm:text-[10px] mb-6 sm:mb-8">Excellence in Service</p>
+                            <h3 className="text-4xl sm:text-5xl font-black mb-2 text-center text-slate-900 leading-tight">{winner.employee?.full_name}</h3>
+                            <p className="text-amber-500 font-black uppercase tracking-[0.4em] text-[10px] sm:text-xs mb-8">
+                                Employee of the Month — {new Date(winner.reveal_at || winner.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                            </p>
 
-                            <div className="w-full h-px bg-slate-100 dark:bg-slate-800 mb-6 sm:mb-8" />
+                            <div className="w-full h-px bg-slate-100 mb-8" />
 
-                            <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full px-2 sm:px-4 gap-6 sm:gap-8">
+                            <div className="flex flex-col sm:flex-row items-center sm:items-end justify-between w-full px-2 gap-8">
                                 <div className="text-center sm:text-left">
-                                    <p className="text-[9px] uppercase font-black tracking-widest text-slate-400 mb-2 leading-none">Awarded By</p>
+                                    <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Awarded By</p>
                                     <div className="flex items-center gap-2 justify-center sm:justify-start">
-                                        {organizationLogo && <img src={organizationLogo} className="h-4 w-4 sm:h-5 sm:w-5 rounded-md object-contain" />}
-                                        <p className="text-xs sm:text-sm font-extrabold max-w-[200px] break-words">{organizationName}</p>
+                                        {organizationLogo && <img src={organizationLogo} className="h-5 w-5 rounded-md object-contain" />}
+                                        <p className="text-sm font-black text-slate-900 leading-none">{organizationName}</p>
                                     </div>
                                 </div>
-                                <div className="text-center sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0 w-full sm:w-auto border-slate-100 dark:border-slate-800">
-                                    <p className="text-[9px] uppercase font-black tracking-widest text-slate-400 mb-2 leading-none">Powered By</p>
+                                <div className="text-center sm:text-right">
+                                    <p className="text-[10px] uppercase font-black tracking-[0.2em] text-slate-400 mb-2 leading-none">Powered By</p>
                                     <div className="flex items-center gap-1.5 justify-center sm:justify-end">
                                         <div className="w-5 h-5 bg-primary rounded-md flex items-center justify-center">
                                             <span className="text-[10px] font-black text-white">O</span>
@@ -189,15 +191,15 @@ export function EOTMRevealOverlay({
                     <div className="pt-4 flex gap-3">
                         <button
                             onClick={handleShare}
-                            className="flex-1 flex items-center justify-center gap-2 py-4 bg-slate-900 text-white dark:bg-white dark:text-slate-900 rounded-2xl font-bold hover:opacity-90 transition-all active:scale-95 shadow-xl shadow-black/20"
+                            className="flex-1 flex items-center justify-center gap-2 py-4 bg-white text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-black/20"
                         >
                             <Share2 size={18} />
-                            <span>Share with World</span>
+                            <span>Share</span>
                         </button>
                         <button
                             onClick={handleDownloadImage}
                             disabled={isCapturing}
-                            className="p-4 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-2xl font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all active:scale-95 shadow-xl shadow-black/5 flex items-center justify-center min-w-[64px]"
+                            className="p-4 bg-white text-slate-900 rounded-2xl font-bold hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-black/5 flex items-center justify-center min-w-[64px]"
                         >
                             {isCapturing ? <Loader2 size={24} className="animate-spin" /> : <Download size={24} />}
                         </button>
@@ -208,7 +210,7 @@ export function EOTMRevealOverlay({
                             onClick={onClose}
                             className="px-12 py-4 bg-primary text-white font-black rounded-full shadow-2xl shadow-primary/40 hover:scale-105 transition-all active:scale-95 text-sm uppercase tracking-widest border-4 border-white/20"
                         >
-                            Return to Dashboard
+                            Dashboard
                         </button>
                     </div>
                 </div>
