@@ -15,24 +15,22 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
     const [confirmPassword, setConfirmPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
 
     if (!isOpen) return null
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError("")
         setLoading(true)
 
         if (newPassword !== confirmPassword) {
-            setError("Passwords do not match")
+            toast.error("Validation Error", { description: "Passwords do not match" })
             setLoading(false)
             return
         }
 
         if (newPassword.length < 6) {
-            setError("Password must be at least 6 characters")
+            toast.error("Security Rule", { description: "Password must be at least 6 characters" })
             setLoading(false)
             return
         }
@@ -48,7 +46,7 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                 setConfirmPassword("")
             }, 2000)
         } catch (err: any) {
-            setError(err.message || "Failed to update password")
+            toast.error("Update Failed", { description: err.message || "Failed to update password" })
         } finally {
             setLoading(false)
         }
@@ -121,12 +119,6 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
                                     placeholder="Repeat new password"
                                 />
                             </div>
-
-                            {error && (
-                                <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium rounded-xl flex items-center gap-2">
-                                    <X size={14} /> {error}
-                                </div>
-                            )}
 
                             <div className="pt-2 flex gap-3">
                                 <button

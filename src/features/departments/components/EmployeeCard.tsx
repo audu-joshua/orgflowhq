@@ -29,11 +29,13 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-green-500/10 text-green-600 dark:text-green-400"
+        return "bg-green-600 text-white"
+      case "invited":
+        return "bg-blue-600 text-white"
       case "inactive":
-        return "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400"
+        return "bg-amber-500 text-white"
       case "terminated":
-        return "bg-destructive/10 text-destructive"
+        return "bg-destructive text-destructive-foreground"
       default:
         return "bg-muted text-muted-foreground"
     }
@@ -79,7 +81,7 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
 
           {/* Status Badge */}
           <div className="absolute top-3 right-3">
-            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm border border-white/10 backdrop-blur-md ${getStatusColor(employee.status)}`}>
+            <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md shadow-black/30 border-2 border-background/20 ${getStatusColor(employee.status)}`}>
               {employee.status}
             </span>
           </div>

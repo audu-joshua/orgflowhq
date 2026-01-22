@@ -22,7 +22,6 @@ export function RegisterForm() {
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
   const [organizationName, setOrganizationName] = useState("")
-  const [formError, setFormError] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [localLoading, setLocalLoading] = useState(false)
 
@@ -35,13 +34,12 @@ export function RegisterForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormError("")
     setLocalLoading(true)
 
     // const isFreeEmail = !validateCompanyEmail(email) // Temporarily disabling strict check or using for warning if needed
 
     if (password.length < 6) {
-      setFormError("Password must be at least 6 characters")
+      toast.error("Password too short", { description: "Password must be at least 6 characters" })
       setLocalLoading(false)
       return
     }
@@ -142,7 +140,7 @@ export function RegisterForm() {
     } catch (err) {
       // Don't duplicate error if we already toasted
       if (err instanceof Error && !err.message.includes("Account previously registered")) {
-        setFormError(err.message)
+        toast.error("Registration failed", { description: err.message })
       }
     } finally {
       setLocalLoading(false)
@@ -227,12 +225,6 @@ export function RegisterForm() {
           </p>
         </div>
 
-        {(formError || error) && (
-          <div className="p-3 bg-destructive/10 border border-destructive rounded-xl text-destructive text-sm">
-            {formError || error}
-          </div>
-        )}
-
         <button
           type="submit"
           disabled={localLoading || loading}
@@ -241,6 +233,7 @@ export function RegisterForm() {
           {localLoading || loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Sign Up"}
         </button>
       </form>
+
 
       {/* Footer Links */}
       <div className="text-center space-y-4">
@@ -258,3 +251,4 @@ export function RegisterForm() {
     </div>
   )
 }
+

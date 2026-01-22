@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Sparkles, Loader2 } from "lucide-react"
+import { X, Sparkles, Loader2, Plus } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { departmentService } from "../services/departmentService"
 import { toast } from "@/lib/toast"
 import { CustomSelect } from "@/components/ui/CustomSelect"
+import { CreateDepartmentModal } from "./CreateDepartmentModal"
 import type { Department } from "../types"
 
 interface AddEmployeeModalProps {
@@ -32,21 +33,24 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
   const [loading, setLoading] = useState(false)
   const [isGeneratingId, setIsGeneratingId] = useState(false)
   const [error, setError] = useState("")
+  const [isAddingDepartment, setIsAddingDepartment] = useState(false)
+
+  const fetchDepts = async () => {
+    if (!organization) return
+    try {
+      const depts = await departmentService.getDepartmentsByOrganization(organization.id)
+      setDepartments(depts)
+      if (depts.length > 0 && !formData.department_id) {
+        setFormData(prev => ({ ...prev, department_id: depts[0].id }))
+      }
+    } catch (err) {
+      console.error("Failed to fetch departments", err)
+    }
+  }
 
   // Fetch departments if not provided
   useEffect(() => {
     if (isOpen && organization && !departmentId) {
-      const fetchDepts = async () => {
-        try {
-          const depts = await departmentService.getDepartmentsByOrganization(organization.id)
-          setDepartments(depts)
-          if (depts.length > 0) {
-            setFormData(prev => ({ ...prev, department_id: depts[0].id }))
-          }
-        } catch (err) {
-          console.error("Failed to fetch departments", err)
-        }
-      }
       fetchDepts()
     }
   }, [isOpen, organization, departmentId])
@@ -97,7 +101,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
       if (!organization) throw new Error("Organization not found")
       if (!formData.department_id) throw new Error("Please select a department")
 
-      await departmentService.createEmployee(organization.id, {
+      const newEmployee = await departmentService.createEmployee(organization.id, {
         user_id: null,
         department_id: formData.department_id,
         full_name: formData.full_name || "",
@@ -106,10 +110,16 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
         position: formData.position || null,
         phone: formData.phone || null,
         hire_date: formData.hire_date || null,
-        profile_image_url: imagePreview || null,
+        profile_image_url: null, // Save as null initially, then upload to storage
         status: "invited",
         activated_at: null,
       })
+
+      // If an image was selected, upload it to storage now that we have the employee ID
+      if (profileImage && newEmployee) {
+        await departmentService.uploadEmployeeProfileImage(newEmployee.id, profileImage)
+      }
+
 
       toast.success("Employee added successfully")
       onSuccess()
@@ -125,11 +135,24 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
       })
       setProfileImage(null)
       setImagePreview("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add employee")
+    } catch (err: any) {
+      if (err.code === "23505" || err.message?.includes("unique_employee_email")) {
+        setError("An employee with this email already exists in the system.")
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to add employee")
+      }
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDepartmentCreated = async (newDept: Department) => {
+    // Refresh departments list
+    await fetchDepts()
+    // Select the new department
+    setFormData(prev => ({ ...prev, department_id: newDept.id }))
+    setIsAddingDepartment(false)
+    toast.success(`${newDept.name} department created`)
   }
 
   if (!isOpen) return null
@@ -171,14 +194,26 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
                   <label htmlFor="department" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                     Department <span className="text-destructive">*</span>
                   </label>
-                  <CustomSelect
-                    id="department"
-                    value={formData.department_id}
-                    onChange={(value) => setFormData({ ...formData, department_id: value })}
-                    options={departments.map(d => ({ value: d.id, label: d.name }))}
-                    placeholder="Select Department"
-                    required
-                  />
+                  <div className="flex items-end gap-2">
+                    <div className="flex-1">
+                      <CustomSelect
+                        id="department"
+                        value={formData.department_id}
+                        onChange={(value) => setFormData({ ...formData, department_id: value })}
+                        options={departments.map(d => ({ value: d.id, label: d.name }))}
+                        placeholder="Select Department"
+                        required
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingDepartment(true)}
+                      className="p-3 border border-border rounded-xl bg-background text-primary hover:bg-primary/5 transition-all outline-none"
+                      title="Add New Department"
+                    >
+                      <Plus size={20} />
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -307,6 +342,12 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
           </div>
         </div>
       </div>
+
+      <CreateDepartmentModal
+        isOpen={isAddingDepartment}
+        onClose={() => setIsAddingDepartment(false)}
+        onSuccess={handleDepartmentCreated}
+      />
     </div>
   )
 }

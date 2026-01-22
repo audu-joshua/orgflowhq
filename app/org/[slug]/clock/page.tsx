@@ -8,7 +8,7 @@ import { organizationService } from "@/features/organization/services/organizati
 import { timesheetService, Timesheet } from "@/features/timesheets/services/timesheetService"
 import { departmentService } from "@/features/departments/services/departmentService"
 import { useAppStore } from "@/store/useAppStore"
-import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2 } from "lucide-react"
+import { Clock, LogIn, LogOut, History, AlertCircle, Download, Filter, Loader2, Plus } from "lucide-react"
 import { ForgotPasswordModal } from "@/features/auth/components/ForgotPasswordModal"
 import { toast } from "@/lib/toast"
 import { isSameWeek, isSameMonth, parseISO } from "date-fns"
@@ -19,8 +19,8 @@ import type { EOTMCompetition, EOTMWinner } from "@/features/departments/types/e
 
 export default function ClockPage() {
     const { slug } = useParams() as { slug: string }
-    const { user, signIn, signOut, refreshProfile, loading: authLoading } = useAuth()
-    const { organization, setOrganization } = useAppStore()
+    const { signIn, signOut, refreshProfile, loading: authLoading } = useAuth()
+    const { user, organization, setOrganization, employee, setEmployee } = useAppStore()
 
     const [email, setEmail] = useState("")
     const [employeeIdField, setEmployeeIdField] = useState("")
@@ -28,7 +28,6 @@ export default function ClockPage() {
     const [error, setError] = useState("")
     const [timesheets, setTimesheets] = useState<Timesheet[]>([])
     const [currentTimesheet, setCurrentTimesheet] = useState<Timesheet | null>(null)
-    const [employee, setEmployee] = useState<any>(null)
     const [isForgotModalOpen, setIsForgotModalOpen] = useState(false)
     const [timeFilter, setTimeFilter] = useState<'all' | 'week' | 'month'>('all')
     const [statusFilter, setStatusFilter] = useState<'all' | 'approved' | 'rejected'>('all')
@@ -38,6 +37,7 @@ export default function ClockPage() {
     const [eotmWinner, setEotmWinner] = useState<EOTMWinner | null>(null)
     const [showVoteOverlay, setShowVoteOverlay] = useState(false)
     const [showRevealOverlay, setShowRevealOverlay] = useState(false)
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
 
     useEffect(() => {
         const initPage = async () => {
@@ -61,30 +61,47 @@ export default function ClockPage() {
         setLoading(true)
         setError("")
         try {
-            // Find employee record for current user IN THIS SPECIFIC ORGANIZATION
             const { getSupabaseClient } = await import("@/lib/supabaseClient")
             const supabase = getSupabaseClient()
 
-            let { data: currentEmployee, error: empError } = await supabase
+            // FETCH: Get all employee records for this user across all organizations
+            // This mirrors the Profile Modal logic which successfully finds the record
+            const { data: allEmployees, error: empError } = await supabase
                 .from("employees")
-                .select("*, organizations(*)")
+                .select(`
+                    *,
+                    organizations(*),
+                    departments(name)
+                `)
                 .eq("user_id", user!.id)
-                .eq("organization_id", organization!.id)
-                .maybeSingle()
 
             if (empError) {
                 console.error("Employee lookup error:", empError)
                 throw empError
             }
 
-            // SENIOR REFINEMENT: If no record found by user_id, check if they exist by email but unlinked
+            // FIND: Locate the record matching the current organization
+            // We search by ID first, then fallback to slug matching
+            let currentEmployee = allEmployees?.find((emp: any) =>
+                emp.organization_id === organization?.id ||
+                emp.organizations?.slug === slug
+            )
+
+            // AUTO-RESOLVE: If no match found for current slug, but user has exactly ONE membership
+            // we follow that membership to be helpful (fixes "wrong slug" issues)
+            if (!currentEmployee && allEmployees && allEmployees.length === 1) {
+                console.log("[fetchEmployeeData] Context mismatch but following single membership...")
+                currentEmployee = allEmployees[0]
+            }
+
+            // SENIOR REFINEMENT: If still no record, check for unlinked records by email
             if (!currentEmployee && user?.email) {
                 console.log("[fetchEmployeeData] Checking for unlinked record by email:", user.email)
                 const { data: employeeByEmail, error: emailLookupError } = await supabase
                     .from("employees")
-                    .select("*, organizations(*)")
+                    .select("*, organizations(*), departments(name)")
                     .eq("email", user.email)
-                    .eq("organization_id", organization!.id)
+                    .eq("organization_id", organization?.id)
                     .is("user_id", null)
                     .maybeSingle()
 
@@ -98,46 +115,42 @@ export default function ClockPage() {
                         .eq("id", employeeByEmail.id)
 
                     if (!linkError) {
-                        currentEmployee = { ...employeeByEmail, user_id: user.id }
                         toast.success("Accounts linked successfully.")
-                        // Refresh the auth profile to pick up the new role
-                        await refreshProfile(user.id, organization!.id)
+                        await refreshProfile(user.id, employeeByEmail.organization_id)
+                        // Sync to global store
+                        setEmployee({ ...employeeByEmail, user_id: user.id })
+                        return
                     } else {
                         console.error("[fetchEmployeeData] Link error:", linkError)
                     }
                 }
             }
 
-            if (!currentEmployee && user) {
-                // If this is an Admin/Owner, provision an employee record on the fly
-                console.log("No employee record found, checking if auto-provisioning is possible...")
-                try {
-                    const provisioned = await departmentService.provisionEmployeeRecord(
-                        user.id,
-                        organization!.id,
-                        user.email
-                    )
-                    console.log("Successfully auto-provisioned employee record.")
-                    setEmployee(provisioned)
-                    const records = await timesheetService.getEmployeeTimesheets(provisioned.id)
-                    setTimesheets(records)
-                    const active = records.find(r => !r.clock_out)
-                    setCurrentTimesheet(active || null)
-                } catch (provErr) {
-                    console.error("Auto-provisioning failed:", provErr)
-                    setError("No employee profile exists for your account. Please contact HR.")
-                }
-            } else if (currentEmployee) {
+            if (currentEmployee) {
                 setEmployee(currentEmployee)
+
+                // If organization ID in store differs from the record's org, sync it
+                // This handles cases where the initial slug resolution picked the "wrong" organization
+                if (organization?.id !== currentEmployee.organization_id) {
+                    console.log("[fetchEmployeeData] Syncing organization ID mismatch...")
+                    setOrganization(currentEmployee.organizations)
+                }
+
                 const records = await timesheetService.getEmployeeTimesheets(currentEmployee.id)
                 setTimesheets(records)
 
                 // Check for active (not clocked out) timesheet
                 const active = records.find(r => !r.clock_out)
                 setCurrentTimesheet(active || null)
+            } else if (allEmployees && allEmployees.length > 0) {
+                // User is an employee, but not in THIS organization
+                const firstOrg = allEmployees[0].organizations?.name || "another organization"
+                setError(`You are not registered in ${organization?.name || "this organization"}. You appear to be a member of ${firstOrg}.`)
             } else {
                 setError("No employee profile exists for your account. Please contact HR.")
             }
+
+
         } catch (err: any) {
             console.error("Fetch error:", err)
             setError(err.message || "Failed to sync your profile.")
@@ -277,6 +290,24 @@ export default function ClockPage() {
         }
     }
 
+    const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !employee) return
+
+        setIsUploadingImage(true)
+        try {
+            const publicUrl = await departmentService.uploadEmployeeProfileImage(employee.id, file)
+            // Update both local and global state (they are now the same)
+            setEmployee({ ...employee, profile_image_url: publicUrl })
+            toast.success("Profile image updated")
+        } catch (err: any) {
+            console.error("Profile image upload failed:", err)
+            toast.error("Failed to update profile image")
+        } finally {
+            setIsUploadingImage(false)
+        }
+    }
+
     // Filter Logic
     const filteredTimesheets = timesheets.filter(ts => {
         const matchesStatus = statusFilter === 'all' || ts.status === statusFilter
@@ -397,24 +428,58 @@ export default function ClockPage() {
             {/* STICKY Header */}
             <div className="sticky top-4 z-50 p-4 bg-card/80 backdrop-blur-md border border-border rounded-xl shadow-lg flex items-center justify-between transition-all">
                 <div className="flex items-center gap-4">
-                    {employee?.profile_image_url ? (
-                        <img
-                            src={employee.profile_image_url}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full border-2 border-primary object-cover"
+                    <div className="relative group shrink-0">
+                        {employee?.profile_image_url || user?.profile_image_url ? (
+                            <img
+                                src={employee?.profile_image_url || user?.profile_image_url}
+                                alt="Profile"
+                                className="w-12 h-12 rounded-full border-2 border-primary object-cover transition-opacity group-hover:opacity-70"
+                            />
+                        ) : (
+                            <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 transition-opacity group-hover:opacity-70">
+                                <span className="text-primary font-bold text-lg">
+                                    {(employee?.full_name || user?.full_name || user?.email)?.[0].toUpperCase()}
+                                </span>
+                            </div>
+                        )}
+                        <label
+                            htmlFor="profile-upload"
+                            className={`absolute inset-0 flex items-center justify-center transition-all cursor-pointer rounded-full ${isUploadingImage
+                                ? "opacity-100 bg-black/40"
+                                : "opacity-0 group-hover:opacity-100 bg-black/20"
+                                }`}
+                        >
+                            {isUploadingImage ? (
+                                <Loader2 className="w-6 h-6 animate-spin text-white" />
+                            ) : (
+                                <Plus size={20} className="text-white drop-shadow-md" />
+                            )}
+                        </label>
+
+                        <input
+                            id="profile-upload"
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleProfileImageChange}
+                            disabled={isUploadingImage}
                         />
-                    ) : (
-                        <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20">
-                            <span className="text-primary font-bold text-lg">
-                                {employee?.full_name?.[0].toUpperCase() || "E"}
+                    </div>
+                    <div className="min-w-0 pr-4">
+                        <h2 className="text-md font-bold text-foreground leading-tight truncate">
+                            <span className="sm:hidden">
+                                {(employee?.full_name || user?.full_name || user?.email || "").split(" ")[0]}
                             </span>
-                        </div>
-                    )}
-                    <div>
-                        <h2 className="text-md font-bold text-foreground">{employee?.full_name || user.email}</h2>
-                        <p className="text-xs text-muted-foreground">{employee?.position || "Employee"}</p>
+                            <span className="hidden sm:inline">
+                                {employee?.full_name || user?.full_name || user?.email}
+                            </span>
+                        </h2>
+                        <p className="text-xs text-muted-foreground truncate">
+                            {employee?.position || (employee?.departments?.name ? `${employee.departments.name} Team` : "Member")}
+                        </p>
                     </div>
                 </div>
+
                 <button
                     onClick={async () => {
                         await signOut()

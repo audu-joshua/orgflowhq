@@ -81,16 +81,19 @@ export const departmentService = {
     // This ensures they can log in to the clock portal immediately with their employee ID
     console.log(`[departmentService] Provisioning auth for ${employeeData.email}...`)
 
-    if (!employeeData.email || !employeeData.employee_id || !employeeData.full_name) {
+
+    const { email, employee_id, full_name } = employeeData
+    if (!email || !employee_id || !full_name) {
       throw new Error("Missing required fields for auth provisioning (Email, Employee ID, or Name)")
     }
 
     const { userId, error: provisionError } = await this.provisionAuthAccount({
-      email: employeeData.email,
-      employeeId: employeeData.employee_id,
-      fullName: employeeData.full_name,
+      email,
+      employeeId: employee_id,
+      fullName: full_name,
       organizationId
     })
+
 
     if (provisionError) {
       console.error("[departmentService] Provisioning failed:", provisionError)
@@ -207,7 +210,7 @@ export const departmentService = {
 
     const { data, error } = await supabase
       .from("employees")
-      .select("*, organizations(*)")
+      .select("*, organizations(*), departments(name)")
       .eq("user_id", userId)
       .maybeSingle()
 
@@ -377,5 +380,47 @@ export const departmentService = {
     const paddedNumber = nextNumber.toString().padStart(3, '0')
 
     return `${prefix}-${paddedNumber}`
+  },
+
+  async uploadEmployeeProfileImage(employeeId: string, file: File) {
+    const supabase = getSupabaseClient()
+
+    // Generate unique filename
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${employeeId}/${Date.now()}.${fileExt}`
+
+    console.log(`[departmentService] Uploading profile image: ${fileName}`)
+
+    // Upload to Supabase Storage (bucket: employees)
+    // We'll use 'employees' bucket which should be configured for public access
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from("employees")
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: true
+      })
+
+    if (uploadError) {
+      console.error("Error uploading profile image:", uploadError)
+      throw uploadError
+    }
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from("employees")
+      .getPublicUrl(fileName)
+
+    // Update employee record
+    const { error: dbError } = await supabase
+      .from("employees")
+      .update({ profile_image_url: publicUrl })
+      .eq("id", employeeId)
+
+    if (dbError) {
+      console.error("Error updating employee profile image URL:", dbError)
+      throw dbError
+    }
+
+    return publicUrl
   }
 }

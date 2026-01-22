@@ -17,16 +17,16 @@ interface UserProfileModalProps {
 }
 
 export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
-    const { user, organization } = useAppStore()
+    const { user, organization, employee, setEmployee } = useAppStore()
     const { signOut } = useAuth()
-    const [employee, setEmployee] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
+    const [loading, setLoading] = useState(!employee) // Only load if we don't have it
     const [error, setError] = useState("")
     const [isLoggingOut, setIsLoggingOut] = useState(false)
     const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
+    const [isUploadingImage, setIsUploadingImage] = useState(false)
 
     useEffect(() => {
-        if (isOpen && user) {
+        if (isOpen && user && !employee) {
             const fetchProfile = async () => {
                 setLoading(true)
                 try {
@@ -41,9 +41,27 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             }
             fetchProfile()
         }
-    }, [isOpen, user])
+    }, [isOpen, user, employee, setEmployee])
 
     if (!isOpen) return null
+
+    const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file || !employee) return
+
+        setIsUploadingImage(true)
+        try {
+            const publicUrl = await departmentService.uploadEmployeeProfileImage(employee.id, file)
+            // Update global store (which handles local state since we use the store)
+            setEmployee({ ...employee, profile_image_url: publicUrl })
+            toast.success("Profile image updated")
+        } catch (err: any) {
+            console.error("Profile image upload failed:", err)
+            toast.error("Failed to update profile image")
+        } finally {
+            setIsUploadingImage(false)
+        }
+    }
 
     const handleSignOut = async () => {
         setIsLoggingOut(true)
@@ -114,19 +132,43 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                 {/* Profile Top Section */}
                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                                     <div className="relative group">
-                                        {employee?.profile_image_url ? (
-                                            <img
-                                                src={employee.profile_image_url}
-                                                alt={employee.full_name}
-                                                className="w-24 h-24 rounded-2xl object-cover ring-4 ring-background shadow-xl"
+                                        <div className="relative">
+                                            {employee?.profile_image_url ? (
+                                                <img
+                                                    src={employee.profile_image_url}
+                                                    alt={employee.full_name}
+                                                    className="w-24 h-24 rounded-2xl object-cover ring-4 ring-background shadow-xl transition-opacity group-hover:opacity-75"
+                                                />
+                                            ) : (
+                                                <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center ring-4 ring-background shadow-lg border-2 border-dashed border-primary/20 transition-opacity group-hover:opacity-75">
+                                                    <span className="text-primary font-bold text-3xl">{getInitial()}</span>
+                                                </div>
+                                            )}
+
+                                            <label
+                                                htmlFor="avatar-upload"
+                                                className={`absolute inset-0 flex items-center justify-center transition-all cursor-pointer z-10 ${isUploadingImage
+                                                    ? "opacity-100"
+                                                    : "opacity-0 group-hover:opacity-100"
+                                                    }`}
+                                            >
+
+                                                <div className="bg-black/40 p-2 rounded-full text-white backdrop-blur-sm">
+                                                    {isUploadingImage ? <Loader2 size={20} className="animate-spin" /> : <Fingerprint size={20} />}
+                                                </div>
+                                            </label>
+                                            <input
+                                                id="avatar-upload"
+                                                type="file"
+                                                accept="image/*"
+                                                className="hidden"
+                                                onChange={handleProfileImageChange}
+                                                disabled={isUploadingImage}
                                             />
-                                        ) : (
-                                            <div className="w-24 h-24 bg-primary/10 rounded-2xl flex items-center justify-center ring-4 ring-background shadow-lg border-2 border-dashed border-primary/20">
-                                                <span className="text-primary font-bold text-3xl">{getInitial()}</span>
+
+                                            <div className="absolute -bottom-2 -right-2 p-1.5 bg-green-500 rounded-lg text-white shadow-lg border-2 border-background z-20">
+                                                <CheckCircle2 size={12} />
                                             </div>
-                                        )}
-                                        <div className="absolute -bottom-2 -right-2 p-1.5 bg-green-500 rounded-lg text-white shadow-lg border-2 border-background">
-                                            <CheckCircle2 size={12} />
                                         </div>
                                     </div>
 
@@ -175,9 +217,11 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                     <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-1 hover:border-primary/30 transition-colors">
                                         <div className="flex items-center gap-2 text-muted-foreground mb-1">
                                             <Building size={14} />
-                                            <span className="text-[10px] font-bold uppercase tracking-tight">Assigned Unit</span>
+                                            <span className="text-[10px] font-bold uppercase tracking-tight">Department</span>
                                         </div>
-                                        <p className="text-xs font-bold text-foreground">Main HQ - Personnel</p>
+                                        <p className="text-xs font-bold text-foreground">
+                                            {employee?.departments?.name || "Unassigned"}
+                                        </p>
                                     </div>
                                 </div>
 

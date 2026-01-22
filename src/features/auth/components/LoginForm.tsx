@@ -7,33 +7,35 @@ import { useAuth } from "../hooks/useAuth"
 import { authService } from "../services/authService"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
+import { toast } from "@/lib/toast"
 
 export function LoginForm() {
   const router = useRouter()
   const { signIn, loading, error } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [formError, setFormError] = useState(() => {
-    // Check if redirect with error via client-side router
+  const [showPassword, setShowPassword] = useState(false)
+
+  // Initial check for termination via URL params
+  useState(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       if (params.get('error') === 'terminated') {
-        return "Account not Found; Contact Your Hr..."
+        toast.warning("Account not Found", {
+          description: "Contact Your Hr for assistance."
+        })
       }
     }
-    return ""
   })
-  const [showPassword, setShowPassword] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setFormError("")
 
     try {
       // 0. Pre-login access validation
       const access = await authService.validateAccessStatus(email)
       if (!access.allowed) {
-        setFormError(access.error || "Access Denied")
+        toast.error(access.error || "Access Denied")
         return
       }
 
@@ -47,7 +49,7 @@ export function LoginForm() {
       if (profile.status === 'terminated' || profile.status === 'inactive') {
         const { getSupabaseClient } = await import("@/lib/supabaseClient")
         await getSupabaseClient().auth.signOut()
-        setFormError("You have been Deactivated; Contact Your Hr")
+        toast.error("You have been Deactivated; Contact Your Hr")
         return
       }
 
@@ -59,7 +61,7 @@ export function LoginForm() {
       } else if (privilegedRoles.includes(profile.role)) {
         // Privileged roles need an organization
         if (!profile.organization_id) {
-          setFormError("No active organization found for this account. If you just signed up, your organization might still be provisioning. Otherwise, please register a new organization.")
+          toast.error("No active organization found for this account.")
           return
         }
         router.push("/dashboard")
@@ -67,10 +69,10 @@ export function LoginForm() {
         // If employee or other role, redirect to clock (or block)
         router.push(`/org/${profile.organizations.slug}/clock`)
       } else {
-        setFormError("No active organization found for this account. If you just signed up, your organization might still be provisioning. Otherwise, please register a new organization.")
+        toast.error("No active organization found for this account.")
       }
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : "Login failed")
+      toast.error(err instanceof Error ? err.message : "Login failed")
     }
   }
 
@@ -119,16 +121,10 @@ export function LoginForm() {
         </div>
 
         <div className="flex justify-end">
-          <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+          <Link href="/forgot-password" title="Get a reset link" className="text-sm text-primary hover:underline">
             Forget Password?
           </Link>
         </div>
-
-        {(formError || error) && (
-          <div className="p-3 bg-destructive/10 border border-destructive rounded-xl text-destructive text-sm">
-            {formError || error}
-          </div>
-        )}
 
         <button
           type="submit"

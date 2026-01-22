@@ -50,8 +50,30 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Forbidden: Insufficient permissions" }, { status: 403 })
         }
 
-        // 2. Provision Logic
+        // 2. Global Integrity Check: Does this email already exist as an employee anywhere?
+        // We check using Service Role (Admin) to bypass RLS and catch system-wide duplicates
         const supabaseAdmin = getSupabaseAdmin()
+
+        console.log(`[Provision] Checking global uniqueness for: ${email}`)
+        const { data: globalEmployee, error: globalCheckError } = await supabaseAdmin
+            .from("employees")
+            .select("id, organization_id")
+            .eq("email", email)
+            .maybeSingle()
+
+        if (globalCheckError) {
+            console.error("[Provision] Global check error:", globalCheckError.message)
+            return NextResponse.json({ error: "System integrity check failed" }, { status: 500 })
+        }
+
+        if (globalEmployee) {
+            console.error(`[Provision] Email conflict: ${email} already exists in org: ${globalEmployee.organization_id}`)
+            return NextResponse.json({
+                error: "An employee with this email already exists in the system. Personnel records must have unique emails across all organizations."
+            }, { status: 400 })
+        }
+
+        // 3. Provision Logic
 
         // Fetch Org Name & Slug for the static link
         const { data: org } = await supabaseAdmin

@@ -14,14 +14,12 @@ interface ForgotPasswordModalProps {
 export function ForgotPasswordModal({ isOpen, onClose, initialEmail = "" }: ForgotPasswordModalProps) {
     const [email, setEmail] = useState(initialEmail)
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
     const [success, setSuccess] = useState(false)
 
     if (!isOpen) return null
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError("")
         setLoading(true)
 
         try {
@@ -29,7 +27,7 @@ export function ForgotPasswordModal({ isOpen, onClose, initialEmail = "" }: Forg
             setSuccess(true)
             toast.success("Reset email sent! Check your inbox.")
         } catch (err: any) {
-            setError(err.message || "Failed to send reset email")
+            toast.error("Process Failed", { description: err.message || "Failed to send reset email" })
         } finally {
             setLoading(false)
         }
@@ -96,12 +94,6 @@ export function ForgotPasswordModal({ isOpen, onClose, initialEmail = "" }: Forg
                                     placeholder="name@company.com"
                                 />
                             </div>
-
-                            {error && (
-                                <div className="p-3 bg-destructive/10 border border-destructive/20 text-destructive text-xs font-medium rounded-xl flex items-center gap-2">
-                                    <X size={14} /> {error}
-                                </div>
-                            )}
 
                             <div className="pt-2 flex gap-3">
                                 <button
