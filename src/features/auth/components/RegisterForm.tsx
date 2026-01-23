@@ -58,7 +58,7 @@ export function RegisterForm() {
           (err.status === 422 && err.name === "AuthApiError")
 
         if (isUserExists) {
-          console.log("[RegisterForm] User exists, attempting silent recovery...")
+          console.log("[RegisterForm] User exists, attempting recovery...")
           clearError()
 
           // Attempt silent login
@@ -79,7 +79,21 @@ export function RegisterForm() {
             throw new Error("Account previously registered. Use your old password or reset it.")
           }
 
-          // SUCCESS -> Proceed to provision (Silent login worked)
+          // SUCCESS -> If login worked, check if they already have an org
+          // If they do, we don't need to provision, just redirect
+          const profile = (await refreshProfile(signInData.user!.id)) as any
+          if (profile && profile.organization_id) {
+            console.log("[RegisterForm] User already provisioned, redirecting to dashboard.")
+            toast.success("Welcome Back", {
+              title: "Already Registered",
+              description: "Redirecting you to the dashboard.",
+              duration: 3000,
+            })
+            router.push("/dashboard")
+            return
+          }
+
+          // Otherwise proceed to provision (Silent login worked but no org yet)
         } else {
           throw err
         }
@@ -107,7 +121,14 @@ export function RegisterForm() {
       if (!response.ok) {
         const errorData = await response.json()
         if (errorData.error?.includes("already linked")) {
-          throw new Error("You are already a member of an organization. Please log in.")
+          // If already linked, just redirect
+          toast.success("Account Found", {
+            title: "Already Linked",
+            description: "Taking you to your dashboard...",
+            duration: 3000,
+          })
+          router.push("/dashboard")
+          return
         }
         throw new Error(errorData.error || "We encountered an issue setting up your organization. Please try again.")
       }
@@ -135,6 +156,12 @@ export function RegisterForm() {
 
       // 4. Force a profile sync
       await refreshProfile(session.user.id, provisionData.organizationId)
+
+      toast.success("Success", {
+        title: "Account Created!",
+        description: `${organizationName} is ready. Redirecting...`,
+        duration: 4000,
+      })
 
       router.push("/dashboard")
     } catch (err) {

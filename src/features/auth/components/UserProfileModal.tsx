@@ -249,12 +249,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                             >
                                 Change Password
                             </button>
-                            <button
-                                onClick={onClose}
-                                className="px-6 py-2 bg-foreground text-background rounded-lg font-bold text-xs hover:bg-foreground/90 transition-all"
-                            >
-                                Done
-                            </button>
+
                         </div>
                     </div>
                 </div>

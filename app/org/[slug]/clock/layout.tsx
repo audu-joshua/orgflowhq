@@ -21,7 +21,7 @@ export default function ClockLayout({
                     {/* App Logo (Left) */}
                     <div className="flex items-center gap-1">
                         <img src="/logo.png" alt="OrgFlow" className="h-11 w-auto object-contain" />
-                        <span className="font-bold text-foreground text-xl tracking-tight -ml-2">rgFlow Clock</span>
+                        <span className="font-bold text-foreground text-xl tracking-tight -ml-2">rgFlow</span>
                     </div>
 
                     {/* Right Side: Organization & User Profile */}

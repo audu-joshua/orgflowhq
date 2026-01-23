@@ -65,16 +65,20 @@ export function useAuth() {
           profile_image_url: profile.profile_image_url,
           status: profile.status,
         })
+        return profile
       } else {
-        setUser({
+        const fallbackUser = {
           id: userId,
           email: "",
           organization_id: "",
           created_at: new Date().toISOString(),
-        })
+        }
+        setUser(fallbackUser)
+        return fallbackUser
       }
     } catch (err) {
       console.error("[useAuth] refreshProfile failed:", err)
+      return null
     }
   }, [setUser, setOrganization, checkActivation])
 

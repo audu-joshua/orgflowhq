@@ -32,155 +32,70 @@ export async function POST(req: Request) {
 
         const supabaseAdmin = getSupabaseAdmin()
 
-        // 2. Provisioning Transactional Logic
-        console.log(`[Provision-Org] Starting setup for ${organizationName} by ${user.email}`)
+        // 2. Provisioning Transactional Logic (Using RPC for Atomicity)
+        console.log(`[Provision-Org] Starting atomic setup for ${organizationName} by ${user.email}`)
 
         // A. Generate Slug
         let slug = slugify(organizationName)
-        console.log(`[Provision-Org] Generated slug: ${slug}, checking existence...`)
+        console.log(`[Provision-Org] Generated initial slug: ${slug}`)
 
-        try {
-            const { data: existingOrgs, error: slugError } = await supabaseAdmin
-                .from("organizations")
-                .select("slug")
-                .ilike("slug", `${slug}%`)
+        // B. Call the Atomic Provisioning Function
+        const { data: result, error: rpcError } = await supabaseAdmin.rpc("provision_organization", {
+            p_user_id: user.id,
+            p_user_email: user.email,
+            p_org_name: organizationName,
+            p_org_slug: slug,
+            p_full_name: fullName || user.user_metadata?.full_name || "Owner"
+        })
 
-            if (slugError) {
-                console.error("[Provision-Org] Slug check error:", slugError)
-                throw slugError
-            }
+        if (rpcError) {
+            console.error("[Provision-Org] RPC Error:", rpcError)
 
-            if (existingOrgs && existingOrgs.length > 0) {
-                const slugs = existingOrgs.map((o: any) => o.slug)
-                if (slugs.includes(slug)) {
-                    let counter = 1
-                    while (slugs.includes(`${slug}-${counter}`)) {
-                        counter++
+            // Handle Slug Conflict explicitly if the RPC didn't catch it or for retry logic
+            if (rpcError.message?.includes("organizations_slug_key")) {
+                let counter = 1
+                let finalResult = null
+
+                // Retry with incremented slugs (limit to 5 attempts for safety)
+                while (counter <= 5) {
+                    const nextSlug = `${slug}-${counter}`
+                    console.log(`[Provision-Org] Retrying with slug: ${nextSlug}`)
+
+                    const { data: retryData, error: retryError } = await supabaseAdmin.rpc("provision_organization", {
+                        p_user_id: user.id,
+                        p_user_email: user.email,
+                        p_org_name: organizationName,
+                        p_org_slug: nextSlug,
+                        p_full_name: fullName || user.user_metadata?.full_name || "Owner"
+                    })
+
+                    if (!retryError) {
+                        finalResult = retryData
+                        break
                     }
-                    slug = `${slug}-${counter}`
+
+                    if (!retryError.message?.includes("organizations_slug_key")) {
+                        throw retryError
+                    }
+                    counter++
                 }
-            }
-            console.log(`[Provision-Org] Final slug: ${slug}`)
 
-            // B. Create Organization
-            console.log("[Provision-Org] Creating organization...")
-            const { data: orgData, error: orgError } = await supabaseAdmin
-                .from("organizations")
-                .insert([{ name: organizationName, slug: slug }])
-                .select()
-                .single()
-
-            if (orgError) {
-                console.error("[Provision-Org] Org creation error:", orgError)
-                throw orgError
-            }
-            console.log(`[Provision-Org] Org created: ${orgData.id}`)
-
-            // C. Create "Management" Department
-            console.log("[Provision-Org] Creating Management department...")
-            const { data: deptData, error: deptError } = await supabaseAdmin
-                .from("departments")
-                .insert([{
-                    organization_id: orgData.id,
-                    name: "Management",
-                    description: "Executive and Administrative management team"
-                }])
-                .select()
-                .single()
-
-            if (deptError) {
-                console.error("[Provision-Org] Department creation error:", deptError)
-                throw deptError
+                if (!finalResult) throw new Error("Could not generate a unique slug for your organization. Please try a different name.")
+                return handleSuccess(finalResult, user, organizationName, fullName)
             }
 
-            // D. Create or update User Profile
-            console.log("[Provision-Org] Upserting user profile...")
-            const { error: userError } = await supabaseAdmin
-                .from("users")
-                .upsert({
-                    id: user.id,
-                    email: user.email,
-                    organization_id: orgData.id
-                })
-                .eq("id", user.id)
-
-            if (userError) {
-                console.error("[Provision-Org] User upsert error:", userError)
-                throw userError
-            }
-
-            // E. Link User as Owner
-            console.log("[Provision-Org] Linking user as owner...")
-            const { error: linkError } = await supabaseAdmin
-                .from("users_organizations")
-                .insert([{
-                    user_id: user.id,
-                    organization_id: orgData.id,
-                    role: "owner"
-                }])
-
-            if (linkError) {
-                console.error("[Provision-Org] Link user error:", linkError)
-                throw linkError
-            }
-
-            // F. Create Employee Record for Owner
-            console.log("[Provision-Org] Creating employee record...")
-            const { error: empError } = await supabaseAdmin
-                .from("employees")
-                .insert([{
-                    organization_id: orgData.id,
-                    user_id: user.id,
-                    department_id: deptData.id,
-                    full_name: fullName || user.user_metadata?.full_name || "Owner",
-                    email: user.email,
-                    employee_id: "OWN-001",
-                    position: "Owner",
-                    status: "active",
-                    hire_date: new Date().toISOString().split('T')[0]
-                }])
-
-            if (empError) {
-                console.error("[Provision-Org] Employee creation error:", empError)
-                throw empError
-            }
-
-            // G. Sync Organization ID to Auth Metadata (Critical for Middleware)
-            console.log("[Provision-Org] Updating auth metadata...")
-            const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(
-                user.id,
-                { user_metadata: { organization_id: orgData.id } }
-            )
-
-            if (metaError) {
-                console.error("[Provision-Org] Failed to sync auth metadata:", metaError)
-                // We don't block flow, but middleware might be delayed until next refresh
-            }
-
-            try {
-                await mailService.sendOrgWelcomeEmail(
-                    user.email!,
-                    organizationName,
-                    fullName || user.user_metadata?.full_name || "Owner"
-                )
-                console.log("[Provision-Org] Welcome email sent.")
-            } catch (mailErr: any) {
-                console.error("🚨 [Provision-Org] Mail FAILED:", mailErr.message || mailErr)
-            }
-
-            return NextResponse.json({
-                success: true,
-                organizationId: orgData.id,
-                slug: orgData.slug
-            })
-
-        } catch (innerError) {
-            console.error("[Provision-Org] Inner process error:", innerError)
-            throw innerError
+            throw rpcError
         }
 
+        if (!result.success) {
+            console.error("[Provision-Org] RPC Logic Error:", result.error)
+            throw new Error(result.error || "Provisioning failed")
+        }
+
+        return handleSuccess(result, user, organizationName, fullName)
+
     } catch (error: any) {
-        console.error("[Provision-Org] Unexpected error:", error)
+        console.error("[Provision-Org] Final catch error:", error)
 
         // Map technical database errors to friendly messages
         let errorMessage = error.message || "Internal Server Error"
@@ -197,4 +112,37 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ error: errorMessage }, { status: 500 })
     }
+}
+
+async function handleSuccess(result: any, user: any, organizationName: string, fullName: string) {
+    const supabaseAdmin = getSupabaseAdmin()
+
+    // G. Sync Organization ID to Auth Metadata (Critical for Middleware)
+    console.log("[Provision-Org] Updating auth metadata...")
+    const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(
+        user.id,
+        { user_metadata: { organization_id: result.organization_id } }
+    )
+
+    if (metaError) {
+        console.error("[Provision-Org] Failed to sync auth metadata:", metaError)
+    }
+
+    try {
+        const { mailService } = await import("@/lib/mail/mailService")
+        await mailService.sendOrgWelcomeEmail(
+            user.email!,
+            organizationName,
+            fullName || user.user_metadata?.full_name || "Owner"
+        )
+        console.log("[Provision-Org] Welcome email sent.")
+    } catch (mailErr: any) {
+        console.error("🚨 [Provision-Org] Mail FAILED:", mailErr.message || mailErr)
+    }
+
+    return NextResponse.json({
+        success: true,
+        organizationId: result.organization_id,
+        slug: result.slug
+    })
 }
