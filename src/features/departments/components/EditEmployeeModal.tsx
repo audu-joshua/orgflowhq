@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Loader2, X, Sparkles } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
-import { departmentService } from "../services/departmentService"
+import { getDepartmentsByOrganizationAction, updateEmployeeAction } from "../actions"
 import { toast } from "@/lib/toast"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import type { Employee, Department } from "../types"
@@ -55,8 +55,8 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
         if (isOpen && organization) {
             const fetchDepts = async () => {
                 try {
-                    const depts = await departmentService.getDepartmentsByOrganization(organization.id)
-                    setDepartments(depts)
+                    const depts = await getDepartmentsByOrganizationAction(organization.id)
+                    setDepartments(depts as any)
                 } catch (err) {
                     console.error("Failed to fetch departments", err)
                 }
@@ -86,7 +86,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
         try {
             if (!organization) throw new Error("Organization not found")
 
-            await departmentService.updateEmployee(employee.id, {
+            const result = await updateEmployeeAction(employee.id, {
                 department_id: formData.department_id,
                 full_name: formData.full_name,
                 email: formData.email,
@@ -94,8 +94,10 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                 phone: formData.phone || null,
                 hire_date: formData.hire_date || null,
                 status: formData.status as any,
-                profile_image_url: imagePreview || null, // In real app, we'd upload file to storage here first
+                profile_image_url: imagePreview || null,
             })
+
+            if (!result.success) throw new Error(result.error)
 
             // TODO: Handle image upload logic effectively if we had storage bucket ready
             // For now we assume image preview string if base64 or url is enough or handles externally

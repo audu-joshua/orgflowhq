@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Plus, Trash2 } from "lucide-react"
-import { departmentService } from "../services/departmentService"
+import { getDepartmentByIdAction, getEmployeesByDepartmentAction, deleteDepartmentAction } from "../actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { AddEmployeeModal } from "./AddEmployeeModal"
 import { EmployeeList } from "./EmployeeList"
@@ -23,10 +23,10 @@ export function DepartmentDetail({ departmentId }: DepartmentDetailProps) {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const dept = await departmentService.getDepartmentById(departmentId)
-        setDepartment(dept)
-        const emps = await departmentService.getEmployeesByDepartment(departmentId)
-        setEmployees(emps)
+        const dept = await getDepartmentByIdAction(departmentId)
+        setDepartment(dept as any)
+        const emps = await getEmployeesByDepartmentAction(departmentId)
+        setEmployees(emps as any)
       } catch (error) {
         console.error("Failed to load department:", error)
       } finally {
@@ -41,7 +41,7 @@ export function DepartmentDetail({ departmentId }: DepartmentDetailProps) {
     if (!confirm("Are you sure you want to delete this department?")) return
 
     try {
-      await departmentService.deleteDepartment(departmentId)
+      await deleteDepartmentAction(departmentId)
       router.push("/dashboard/departments")
     } catch (error) {
       console.error("Failed to delete department:", error)
@@ -50,8 +50,8 @@ export function DepartmentDetail({ departmentId }: DepartmentDetailProps) {
 
   const handleRefresh = async () => {
     try {
-      const emps = await departmentService.getEmployeesByDepartment(departmentId)
-      setEmployees(emps)
+      const emps = await getEmployeesByDepartmentAction(departmentId)
+      setEmployees(emps as any)
     } catch (error) {
       console.error("Failed to refresh employees:", error)
     }

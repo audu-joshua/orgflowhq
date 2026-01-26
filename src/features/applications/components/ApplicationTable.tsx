@@ -2,8 +2,10 @@
 
 import { useState } from "react"
 import { Trash2, Download } from "lucide-react"
+import { useAppStore } from "@/store/useAppStore"
 import { formatDate } from "@/lib/utils"
-import { applicationService } from "../services/applicationService"
+import { updateApplicationStatusAction, deleteApplicationAction } from "../actions"
+import { toast } from "@/lib/toast"
 import { APPLICATION_STATUS, STATUS_LABELS } from "@/lib/constants"
 import type { Application } from "../types"
 
@@ -13,12 +15,17 @@ interface ApplicationTableProps {
 }
 
 export function ApplicationTable({ applications, onApplicationDeleted }: ApplicationTableProps) {
+  const { organization } = useAppStore()
   const [updating, setUpdating] = useState<string | null>(null)
 
   const handleStatusChange = async (applicationId: string, newStatus: Application["status"]) => {
     setUpdating(applicationId)
     try {
-      await applicationService.updateApplicationStatus(applicationId, newStatus)
+      if (!organization) {
+        toast.error("Organization not found")
+        return
+      }
+      await updateApplicationStatusAction(applicationId, newStatus, organization.id)
       // Trigger parent refresh
       window.location.reload()
     } catch (error) {
@@ -32,7 +39,7 @@ export function ApplicationTable({ applications, onApplicationDeleted }: Applica
     if (!confirm("Are you sure you want to delete this application?")) return
 
     try {
-      await applicationService.deleteApplication(applicationId)
+      await deleteApplicationAction(applicationId)
       onApplicationDeleted?.(applicationId)
       window.location.reload()
     } catch (error) {
@@ -56,8 +63,8 @@ export function ApplicationTable({ applications, onApplicationDeleted }: Applica
         <tbody>
           {applications.map((app) => (
             <tr key={app.id} className="border-b border-gray-200 hover:bg-gray-50">
-              <td className="px-6 py-4 text-sm text-gray-900">{app.candidate_name}</td>
-              <td className="px-6 py-4 text-sm text-gray-600">{app.candidate_email}</td>
+              <td className="px-6 py-4 text-sm text-gray-900">{app.applicant_name}</td>
+              <td className="px-6 py-4 text-sm text-gray-600">{app.applicant_email}</td>
               <td className="px-6 py-4 text-sm text-gray-900">{app.roles?.title || "Unknown"}</td>
               <td className="px-6 py-4">
                 <select

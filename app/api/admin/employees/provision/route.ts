@@ -1,188 +1,115 @@
-import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
-import { createClient } from "@supabase/supabase-js"
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { connectToDatabase } from "@/lib/mongodb";
+import { User, Organization } from "@/models/User";
+import { Employee } from "@/models/Business";
+import bcrypt from "bcryptjs";
+import { mailService } from "@/lib/mail/mailService";
 
 export async function POST(req: Request) {
-    console.log("[Provision] Incoming request started")
+    console.log("[Provision] MongoDB route started");
     try {
-        const body = await req.json()
-        const { email: rawEmail, employeeId: rawEmployeeId, fullName, organizationId } = body
+        await connectToDatabase();
+        const body = await req.json();
+        const { email: rawEmail, employeeId: rawEmployeeId, fullName, organizationId } = body;
 
         if (!rawEmail || !rawEmployeeId || !organizationId) {
-            console.error("[Provision] Missing fields:", { rawEmail, rawEmployeeId, organizationId })
-            return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+            return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
         }
 
-        const email = rawEmail.trim().toLowerCase()
-        const employeeId = rawEmployeeId.trim()
-
-        console.log(`[Provision] Processing: ${email} with ID: ${employeeId}`)
+        const email = rawEmail.trim().toLowerCase();
+        const employeeId = rawEmployeeId.trim();
 
         // 1. Verify Requester Permissions
-        const authHeader = req.headers.get("Authorization")
-        if (!authHeader) {
-            console.error("[Provision] No Authorization header")
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        const session = await getServerSession(authOptions) as any;
+        if (!session || !session.user) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: authHeader } }
-        })
-
-        const { data: { user: requester }, error: authError } = await supabase.auth.getUser()
-
-        if (authError || !requester) {
-            console.error("[Provision] Invalid session:", authError?.message)
-            return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+        const requester = await User.findById(session.user.id);
+        if (!requester) {
+            return NextResponse.json({ error: "Requester not found" }, { status: 401 });
         }
 
-        const { data: membership, error: roleError } = await supabase
-            .from("users_organizations")
-            .select("role")
-            .eq("user_id", requester.id)
-            .eq("organization_id", organizationId)
-            .single()
+        const membership = requester.memberships.find(
+            (m: any) => m.organizationId?.toString() === organizationId
+        );
 
-        if (roleError || !membership || !["owner", "admin", "hr"].includes(membership.role)) {
-            console.error("[Provision] Access denied for user:", requester.id, roleError?.message)
-            return NextResponse.json({ error: "Forbidden: Insufficient permissions" }, { status: 403 })
+        if (!membership || !["owner", "admin", "hr"].includes(membership.role)) {
+            return NextResponse.json({ error: "Forbidden: Insufficient permissions" }, { status: 403 });
         }
 
         // 2. Global Integrity Check: Does this email already exist as an employee anywhere?
-        // We check using Service Role (Admin) to bypass RLS and catch system-wide duplicates
-        const supabaseAdmin = getSupabaseAdmin()
-
-        console.log(`[Provision] Checking global uniqueness for: ${email}`)
-        const { data: globalEmployee, error: globalCheckError } = await supabaseAdmin
-            .from("employees")
-            .select("id, organization_id")
-            .eq("email", email)
-            .maybeSingle()
-
-        if (globalCheckError) {
-            console.error("[Provision] Global check error:", globalCheckError.message)
-            return NextResponse.json({ error: "System integrity check failed" }, { status: 500 })
-        }
-
-        if (globalEmployee) {
-            console.error(`[Provision] Email conflict: ${email} already exists in org: ${globalEmployee.organization_id}`)
+        const existingEmployee = await Employee.findOne({ email });
+        if (existingEmployee) {
             return NextResponse.json({
-                error: "An employee with this email already exists in the system. Personnel records must have unique emails across all organizations."
-            }, { status: 400 })
+                error: "An employee with this email already exists in the system."
+            }, { status: 400 });
         }
 
         // 3. Provision Logic
-
-        // Fetch Org Name & Slug for the static link
-        const { data: org } = await supabaseAdmin
-            .from("organizations")
-            .select("name, slug")
-            .eq("id", organizationId)
-            .single()
-
-        const orgName = org?.name || "your organization"
-        const orgSlug = org?.slug
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-        const clockLink = orgSlug ? `${siteUrl}/org/${orgSlug}/clock` : `${siteUrl}/login`
-
-        // Check if user already exists in auth (Robust check)
-        // We use listUsers with a large limit or try to search
-        const { data: userListData, error: listError } = await supabaseAdmin.auth.admin.listUsers({
-            perPage: 1000 // Increase limit to avoid missing users in initial pages
-        })
-
-        if (listError) {
-            console.error("[Provision] Failed to list users:", listError.message)
-            return NextResponse.json({ error: "Failed to verify user status" }, { status: 500 })
+        const org = await Organization.findById(organizationId);
+        if (!org) {
+            return NextResponse.json({ error: "Organization not found" }, { status: 404 });
         }
 
-        const userInAuth = userListData.users.find(u => u.email?.toLowerCase() === email)
+        const orgName = org.name;
+        const orgSlug = org.slug;
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+        const clockLink = `${siteUrl}/org/${orgSlug}/clock`;
 
-        let userId: string
+        // Check if user already exists in auth (MongoDB Users collection)
+        let user = await User.findOne({ email });
+        let userId: string;
+        let isNewUser = false;
 
-        if (userInAuth) {
-            console.log(`[Provision] User exists (${userInAuth.id}), UPDATING password to Employee ID: ${employeeId}`)
+        const hashedPassword = await bcrypt.hash(employeeId, 12);
 
-            // To ensure the "Default" password works as the user expects,
-            // we update the existing user's password during provisioning.
-            const { data: updatedUser, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-                userInAuth.id,
-                {
-                    password: employeeId,
-                    user_metadata: {
-                        ...userInAuth.user_metadata,
-                        organization_id: organizationId,
-                        employee_id: employeeId
-                    }
-                }
-            )
-
-            if (updateError) {
-                console.error("[Provision] Update Password Error:", updateError.message)
-                return NextResponse.json({ error: `Could not set default password: ${updateError.message}` }, { status: 400 })
+        if (user) {
+            console.log(`[Provision] User exists (${user._id}), UPDATING password to Employee ID`);
+            user.password = hashedPassword;
+            // Ensure organization membership is added if not present
+            const hasMembership = user.memberships.some(
+                (m: any) => m.organizationId?.toString() === organizationId
+            );
+            if (!hasMembership) {
+                user.memberships.push({ organizationId, role: "member" });
             }
-
-            console.log("[Provision] User updated successfully")
-            userId = userInAuth.id
-
-            try {
-                const { mailService } = await import("@/lib/mail/mailService")
-                await mailService.sendEmployeeInviteEmail(
-                    email,
-                    orgName,
-                    fullName,
-                    clockLink,
-                    false, // isNewUser = false
-                    employeeId
-                )
-            } catch (mailErr) {
-                console.error("[Provision] mailService error (existing):", mailErr)
-            }
+            await user.save();
+            userId = user._id.toString();
         } else {
-            console.log(`[Provision] Creating new user with password: ${employeeId}`)
-
-            const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+            console.log(`[Provision] Creating new user for: ${email}`);
+            const newUser = await User.create({
                 email,
-                password: employeeId,
-                email_confirm: true,
-                user_metadata: {
-                    full_name: fullName,
-                    role: "employee",
-                    organization_id: organizationId,
-                    employee_id: employeeId
-                }
-            })
-
-            if (createError) {
-                console.error("[Provision] Create User Error:", createError.message)
-                return NextResponse.json({ error: `Auth creation failed: ${createError.message}` }, { status: 500 })
-            }
-
-            console.log("[Provision] New user created successfully:", userData.user.id)
-            userId = userData.user.id
-
-            try {
-                const { mailService } = await import("@/lib/mail/mailService")
-                await mailService.sendEmployeeInviteEmail(
-                    email,
-                    orgName,
-                    fullName,
-                    clockLink,
-                    true, // isNewUser = true
-                    employeeId
-                )
-            } catch (mailErr) {
-                console.error("[Provision] mailService error (new):", mailErr)
-            }
+                password: hashedPassword,
+                fullName,
+                name: fullName,
+                role: "user",
+                memberships: [{ organizationId, role: "member" }]
+            });
+            userId = newUser._id.toString();
+            isNewUser = true;
         }
 
-        console.log("[Provision] Request completed successfully for userId:", userId)
-        return NextResponse.json({ userId })
+        // 4. Send Invite Email
+        try {
+            await mailService.sendEmployeeInviteEmail(
+                email,
+                orgName,
+                fullName,
+                clockLink,
+                isNewUser,
+                employeeId
+            );
+        } catch (mailErr) {
+            console.error("[Provision] mailService error:", mailErr);
+        }
+
+        return NextResponse.json({ userId });
 
     } catch (error: any) {
-        console.error("[Provision] Unexpected error:", error)
-        return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 })
+        console.error("[Provision] Error:", error);
+        return NextResponse.json({ error: `Internal Server Error: ${error.message}` }, { status: 500 });
     }
 }

@@ -1,122 +1,96 @@
 "use server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
-import { createSupabaseServerClient } from "@/lib/supabaseServer"
+
+import { connectToDatabase } from "@/lib/mongodb";
+import { User, Organization } from "@/models/User";
+import { JobRole } from "@/models/Business";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 /**
  * Helper to enforce Super Admin Access
- * This function must be called at the start of EVERY admin action.
  */
 async function requireSuperAdmin() {
-    console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL)
-    const supabase = await createSupabaseServerClient()
-    try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-        if (authError) {
-            console.error("SuperAdmin Auth Error:", authError)
-            throw new Error(`Auth check failed: ${authError.message}`)
-        }
-        if (!user) throw new Error("Unauthorized")
+    const session = await getServerSession(authOptions) as any;
+    if (!session || !session.user) throw new Error("Unauthorized");
 
-        const { data: userData, error } = await supabase
-            .from("users")
-            .select("role")
-            .eq("id", user.id)
-            .single()
+    await connectToDatabase();
+    const user = await User.findById(session.user.id);
 
-        if (error || userData?.role !== 'super_admin') {
-            throw new Error("Forbidden: Super Admin Access Required")
-        }
-
-        return user
-    } catch (e: any) {
-        console.error("requireSuperAdmin Catch-all Error:", e)
-        if (e.message?.includes('fetch failed')) {
-            console.error("Fetch failure detected. This might be a networking issue or malformed SUPABASE_URL.")
-        }
-        throw e
+    if (!user || user.role !== 'super_admin') {
+        throw new Error("Forbidden: Super Admin Access Required");
     }
+
+    return user;
 }
 
 export async function getSystemStats() {
-    await requireSuperAdmin()
-    const adminClient = getSupabaseAdmin()
+    await requireSuperAdmin();
+    await connectToDatabase();
 
-    // Execute queries in parallel for performance
-    const [
-        { count: tenantCount },
-        { count: userCount },
-        { count: activeCount }
-    ] = await Promise.all([
-        adminClient.from("organizations").select("*", { count: 'exact', head: true }),
-        adminClient.from("users").select("*", { count: 'exact', head: true }).neq("role", "super_admin"),
-        adminClient.from("roles").select("*", { count: 'exact', head: true })
-    ])
+    const [tenantCount, userCount, activeCount] = await Promise.all([
+        Organization.countDocuments(),
+        User.countDocuments({ role: { $ne: "super_admin" } }),
+        JobRole.countDocuments({ status: "active" })
+    ]);
 
     return {
-        tenants: tenantCount || 0,
-        users: userCount || 0,
-        activeTenants: activeCount || 0,
-        revenue: (tenantCount || 0) * 15000 // Mock revenue for the gauge
-    }
+        tenants: tenantCount,
+        users: userCount,
+        activeTenants: activeCount,
+        revenue: tenantCount * 15000
+    };
 }
 
 export async function getLatestOrganizations(limit = 5) {
-    await requireSuperAdmin()
-    const adminClient = getSupabaseAdmin()
+    await requireSuperAdmin();
+    await connectToDatabase();
 
-    const { data, error } = await adminClient
-        .from("organizations")
-        .select(`
-            *,
-            users_organizations!users_organizations_organization_id_fkey (count),
-            employees!employees_organization_id_fkey (count)
-        `)
-        .order("created_at", { ascending: false })
-        .limit(limit)
+    const orgs = await Organization.find()
+        .sort({ createdAt: -1 })
+        .limit(limit);
 
-    if (error) throw error
-    return data
+    // We can't easily do the "count" join like Supabase in Mongoose without aggregation or multiple queries
+    // For now, returning orgs and mapping them
+    return orgs.map(org => org.toObject());
 }
 
 export async function getAllTenants(page = 1, pageSize = 20) {
-    await requireSuperAdmin()
-    const adminClient = getSupabaseAdmin()
+    await requireSuperAdmin();
+    await connectToDatabase();
 
-    const from = (page - 1) * pageSize
-    const to = from + pageSize - 1
+    const skip = (page - 1) * pageSize;
+    const [data, count] = await Promise.all([
+        Organization.find()
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(pageSize),
+        Organization.countDocuments()
+    ]);
 
-    const { data, count, error } = await adminClient
-        .from("organizations")
-        .select(`
-            *,
-            users_organizations!users_organizations_organization_id_fkey (count),
-            employees!employees_organization_id_fkey (count)
-        `, { count: 'exact' })
-        .range(from, to)
-        .order("created_at", { ascending: false })
-
-    if (error) throw error
-    return { data, count }
+    return { data: data.map(d => d.toObject()), count };
 }
 
 export async function getAllUsers(page = 1, pageSize = 20, search?: string) {
-    await requireSuperAdmin()
-    const adminClient = getSupabaseAdmin()
+    await requireSuperAdmin();
+    await connectToDatabase();
 
-    let query = adminClient
-        .from("users")
-        .select("*", { count: 'exact' })
+    const skip = (page - 1) * pageSize;
+    let query: any = { role: { $ne: "super_admin" } };
 
     if (search) {
-        query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+        query.$or = [
+            { email: { $regex: search, $options: "i" } },
+            { fullName: { $regex: search, $options: "i" } }
+        ];
     }
 
-    query = query.neq("role", "super_admin")
+    const [data, count] = await Promise.all([
+        User.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(pageSize),
+        User.countDocuments(query)
+    ]);
 
-    const { data, count, error } = await query
-        .range((page - 1) * pageSize, (page - 1) * pageSize + pageSize - 1)
-        .order("created_at", { ascending: false })
-
-    if (error) throw error
-    return { data, count }
+    return { data: data.map(d => d.toObject()), count };
 }

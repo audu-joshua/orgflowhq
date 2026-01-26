@@ -3,10 +3,10 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, LogOut, Sun, Moon, ChevronLeft, ChevronRight, ExternalLink, Copy, Check, ShieldCheck } from "lucide-react"
+import { LayoutDashboard, Briefcase, FileText, Building, Users, Clock, Settings, LogOut, Sun, Moon, ChevronLeft, ChevronRight, ExternalLink, ShieldCheck, Check } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useTheme } from "@/providers/ThemeProvider"
-import { getSupabaseClient } from "@/lib/supabaseClient"
+import { signOut } from "next-auth/react"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { navItems } from "@/config/navigation"
 
@@ -30,9 +30,7 @@ export function Sidebar() {
   const handleSignOut = async () => {
     setIsSigningOut(true)
     try {
-      const supabase = getSupabaseClient()
-      await supabase.auth.signOut()
-      window.location.href = "/login"
+      await signOut({ callbackUrl: "/login" })
     } catch (e) {
       setIsSigningOut(false)
     }
@@ -116,7 +114,7 @@ export function Sidebar() {
 
                 {/* Actual Settings Item */}
                 {effectivelyAllowed ? (
-                  <Link href={item.href} className="block">
+                  <Link href={item.href} key={item.href} className="block">
                     <div
                       className={`
                         flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group relative
@@ -130,7 +128,7 @@ export function Sidebar() {
                     </div>
                   </Link>
                 ) : (
-                  <TooltipProvider>
+                  <TooltipProvider key={item.href}>
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>
                         <div

@@ -1,151 +1,184 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import type { EOTMCompetition, EOTMVote, EOTMWinner, EOTMStatus } from "../types/eotm"
-
-const supabase = getSupabaseClient()
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { EOTMCompetition, EOTMVote, EOTMWinner, Employee } from "@/models/Business";
+import mongoose from "mongoose";
 
 export const eotmService = {
-    async getActiveCompetition(organizationId: string): Promise<EOTMCompetition | null> {
-        const now = new Date()
-        const month = now.getMonth() + 1
-        const year = now.getFullYear()
+    async getActiveCompetition(organizationId: string) {
+        await connectToDatabase();
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
 
-        const { data, error } = await supabase
-            .from('eotm_competitions')
-            .select('*')
-            .eq('organization_id', organizationId)
-            .eq('month', month)
-            .eq('year', year)
-            .maybeSingle()
+        const data = await EOTMCompetition.findOne({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            month,
+            year
+        });
 
-        if (error) throw error
-        return data
+        return data ? this.mapCompetitionToType(data) : null;
     },
 
-    async ensureCompetitionInitialized(organizationId: string): Promise<EOTMCompetition> {
-        const now = new Date()
-        const day = now.getDate()
-        const month = now.getMonth() + 1
-        const year = now.getFullYear()
+    async ensureCompetitionInitialized(organizationId: string) {
+        await connectToDatabase();
+        const now = new Date();
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
 
         // check if it's the 24th or later
         if (day < 24) {
-            // In production, we might return null here, but for testing or logic continuation:
-            const existing = await this.getActiveCompetition(organizationId)
-            if (existing) return existing
+            const existing = await this.getActiveCompetition(organizationId);
+            if (existing) return existing;
         }
 
-        const { data, error } = await supabase
-            .from('eotm_competitions')
-            .upsert({
-                organization_id: organizationId,
-                month,
-                year,
-                status: 'VOTING_OPEN'
-            }, { onConflict: 'organization_id, month, year' })
-            .select()
-            .single()
+        const data = await EOTMCompetition.findOneAndUpdate(
+            { organizationId: new mongoose.Types.ObjectId(organizationId), month, year },
+            { $setOnInsert: { status: 'VOTING_OPEN' } },
+            { upsert: true, new: true }
+        );
 
-        if (error) throw error
-        return data
+        return this.mapCompetitionToType(data);
     },
 
     async castVote(competitionId: string, voterId: string, nomineeId: string, voterRole: string) {
-        // Determine point weight
-        let points = 1
-        if (voterRole === 'hr') points = 3
-        else if (voterRole === 'owner') points = 2
+        await connectToDatabase();
 
-        const { error } = await supabase
-            .from('eotm_votes')
-            .insert({
-                competition_id: competitionId,
-                voter_id: voterId,
-                nominee_id: nomineeId,
+        let points = 1;
+        if (voterRole === 'hr') points = 3;
+        else if (voterRole === 'owner') points = 2;
+
+        try {
+            await EOTMVote.create({
+                competitionId: new mongoose.Types.ObjectId(competitionId),
+                voterId: new mongoose.Types.ObjectId(voterId),
+                nomineeId: new mongoose.Types.ObjectId(nomineeId),
                 points
-            })
-
-        if (error) {
-            if (error.code === '23505') throw new Error("You have already voted this month!")
-            throw error
+            });
+        } catch (error: any) {
+            if (error.code === 11000) throw new Error("You have already voted this month!");
+            throw error;
         }
     },
 
-    async getWinner(competitionId: string): Promise<EOTMWinner | null> {
-        const { data, error } = await supabase
-            .from('eotm_winners')
-            .select(`
-        *,
-        employee:employees (
-          full_name,
-          profile_image_url,
-          position
-        )
-      `)
-            .eq('competition_id', competitionId)
-            .maybeSingle()
+    async getWinner(competitionId: string) {
+        await connectToDatabase();
+        const winner = await EOTMWinner.findOne({
+            competitionId: new mongoose.Types.ObjectId(competitionId)
+        }).populate({
+            path: 'employeeId',
+            populate: { path: 'organizationId' }
+        });
 
-        if (error) throw error
-        return data
+        if (!winner) return null;
+
+        const obj = winner.toObject();
+        return {
+            id: obj._id.toString(),
+            competition_id: obj.competitionId.toString(),
+            employee_id: obj.employeeId?._id?.toString() || obj.employeeId?.toString(),
+            total_points: obj.totalPoints,
+            reveal_at: obj.revealAt.toISOString(),
+            created_at: obj.createdAt.toISOString(),
+            employee: obj.employeeId ? {
+                full_name: obj.employeeId.fullName,
+                profile_image_url: obj.employeeId.profileImageUrl || null,
+                position: obj.employeeId.position || null,
+                organization_id: obj.employeeId.organizationId?._id?.toString() || obj.employeeId.organizationId?.toString()
+            } : undefined,
+            organization: obj.employeeId?.organizationId || null
+        };
     },
 
-    // Manual Trigger for Testing
-    async devForceStartVoting(organizationId: string) {
-        const now = new Date()
-        const { data, error } = await supabase
-            .from('eotm_competitions')
-            .upsert({
-                organization_id: organizationId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear(),
-                status: 'VOTING_OPEN'
-            }, { onConflict: 'organization_id, month, year' })
-            .select()
-            .single()
+    async getWinnerById(id: string) {
+        await connectToDatabase();
+        const winner = await EOTMWinner.findById(id).populate({
+            path: 'employeeId',
+            populate: { path: 'organizationId' }
+        });
 
-        if (error) throw error
-        return data
+        if (!winner) return null;
+
+        const obj = winner.toObject();
+        return {
+            id: obj._id.toString(),
+            competition_id: obj.competitionId.toString(),
+            employee_id: obj.employeeId?._id?.toString() || obj.employeeId?.toString(),
+            total_points: obj.totalPoints,
+            reveal_at: obj.revealAt.toISOString(),
+            created_at: obj.createdAt.toISOString(),
+            employee: obj.employeeId ? {
+                full_name: obj.employeeId.fullName,
+                profile_image_url: obj.employeeId.profileImageUrl || null,
+                position: obj.employeeId.position || null,
+                organization_id: obj.employeeId.organizationId?._id?.toString() || obj.employeeId.organizationId?.toString()
+            } : undefined,
+            organization: obj.employeeId?.organizationId || null
+        };
+    },
+
+    async devForceStartVoting(organizationId: string) {
+        await connectToDatabase();
+        const now = new Date();
+        const data = await EOTMCompetition.findOneAndUpdate(
+            {
+                organizationId: new mongoose.Types.ObjectId(organizationId),
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
+            },
+            { status: 'VOTING_OPEN' },
+            { upsert: true, new: true }
+        );
+
+        return this.mapCompetitionToType(data);
     },
 
     async devForceReveal(competitionId: string) {
-        // 1. Tally votes for this competition
-        const { data: votes, error: voteError } = await supabase
-            .from('eotm_votes')
-            .select('nominee_id, points')
-            .eq('competition_id', competitionId)
+        await connectToDatabase();
 
-        if (voteError) throw voteError
+        // 1. Tally votes
+        const votes = await EOTMVote.find({
+            competitionId: new mongoose.Types.ObjectId(competitionId)
+        });
+
         if (!votes || votes.length === 0) {
-            throw new Error("No votes found! Please cast at least one vote before revealing.")
+            throw new Error("No votes found! Please cast at least one vote before revealing.");
         }
 
-        // Point Tally Logic
-        const tallies: Record<string, number> = {}
+        const tallies: Record<string, number> = {};
         votes.forEach((v: any) => {
-            tallies[v.nominee_id] = (tallies[v.nominee_id] || 0) + v.points
-        })
+            const id = v.nomineeId.toString();
+            tallies[id] = (tallies[id] || 0) + v.points;
+        });
 
-        // Sort to find winner
-        const sorted = Object.entries(tallies).sort((a, b) => b[1] - a[1])
-        const [winnerId, totalPoints] = sorted[0]
+        const sorted = Object.entries(tallies).sort((a, b) => b[1] - a[1]);
+        const [winnerId, totalPoints] = sorted[0];
 
         // 2. Update competition status
-        const { error: statusError } = await supabase
-            .from('eotm_competitions')
-            .update({ status: 'REVEALED' })
-            .eq('id', competitionId)
+        await EOTMCompetition.findByIdAndUpdate(competitionId, { status: 'REVEALED' });
 
-        if (statusError) throw statusError
+        // 3. Create/Update winner
+        await EOTMWinner.findOneAndUpdate(
+            { competitionId: new mongoose.Types.ObjectId(competitionId) },
+            {
+                employeeId: new mongoose.Types.ObjectId(winnerId),
+                totalPoints,
+                revealAt: new Date()
+            },
+            { upsert: true }
+        );
+    },
 
-        // 3. Create/Update winner record
-        const { error: winnerError } = await supabase
-            .from('eotm_winners')
-            .upsert({
-                competition_id: competitionId,
-                employee_id: winnerId,
-                total_points: totalPoints,
-                reveal_at: new Date().toISOString()
-            }, { onConflict: 'competition_id' })
-
-        if (winnerError) throw winnerError
+    mapCompetitionToType(doc: any) {
+        const obj = doc.toObject ? doc.toObject() : doc;
+        return {
+            id: obj._id.toString(),
+            organization_id: obj.organizationId.toString(),
+            month: obj.month,
+            year: obj.year,
+            status: obj.status,
+            created_at: obj.createdAt.toISOString(),
+            updated_at: obj.updatedAt.toISOString()
+        };
     }
-}
+};

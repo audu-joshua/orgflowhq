@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Bell, Calendar, Clock, ChevronRight } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
-import { interviewService } from "@/features/interviews/services/interviewService"
+import { getInterviewsByOrganizationAction } from "@/features/interviews/actions"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -24,7 +24,7 @@ export function NotificationBell() {
             try {
                 // For now, notifications are just upcoming interviews
                 // In a real app, this might come from a dedicated notifications table
-                const interviews = await interviewService.getInterviewsByOrganization(organization.id)
+                const interviews = await getInterviewsByOrganizationAction(organization.id)
 
                 const upcoming = interviews.filter(i =>
                     new Date(i.scheduled_at) > new Date() && i.status === 'scheduled'

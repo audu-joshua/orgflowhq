@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { X, Lock, Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react"
-import { authService } from "../services/authService"
+import { changePasswordAction } from "../actions"
+import { useAppStore } from "@/store/useAppStore"
 import { toast } from "@/lib/toast"
 
 interface ChangePasswordModalProps {
@@ -11,6 +12,7 @@ interface ChangePasswordModalProps {
 }
 
 export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProps) {
+    const { user } = useAppStore()
     const [newPassword, setNewPassword] = useState("")
     const [confirmPassword, setConfirmPassword] = useState("")
     const [showPassword, setShowPassword] = useState(false)
@@ -36,7 +38,9 @@ export function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProp
         }
 
         try {
-            await authService.updatePassword(newPassword)
+            if (!user) throw new Error("User session not found")
+            const result = await changePasswordAction(user.id, newPassword)
+            if (!result.success) throw new Error(result.error)
             setSuccess(true)
             toast.success("Password updated successfully!")
             setTimeout(() => {

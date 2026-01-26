@@ -3,6 +3,7 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { useAuth } from "../hooks/useAuth"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
@@ -17,6 +18,7 @@ const FREE_EMAIL_PROVIDERS = [
 
 export function RegisterForm() {
   const router = useRouter()
+  const { update } = useSession()
   const { signUp, loading, error, clearError, refreshProfile } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -36,8 +38,6 @@ export function RegisterForm() {
     e.preventDefault()
     setLocalLoading(true)
 
-    // const isFreeEmail = !validateCompanyEmail(email) // Temporarily disabling strict check or using for warning if needed
-
     if (password.length < 6) {
       toast.error("Password too short", { description: "Password must be at least 6 characters" })
       setLocalLoading(false)
@@ -45,130 +45,73 @@ export function RegisterForm() {
     }
 
     try {
-      // 1. Attempt to sign up (create identity)
-      try {
-        await signUp(email, password, organizationName)
-      } catch (err: any) {
-        console.log("Signup initial attempt failed code:", err.code, "msg:", err.message)
+      const { signIn: nextAuthSignIn, getSession } = await import("next-auth/react")
 
-        // Robust check for Supabase "User already registered" error (422)
-        const isUserExists =
-          err.code === "user_already_exists" ||
-          err.message?.includes("already registered") ||
-          (err.status === 422 && err.name === "AuthApiError")
-
-        if (isUserExists) {
-          console.log("[RegisterForm] User exists, attempting recovery...")
-          clearError()
-
-          // Attempt silent login
-          const { getSupabaseClient } = await import("@/lib/supabaseClient")
-          const supabase = getSupabaseClient()
-
-          const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          })
-
-          if (signInError || !signInData.session) {
-            // WRONG PASSWORD -> Show specific toast
-            toast.error("Account Previously Registered", {
-              description: "Please use your last working password to re-register this organization, or use Forgot Password.",
-              duration: 8000,
-            })
-            throw new Error("Account previously registered. Use your old password or reset it.")
-          }
-
-          // SUCCESS -> If login worked, check if they already have an org
-          // If they do, we don't need to provision, just redirect
-          const profile = (await refreshProfile(signInData.user!.id)) as any
-          if (profile && profile.organization_id) {
-            console.log("[RegisterForm] User already provisioned, redirecting to dashboard.")
-            toast.success("Welcome Back", {
-              title: "Already Registered",
-              description: "Redirecting you to the dashboard.",
-              duration: 3000,
-            })
-            router.push("/dashboard")
-            return
-          }
-
-          // Otherwise proceed to provision (Silent login worked but no org yet)
-        } else {
-          throw err
-        }
-      }
-
-      // If we reach here, we have a session (either from fresh signup or silent login)
-      const { getSupabaseClient } = await import("@/lib/supabaseClient")
-      const supabase = getSupabaseClient()
-      let { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) {
-        throw new Error("Authentication failed. Please try again.")
-      }
-
-      // 2. Provision Organization on the server
-      const response = await fetch("/api/auth/register-org", {
+      // 1. Signup (Create MongoDB User)
+      const signupRes = await fetch("/api/auth/signup", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`
-        },
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, fullName })
+      })
+
+      if (!signupRes.ok) {
+        const signupError = await signupRes.json()
+        if (!signupError.error?.includes("already exists")) {
+          throw new Error(signupError.error || "Signup failed")
+        }
+        // If user already exists, we'll try to sign in and provision org if missing
+      }
+
+      // 2. Sign In to get session for org provisioning
+      const signInResult = await nextAuthSignIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      })
+
+      if (signInResult?.error) {
+        if (signupRes.ok) throw new Error("Could not sign in after account creation")
+        toast.error("Account already exists", {
+          description: "This email is registered. Please use login or try a different email."
+        })
+        return
+      }
+
+      const session = await getSession()
+      if (!session) throw new Error("Failed to establish session")
+
+      // 3. Provision Organization
+      const orgRes = await fetch("/api/auth/register-org", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationName, fullName })
       })
 
-      if (!response.ok) {
-        const errorData = await response.json()
-        if (errorData.error?.includes("already linked")) {
-          // If already linked, just redirect
-          toast.success("Account Found", {
-            title: "Already Linked",
-            description: "Taking you to your dashboard...",
-            duration: 3000,
-          })
-          router.push("/dashboard")
-          return
-        }
-        throw new Error(errorData.error || "We encountered an issue setting up your organization. Please try again.")
+      if (!orgRes.ok) {
+        const orgError = await orgRes.json()
+        throw new Error(orgError.error || "Failed to set up organization")
       }
 
-      const provisionData = await response.json()
+      const orgData = await orgRes.json()
 
-      // 3. Update Store with full Org details
-      const { useAppStore } = await import("@/store/useAppStore")
-      const store = useAppStore.getState()
+      // 4. Enrich session with new organization data
+      await update()
 
-      store.setOrganization({
-        id: provisionData.organizationId,
-        slug: provisionData.slug,
-        name: organizationName
-      })
-
-      if (store.user) {
-        store.setUser({
-          ...store.user,
-          organization_id: provisionData.organizationId,
-          role: "owner",
-          full_name: fullName
-        })
+      // 5. Sync store with new data
+      const updatedSession = await getSession() as any
+      if (updatedSession?.user?.id) {
+        await refreshProfile(updatedSession.user.id)
       }
-
-      // 4. Force a profile sync
-      await refreshProfile(session.user.id, provisionData.organizationId)
 
       toast.success("Success", {
-        title: "Account Created!",
+        title: "Setup Complete!",
         description: `${organizationName} is ready. Redirecting...`,
         duration: 4000,
       })
 
       router.push("/dashboard")
     } catch (err) {
-      // Don't duplicate error if we already toasted
-      if (err instanceof Error && !err.message.includes("Account previously registered")) {
-        toast.error("Registration failed", { description: err.message })
-      }
+      toast.error("Registration failed", { description: err instanceof Error ? err.message : "Internal Error" })
     } finally {
       setLocalLoading(false)
     }

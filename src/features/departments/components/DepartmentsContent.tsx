@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Plus } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { departmentService } from "../services/departmentService"
+import { getDepartmentsByOrganizationAction } from "../actions"
 import { DepartmentCard } from "./DepartmentCard"
 import { CreateDepartmentModal } from "./CreateDepartmentModal"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
@@ -21,8 +21,8 @@ export function DepartmentsContent() {
 
   const loadDepartments = async () => {
     try {
-      const data = await departmentService.getDepartmentsByOrganization(organization!.id)
-      setDepartments(data)
+      const data = await getDepartmentsByOrganizationAction(organization!.id)
+      setDepartments(data as any)
     } catch (error) {
       console.error("Failed to load departments:", error)
     } finally {

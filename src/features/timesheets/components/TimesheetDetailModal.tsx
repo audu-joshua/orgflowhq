@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { X, Clock, FileText, User, ShieldAlert, Calendar } from "lucide-react"
 import { format } from "date-fns"
-import type { Timesheet } from "@/features/timesheets/services/timesheetService"
+import type { Timesheet } from "../types"
 import type { Employee } from "@/features/departments/types"
 
 interface TimesheetDetailModalProps {

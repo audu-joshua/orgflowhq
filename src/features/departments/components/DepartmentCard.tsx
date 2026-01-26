@@ -2,7 +2,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Building, Users, Trash2, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { departmentService } from "../services/departmentService"
+import { deleteDepartmentAction } from "../actions"
 import { toast } from "@/lib/toast"
 import {
   AlertDialog,
@@ -34,7 +34,7 @@ export function DepartmentCard({ department, onDeleted }: DepartmentCardProps) {
 
     setIsDeleting(true)
     try {
-      await departmentService.deleteDepartment(department.id)
+      await deleteDepartmentAction(department.id)
       toast.success("Department deleted successfully")
       onDeleted?.(department.id)
     } catch (error) {

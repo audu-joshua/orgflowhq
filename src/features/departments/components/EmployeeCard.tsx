@@ -5,7 +5,7 @@ import { Mail, Phone, Calendar, User, Trash2, Edit2 } from "lucide-react"
 import { EmployeeModal } from "./EmployeeModal"
 import { DeleteConfirmModal } from "./DeleteConfirmModal"
 import { EditEmployeeModal } from "./EditEmployeeModal"
-import { departmentService } from "../services/departmentService"
+import { deleteEmployeeAction } from "../actions"
 import { formatDate } from "@/lib/utils"
 import type { Employee } from "../types"
 
@@ -44,7 +44,7 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await departmentService.deleteEmployee(employee.id)
+      await deleteEmployeeAction(employee.id)
       onDeleted?.()
       setIsDeleteModalOpen(false)
     } catch (error) {

@@ -3,16 +3,18 @@
 import { useState, useEffect } from "react"
 import { useAppStore } from "@/store/useAppStore"
 import { Organization } from "@/features/organization/types"
-import { organizationService } from "@/features/organization/services/organizationService"
+import { getOrganizationSubscriptionAction } from "@/features/organization/actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/lib/toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { useSession } from "next-auth/react"
 
 export function BillingPage() {
     const { organization } = useAppStore()
+    const { data: session } = useSession()
     const [subscription, setSubscription] = useState<any>(null)
     const [loading, setLoading] = useState(true)
     const [processingPlan, setProcessingPlan] = useState<string | null>(null)
@@ -59,7 +61,7 @@ export function BillingPage() {
 
     const loadSubscription = async () => {
         try {
-            const sub = await organizationService.getOrganizationSubscription(organization!.id)
+            const sub = await getOrganizationSubscriptionAction(organization!.id)
             setSubscription(sub)
         } catch (error) {
             console.error("Failed to load subscription", error)
@@ -71,7 +73,6 @@ export function BillingPage() {
     const handleSubscribe = async (planSlug: string) => {
         setProcessingPlan(planSlug)
         try {
-            const { data: { session } } = await (await import("@/lib/supabaseClient")).getSupabaseClient().auth.getSession()
             if (!session?.user?.email) throw new Error("User email not found")
 
             // Call API to initialize transaction
@@ -82,7 +83,7 @@ export function BillingPage() {
                     organizationId: organization!.id,
                     planSlug,
                     email: session.user.email,
-                    callbackUrl: `${window.location.origin}/dashboard/billing` // Return here after payment
+                    callbackUrl: `${window.location.origin}/dashboard/billing`
                 })
             })
 
@@ -94,7 +95,7 @@ export function BillingPage() {
                 window.location.href = data.data.authorization_url
             } else {
                 toast.success("Subscription updated (Free tier)")
-                loadSubscription() // Reload if instant update
+                loadSubscription()
             }
 
         } catch (error: any) {
@@ -111,7 +112,6 @@ export function BillingPage() {
     const currentPlanSlug = subscription?.plan?.slug || 'free'
     const isAnnual = billingInterval === 'yearly'
 
-    // Pricing Config (Mirroring Pricing.tsx logic but reusable here)
     const plans = [
         {
             name: "Free Tier",
@@ -149,7 +149,6 @@ export function BillingPage() {
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">Billing & Plans</h1>
                     <p className="text-muted-foreground mt-2">Manage your subscription and payment methods.</p>
                 </div>
-                {/* Billing Toggle */}
                 <div className="flex items-center gap-3 bg-muted p-1 rounded-lg">
                     <button
                         onClick={() => setBillingInterval('monthly')}
@@ -173,8 +172,8 @@ export function BillingPage() {
                         <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
                     </CardTitle>
                     <CardDescription>
-                        {subscription?.current_period_end
-                            ? `Your plan renews on ${new Date(subscription.current_period_end).toLocaleDateString()}.`
+                        {subscription?.currentPeriodEnd
+                            ? `Your plan renews on ${new Date(subscription.currentPeriodEnd).toLocaleDateString()}.`
                             : "You are currently on the free tier."}
                     </CardDescription>
                 </CardHeader>

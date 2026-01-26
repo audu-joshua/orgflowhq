@@ -2,9 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { X, Search, User, Trophy, Check, Send, Loader2 } from "lucide-react"
-import { eotmService } from "../services/eotmService"
-import { departmentService } from "../services/departmentService"
-import { organizationService } from "@/features/organization/services/organizationService"
+import { castVoteAction } from "../eotmActions"
+import { getEmployeesByOrganizationAction } from "../actions"
 import { toast } from "@/lib/toast"
 
 interface EOTMVoteOverlayProps {
@@ -34,7 +33,7 @@ export function EOTMVoteOverlay({
         if (!isOpen) return
         const fetchEmployees = async () => {
             try {
-                const data = await departmentService.getEmployeesByOrganization(organizationId)
+                const data = await getEmployeesByOrganizationAction(organizationId)
 
                 // Filter: 1. Not self, 2. Not owner, 3. Is active
                 const filtered = data.filter((emp: any) =>
@@ -57,7 +56,8 @@ export function EOTMVoteOverlay({
         if (!selectedNominee) return
         setSubmitting(true)
         try {
-            await eotmService.castVote(competitionId, voterId, selectedNominee, voterRole)
+            const res = await castVoteAction(competitionId, voterId, selectedNominee, voterRole)
+            if (!res.success) throw new Error(res.error)
             toast.success("Your vote has been counted!")
             onClose()
         } catch (error: any) {

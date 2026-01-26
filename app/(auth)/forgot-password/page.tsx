@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import { AuthPageLayout } from "@/features/auth/components/AuthPageLayout"
-import { getSupabaseClient } from "@/lib/supabaseClient"
 import Link from "next/link"
 import { Loader2, CheckCircle2 } from "lucide-react"
 
@@ -17,12 +16,15 @@ export default function ForgotPasswordPage() {
         setLoading(true)
         setError("")
         try {
-            const supabase = getSupabaseClient()
-            const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+            const response = await fetch("/api/auth/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email.toLowerCase() })
             })
 
-            if (error) throw error
+            const data = await response.json()
+            if (!response.ok) throw new Error(data.error || "Failed to send reset link")
+
             setSubmitted(true)
         } catch (err: any) {
             setError(err.message || "Failed to send reset link")

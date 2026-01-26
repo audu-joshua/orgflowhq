@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useAppStore } from "@/store/useAppStore"
-import { interviewService } from "../services/interviewService"
+import { getInterviewsByOrganizationAction } from "../actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { Calendar as CalendarIcon, Clock, MapPin, Video, User, Briefcase, ExternalLink, ChevronLeft, ChevronRight, CheckCircle, Plus } from "lucide-react"
@@ -32,7 +32,7 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
 
         const loadInterviews = async () => {
             try {
-                const data = await interviewService.getInterviewsByOrganization(organization.id)
+                const data = await getInterviewsByOrganizationAction(organization.id)
                 setInterviews(data)
             } catch (error) {
                 console.error("Failed to load interviews:", error)
@@ -109,7 +109,7 @@ export function InterviewsList({ isGoogleConnected }: InterviewsListProps) {
                 setSelectedInterview(null)
                 setShowDeleteConfirm(false)
                 // Refresh list
-                const data = await interviewService.getInterviewsByOrganization(organization!.id)
+                const data = await getInterviewsByOrganizationAction(organization!.id)
                 setInterviews(data)
             } else {
                 toast.error("Failed to delete interview")

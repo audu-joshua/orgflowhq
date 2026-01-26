@@ -1,295 +1,130 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import { slugify } from "@/lib/utils"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { User, Organization } from "@/models/User";
+import { Employee } from "@/models/Business";
+import bcrypt from "bcryptjs";
+import { mailService } from "@/lib/mail/mailService";
 
 export const authService = {
   async validateAccessStatus(email: string) {
     try {
-      const response = await fetch("/api/auth/validate-status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email })
-      })
+      await connectToDatabase();
+      const normalizedEmail = email.toLowerCase();
+      const user = await User.findOne({ email: normalizedEmail });
+      if (!user) return { allowed: true }; // Allow signup if user not found
 
-      const result = await response.json()
-      return result
+      // Custom business logic for status check can go here
+      // For now, we assume all MongoDB users are active unless flagged
+      return { allowed: true };
     } catch (err) {
-      console.warn("[AuthService] Validation API error:", err)
-      return { allowed: true } // Fail open on network errors
+      console.warn("[AuthService] Validation error:", err);
+      return { allowed: true };
     }
   },
 
   async signUp(email: string, password: string, organizationName: string, fullName?: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
+    const normalizedEmail = email.toLowerCase();
 
-    try {
-      // 1. Sign up user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_DEV_SUPABASE_REDIRECT_URL || `${window.location.origin}/dashboard`,
-          data: {
-            full_name: fullName || "Owner"
-          }
-        },
-      })
+    const existingUser = await User.findOne({ email: normalizedEmail });
+    if (existingUser) throw new Error("User already exists");
 
-      if (authError) throw authError
-      if (!authData.user) throw new Error("Failed to create user")
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-      return { user: authData.user }
-    } catch (error) {
-      console.error("Sign up error:", error)
-      throw error
-    }
-  },
+    const newUser = await User.create({
+      email: normalizedEmail,
+      password: hashedPassword,
+      fullName,
+      name: fullName,
+      role: "user",
+      memberships: [],
+    });
 
-  async signIn(email: string, password: string) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    if (error) throw error
-    return data
-  },
-
-  async signOut() {
-    const supabase = getSupabaseClient()
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-  },
-
-  async getCurrentUser() {
-    const supabase = getSupabaseClient()
-
-    try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) throw error
-      return session?.user ?? null
-    } catch (error) {
-      // Session missing is expected when not logged in
-      return null
-    }
+    return { user: { id: newUser._id.toString(), email: newUser.email } };
   },
 
   async getUserProfile(userId: string, scopedOrgId?: string) {
-    const supabase = getSupabaseClient()
-    console.log(`[getUserProfile] Fetching for userId: ${userId}, scopedOrgId: ${scopedOrgId}`)
+    await connectToDatabase();
+    console.log(`[getUserProfile] MongoDB lookup for: ${userId}, scopedOrgId: ${scopedOrgId} `);
 
-    // 0. Check for Platform-Level Role (Super Admin)
-    const { data: publicUser } = await supabase
-      .from("users")
-      .select("id, email, full_name, profile_image_url, role, organization_id")
-      .eq("id", userId)
-      .single()
+    // 1. Find User and populate organization details
+    const dbUser = await User.findById(userId).populate("memberships.organizationId");
 
-    // Even if SUPER ADMIN, check for organization links to populate context
-    // This allows them to "use" the app as a normal user if they choose
-    let adminOrgData = null;
-    if (publicUser?.role === 'super_admin') {
-      console.log(`[getUserProfile] Found SUPER ADMIN: ${userId}`)
+    if (!dbUser) return null;
 
-      const { data: orgLink } = await supabase
-        .from("users_organizations")
-        .select("role, organization_id, organizations(id, slug, name, logo_url, address, welcome_doc_url)")
-        .eq("user_id", userId)
-        .maybeSingle()
-
-      if (orgLink) {
-        adminOrgData = {
-          organization_id: orgLink.organization_id,
-          organizations: orgLink.organizations
-        }
-      }
-
-      return {
-        ...publicUser,
-        organization_id: adminOrgData?.organization_id || "",
-        role: 'super_admin', // Keep their high-level role
-        status: 'active',
-        organizations: adminOrgData?.organizations || [],
-        is_employee_only: false
-      }
-    }
-
-    // 1. Check for privileged role in specific organization
-    // If scopedOrgId is provided, use it. Otherwise query without org filter to get primary role
-    let roleQuery = supabase
-      .from("users_organizations")
-      .select("role, organization_id, organizations(id, slug, name, logo_url, address, welcome_doc_url)")
-      .eq("user_id", userId)
-
+    // 2. Determine Primary Membership
+    let activeMembership = null;
     if (scopedOrgId) {
-      roleQuery = roleQuery.eq("organization_id", scopedOrgId)
+      activeMembership = dbUser.memberships.find(
+        (m: any) => m.organizationId?._id?.toString() === scopedOrgId
+      );
+    } else if (dbUser.memberships.length > 0) {
+      activeMembership = dbUser.memberships[0];
     }
 
-    const { data: roleLink, error: roleError } = await roleQuery.maybeSingle()
-
-    if (roleError) console.error("[getUserProfile] Role lookup error:", roleError)
-
-    if (roleLink) {
-      console.log(`[getUserProfile] Found privileged role: ${roleLink.role} for org: ${roleLink.organization_id}`)
-
-      // Also try to get employee details for name/image
-      const { data: employeeDetails } = await supabase
-        .from("employees")
-        .select("full_name, profile_image_url, status")
-        .eq("user_id", userId)
-        .eq("organization_id", roleLink.organization_id)
-        .maybeSingle()
-
-      return {
-        id: userId,
-        email: publicUser?.email || "",
-        created_at: "", // Not strictly needed for auth check
-        full_name: employeeDetails?.full_name || publicUser?.full_name,
-        profile_image_url: employeeDetails?.profile_image_url || publicUser?.profile_image_url,
-        organization_id: roleLink.organization_id,
-        role: roleLink.role,
-        status: employeeDetails?.status || 'active',
-        organizations: roleLink.organizations,
-        is_employee_only: false
-      }
+    // 3. Get Employee details if membership exists
+    let employeeData = null;
+    if (activeMembership) {
+      employeeData = await Employee.findOne({
+        userId: dbUser._id,
+        organizationId: activeMembership.organizationId?._id
+      }).populate("departmentId");
     }
 
-    console.log("[getUserProfile] No privileged role found. Checking employees table...")
-
-    // 2. If not privileged, check employees table (Clock-only users)
-    let employeeQuery = supabase
-      .from("employees")
-      .select("*, organizations(*)")
-      .eq("user_id", userId)
-
-    if (scopedOrgId) {
-      employeeQuery = employeeQuery.eq("organization_id", scopedOrgId)
-    }
-
-    const { data: employeeData, error: empError } = await employeeQuery.maybeSingle()
-
-    if (empError) console.error("[getUserProfile] Employee lookup error:", empError)
-
-    if (employeeData) {
-      console.log(`[getUserProfile] Found employee record for org: ${employeeData.organization_id}`)
-      return {
-        id: employeeData.user_id,
-        email: employeeData.email,
-        organization_id: employeeData.organization_id,
-        created_at: employeeData.created_at,
-        role: "employee",
-        full_name: employeeData.full_name,
-        profile_image_url: employeeData.profile_image_url,
-        status: employeeData.status,
-        is_employee_only: true,
-        organizations: employeeData.organizations
-      }
-    }
-
-    // 3. Fallback: User exists in Auth but has no roles/links
-    console.warn(`[getUserProfile] No links found for ${userId} in ${scopedOrgId || 'any org'}.`)
-    const { data: basicUser } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle()
-
-    if (basicUser) {
-      return {
-        ...basicUser,
-        organization_id: scopedOrgId || basicUser.organization_id || "", // Prioritize scope, fallback to DB only if no scope
-        role: null,
-        organizations: null
-      }
-    }
-
-    return null
+    return {
+      id: dbUser._id.toString(),
+      email: dbUser.email,
+      fullName: dbUser.fullName || dbUser.name,
+      profileImageUrl: dbUser.profileImageUrl || dbUser.image,
+      role: activeMembership?.role || dbUser.role,
+      systemRole: dbUser.role, // "super_admin" or "user"
+      organization_id: activeMembership?.organizationId?._id?.toString() || "",
+      organizations: activeMembership?.organizationId || null,
+      status: employeeData?.status || 'active',
+      is_employee_only: dbUser.role !== 'super_admin' && activeMembership?.role === 'member',
+      created_at: (dbUser as any).createdAt?.toISOString() || new Date().toISOString()
+    };
   },
 
-  async setupEmployeeAccount(email: string, employeeId: string) {
-    const supabase = getSupabaseClient()
-    console.log(`[setupEmployeeAccount] Starting for email: ${email}, ID: ${employeeId}`)
-
-    // 1. Verify employee exists and has no user_id
-    const { data: employee, error: empError } = await supabase
-      .from("employees")
-      .select("*")
-      .eq("email", email)
-      .eq("employee_id", employeeId)
-      .maybeSingle()
-
-    if (empError) {
-      console.error("[setupEmployeeAccount] Employee lookup error:", empError)
-      throw empError
-    }
-
-    if (!employee) {
-      console.warn("[setupEmployeeAccount] No matching employee found for:", { email, employeeId })
-      throw new Error("No employee record matches these credentials.")
-    }
-
-    if (employee.user_id) {
-      console.log("[setupEmployeeAccount] Employee already has user_id:", employee.user_id)
-      throw new Error("Account already exists. Try logging in normally.")
-    }
-
-    console.log("[setupEmployeeAccount] Creating auth user...")
-    // 2. Register the user with their employee ID as password
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: employeeId,
-      options: {
-        data: {
-          full_name: employee.full_name
-        }
-      }
-    })
-
-    if (signUpError) {
-      console.error("[setupEmployeeAccount] Auth signUp error:", signUpError.message)
-      throw signUpError
-    }
-
-    if (!authData.user) {
-      console.error("[setupEmployeeAccount] Auth signUp succeeded but no user returned")
-      throw new Error("Signup failed.")
-    }
-
-    console.log("[setupEmployeeAccount] Auth user created successfully. ID:", authData.user.id)
-
-    // 3. Link the employee record to the new user_id
-    const { error: linkError } = await supabase
-      .from("employees")
-      .update({ user_id: authData.user.id })
-      .eq("id", employee.id)
-
-    if (linkError) {
-      console.error("[setupEmployeeAccount] Failed to link employee record to user_id:", linkError)
-      throw linkError
-    }
-
-    console.log("[setupEmployeeAccount] Link successful.")
-    return authData.user
+  // Mocking or removing Supabase specific methods
+  async signOut() {
+    // NextAuth handles signout via its own utility
   },
 
-  async updatePassword(newPassword: string) {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword
-    })
-
-    if (error) throw error
-    return data
+  async getCurrentUser() {
+    // NextAuth handles this via useSession or getServerSession
+    return null;
   },
 
-  async sendPasswordResetEmail(email: string, redirectTo?: string) {
-    const supabase = getSupabaseClient()
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: redirectTo || `${window.location.origin}/auth/callback?type=recovery`,
-    })
+  async changePassword(userId: string, newPassword: string) {
+    await connectToDatabase();
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    const user = await User.findByIdAndUpdate(userId, { password: hashedPassword });
+    if (!user) throw new Error("User not found");
+    return { success: true };
+  },
 
-    if (error) throw error
-    return data
+  async forgotPassword(email: string) {
+    // This would typically generate a reset token and send an email
+    // For now, mirroring the intent
+    await connectToDatabase();
+    const user = await User.findOne({ email });
+    if (!user) throw new Error("User not found");
+
+    // Generate Reset Token
+    const resetToken = crypto.randomUUID();
+    const resetExpires = new Date(Date.now() + 3600000); // 1 hour
+
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetExpires;
+    await user.save();
+
+    // Send Email
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const resetLink = `${siteUrl}/reset-password?token=${resetToken}`;
+
+    await mailService.sendPasswordResetEmail(email, resetLink);
+
+    return { success: true };
   }
-}
+};

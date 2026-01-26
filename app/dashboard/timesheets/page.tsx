@@ -2,8 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useAppStore } from "@/store/useAppStore"
-import { timesheetService, Timesheet } from "@/features/timesheets/services/timesheetService"
-import { departmentService } from "@/features/departments/services/departmentService"
+import {
+    getAllTimesheetsAction,
+    updateTimesheetStatusAction,
+    updateTimesheetsStatusAction
+} from "@/features/timesheets/actions"
+import { getEmployeesByOrganizationAction } from "@/features/departments/actions"
+import type { Timesheet } from "@/features/timesheets/types"
 import { Check, X, Clock, User, Filter, Search, AlertCircle, Download, Calendar, Plus, Edit2 } from "lucide-react"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { formatDate } from "@/lib/utils"
@@ -39,11 +44,11 @@ export default function TimesheetsPage() {
     const fetchTimesheets = async () => {
         setLoading(true)
         try {
-            const data = await timesheetService.getAllTimesheets(organization!.id)
-            setTimesheets(data)
+            const data = await getAllTimesheetsAction(organization!.id)
+            setTimesheets(data as any)
 
-            const emps = await departmentService.getEmployeesByOrganization(organization!.id)
-            setEmployees(emps)
+            const emps = await getEmployeesByOrganizationAction(organization!.id)
+            setEmployees(emps as any)
         } catch (err) {
             setError("Failed to fetch timesheets")
         } finally {
@@ -53,7 +58,7 @@ export default function TimesheetsPage() {
 
     const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
         try {
-            await timesheetService.updateTimesheetStatus(id, status)
+            await updateTimesheetStatusAction(id, status)
             setTimesheets(timesheets.map(ts => ts.id === id ? { ...ts, status } : ts))
         } catch (err) {
             setError("Failed to update status")
@@ -72,7 +77,7 @@ export default function TimesheetsPage() {
         }
 
         try {
-            await timesheetService.updateTimesheetsStatus(pendingIds, status)
+            await updateTimesheetsStatusAction(pendingIds, status)
             setTimesheets(timesheets.map(ts => pendingIds.includes(ts.id) ? { ...ts, status } : ts))
         } catch (err) {
             setError("Failed to perform bulk action")

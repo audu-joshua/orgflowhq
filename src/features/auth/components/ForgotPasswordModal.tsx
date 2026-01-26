@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { X, Mail, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
-import { authService } from "../services/authService"
+import { forgotPasswordAction } from "../actions"
 import { toast } from "@/lib/toast"
 
 interface ForgotPasswordModalProps {
@@ -23,7 +23,8 @@ export function ForgotPasswordModal({ isOpen, onClose, initialEmail = "" }: Forg
         setLoading(true)
 
         try {
-            await authService.sendPasswordResetEmail(email)
+            const result = await forgotPasswordAction(email)
+            if (!result.success) throw new Error(result.error)
             setSuccess(true)
             toast.success("Reset email sent! Check your inbox.")
         } catch (err: any) {

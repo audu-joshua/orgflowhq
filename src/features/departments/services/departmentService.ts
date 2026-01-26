@@ -1,426 +1,297 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import { planLimitsService } from "@/lib/subscription/planLimits"
-import type { Department, Employee } from "../types"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { Department, Employee } from "@/models/Business";
+import { User, Organization } from "@/models/User";
+import mongoose from "mongoose";
 
 export const departmentService = {
-  async createDepartment(organizationId: string, departmentData: Omit<Department, "id" | "organization_id" | "created_at" | "updated_at">) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase
-      .from("departments")
-      .insert([{ ...departmentData, organization_id: organizationId }])
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Department
+  async createDepartment(organizationId: string, departmentData: any) {
+    await connectToDatabase();
+    const data = await Department.create({
+      ...departmentData,
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    });
+    return data.toObject();
   },
 
-  async updateDepartment(departmentId: string, departmentData: Partial<Department>) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase
-      .from("departments")
-      .update(departmentData)
-      .eq("id", departmentId)
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Department
+  async updateDepartment(departmentId: string, departmentData: any) {
+    await connectToDatabase();
+    const data = await Department.findByIdAndUpdate(
+      departmentId,
+      { $set: departmentData },
+      { new: true }
+    );
+    if (!data) throw new Error("Department not found");
+    return data.toObject();
   },
 
   async deleteDepartment(departmentId: string) {
-    const supabase = getSupabaseClient()
-
-    const { error } = await supabase
-      .from("departments")
-      .delete()
-      .eq("id", departmentId)
-
-    if (error) throw error
+    await connectToDatabase();
+    await Department.findByIdAndDelete(departmentId);
   },
 
   async getDepartmentById(departmentId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
+    const dept = await Department.findById(departmentId);
+    if (!dept) throw new Error("Department not found");
 
-    const { data, error } = await supabase
-      .from("departments")
-      .select("*, employees(count)")
-      .eq("id", departmentId)
-      .single()
+    const employeeCount = await Employee.countDocuments({ departmentId: dept._id });
 
-    if (error) throw error
-    return data
+    return {
+      ...dept.toObject(),
+      employees: [{ count: employeeCount }] // Mirroring Supabase structure for UI compat
+    };
   },
 
   async getDepartmentsByOrganization(organizationId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
+    const depts = await Department.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    }).sort({ createdAt: -1 });
 
-    const { data, error } = await supabase
-      .from("departments")
-      .select("*, employees(count)")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false })
+    const departmentsWithCount = await Promise.all(depts.map(async (dept) => {
+      const count = await Employee.countDocuments({ departmentId: dept._id });
+      return {
+        ...dept.toObject(),
+        employees: [{ count }]
+      };
+    }));
 
-    if (error) throw error
-    return data
+    return departmentsWithCount;
   },
 
-  // Employee management
-  async createEmployee(organizationId: string, employeeData: Omit<Employee, "id" | "organization_id" | "created_at" | "updated_at">) {
-    const supabase = getSupabaseClient()
+  async createEmployee(organizationId: string, employeeData: any) {
+    await connectToDatabase();
 
-    // Check Plan Limits
-    const limitCheck = await planLimitsService.checkEmployeeLimit(organizationId)
-    if (!limitCheck.allowed) {
-      throw new Error(limitCheck.message)
-    }
-
-    // 1. Provision Auth Account via Admin API
-    // This ensures they can log in to the clock portal immediately with their employee ID
-    console.log(`[departmentService] Provisioning auth for ${employeeData.email}...`)
-
-
-    const { email, employee_id, full_name } = employeeData
+    const { email, employee_id, full_name } = employeeData;
     if (!email || !employee_id || !full_name) {
-      throw new Error("Missing required fields for auth provisioning (Email, Employee ID, or Name)")
+      throw new Error("Missing required fields for employee creation");
     }
 
-    const { userId, error: provisionError } = await this.provisionAuthAccount({
+    // 1. Provision Auth via API
+    const { userId, error } = await this.provisionAuthAccount({
       email,
       employeeId: employee_id,
       fullName: full_name,
       organizationId
-    })
+    });
 
+    if (error) throw new Error(`Failed to create employee account: ${error}`);
 
-    if (provisionError) {
-      console.error("[departmentService] Provisioning failed:", provisionError)
-      throw new Error(`Failed to create employee login: ${provisionError}`)
-    }
+    // 2. Create local employee record
+    const data = await Employee.create({
+      fullName: full_name,
+      email,
+      employeeId: employee_id,
+      position: employeeData.position,
+      phone: employeeData.phone,
+      hireDate: employeeData.hire_date ? new Date(employeeData.hire_date) : undefined,
+      status: employeeData.status || "invited",
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      departmentId: employeeData.department_id ? new mongoose.Types.ObjectId(employeeData.department_id) : undefined,
+      userId: new mongoose.Types.ObjectId(userId)
+    });
 
-    // 2. Create the employee record linked to the new user_id
-    const { data, error } = await supabase
-      .from("employees")
-      .insert([{
-        ...employeeData,
-        organization_id: organizationId,
-        user_id: userId // Link the auth user
-      }])
-      .select()
-      .single()
-
-    if (error) throw error
-    return data as Employee
+    return data.toObject();
   },
 
-  async updateEmployee(employeeId: string, employeeData: Partial<Employee>) {
-    const supabase = getSupabaseClient()
+  async updateEmployee(employeeId: string, employeeData: any) {
+    await connectToDatabase();
 
-    const { data, error } = await supabase
-      .from("employees")
-      .update(employeeData)
-      .eq("id", employeeId)
-      .select()
-      .single()
+    // Map frontend snake_case to mongoose camelCase if necessary
+    const updates: any = {};
+    if (employeeData.full_name) updates.fullName = employeeData.full_name;
+    if (employeeData.position) updates.position = employeeData.position;
+    if (employeeData.phone) updates.phone = employeeData.phone;
+    if (employeeData.status) updates.status = employeeData.status;
+    if (employeeData.department_id) updates.departmentId = new mongoose.Types.ObjectId(employeeData.department_id);
+    if (employeeData.hire_date) updates.hireDate = new Date(employeeData.hire_date);
 
-    if (error) throw error
-    return data as Employee
+    const data = await Employee.findByIdAndUpdate(
+      employeeId,
+      { $set: updates },
+      { new: true }
+    );
+    if (!data) throw new Error("Employee not found");
+    return data.toObject();
   },
 
   async provisionAuthAccount(data: { email: string, employeeId: string, fullName: string, organizationId: string }) {
     try {
-      // Get the current session to pass Authorization header
-      const supabase = getSupabaseClient()
-      const { data: { session } } = await supabase.auth.getSession()
-
-      if (!session) throw new Error("No active session")
-
+      // In a real server context, this would be an internal call or a fetch to self
       const response = await fetch("/api/admin/employees/provision", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${session.access_token}`
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data)
-      })
+      });
 
-      const result = await response.json()
-      if (!response.ok) {
-        return { userId: null, error: result.error || "Provisioning API error" }
-      }
-
-      return { userId: result.userId, error: null }
+      const result = await response.json();
+      if (!response.ok) return { userId: null, error: result.error || "Provisioning failed" };
+      return { userId: result.userId, error: null };
     } catch (err: any) {
-      return { userId: null, error: err.message }
+      return { userId: null, error: err.message };
     }
   },
 
   async getEmployeesByDepartment(departmentId: string) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase
-      .from("employees")
-      .select("*")
-      .eq("department_id", departmentId)
-      .order("created_at", { ascending: false })
-
-    if (error) throw error
-    return data || []
+    await connectToDatabase();
+    const employees = await Employee.find({
+      departmentId: new mongoose.Types.ObjectId(departmentId)
+    }).sort({ createdAt: -1 });
+    return employees.map(e => e.toObject());
   },
 
   async getEmployeesByOrganization(organizationId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
 
     // 1. Get employees
-    const { data: employees, error: empError } = await supabase
-      .from("employees")
-      .select("*")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false })
+    const employees = await Employee.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    }).sort({ createdAt: -1 });
 
-    if (empError) throw empError
-
-    // 2. Get system roles for these employees (via users_organizations)
-    const userIds = (employees || []).filter((e: any) => e.user_id).map((e: any) => e.user_id)
-
-    if (userIds.length > 0) {
-      const { data: roles, error: rolesError } = await supabase
-        .from("users_organizations")
-        .select("user_id, role")
-        .in("user_id", userIds)
-        .eq("organization_id", organizationId)
-
-      if (!rolesError && roles) {
-        // Map roles back to employees
-        const roleMap = new Map((roles as any[]).map((r: any) => [r.user_id, r.role]))
-        return (employees as any[]).map((emp: any) => ({
-          ...emp,
-          system_role: emp.user_id ? roleMap.get(emp.user_id) || null : null
-        }))
+    // 2. Map system roles from User memberships
+    const employeesWithRoles = await Promise.all(employees.map(async (emp) => {
+      let systemRole = null;
+      if (emp.userId) {
+        const user = await User.findById(emp.userId);
+        const membership = user?.memberships.find(
+          (m: any) => m.organizationId?.toString() === organizationId
+        );
+        systemRole = membership?.role || null;
       }
-    }
+      return {
+        ...emp.toObject(),
+        system_role: systemRole
+      };
+    }));
 
-    return (employees || []).map((emp: any) => ({ ...emp, system_role: null }))
+    return employeesWithRoles;
   },
 
   async getEmployeeByUserId(userId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
+    const data = await Employee.findOne({ userId: new mongoose.Types.ObjectId(userId) })
+      .populate("organizationId")
+      .populate("departmentId");
 
-    const { data, error } = await supabase
-      .from("employees")
-      .select("*, organizations(*), departments(name)")
-      .eq("user_id", userId)
-      .maybeSingle()
+    if (!data) return null;
 
-    if (error) throw error
-    return data
+    // Map to expected structure (mirroring Supabase)
+    const obj = data.toObject();
+    return {
+      ...obj,
+      organizations: obj.organizationId,
+      departments: obj.departmentId ? { name: obj.departmentId.name } : null
+    };
   },
 
   async provisionEmployeeRecord(userId: string, organizationId: string, email: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
 
-    // 1. Check if "Management" department exists, if not create it
-    let { data: dept } = await supabase
-      .from("departments")
-      .select("id")
-      .eq("organization_id", organizationId)
-      .eq("name", "Management")
-      .maybeSingle()
-
+    // 1. Check/Create Management department
+    let dept = await Department.findOne({ organizationId, name: "Management" });
     if (!dept) {
-      const { data: newDept, error: createDeptError } = await supabase
-        .from("departments")
-        .insert([{
-          organization_id: organizationId,
-          name: "Management",
-          description: "Default management department for system users"
-        }])
-        .select()
-        .single()
-
-      if (createDeptError) throw createDeptError
-      dept = newDept
+      dept = await Department.create({
+        organizationId: new mongoose.Types.ObjectId(organizationId),
+        name: "Management",
+        description: "Default management department"
+      });
     }
 
-    // 2. Generate an ID
-    const { data: org } = await supabase
-      .from("organizations")
-      .select("name")
-      .eq("id", organizationId)
-      .single()
+    // 2. Generate ID
+    const org = await Organization.findById(organizationId);
+    const employeeId = await this.generateNextEmployeeId(organizationId, org?.name || "SYS");
 
-    const employeeId = await this.generateNextEmployeeId(organizationId, org?.name || "SYS")
+    // 3. Create Employee
+    const employee = await Employee.create({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      userId: new mongoose.Types.ObjectId(userId),
+      departmentId: dept._id,
+      fullName: email.split('@')[0],
+      email: email,
+      employeeId: employeeId,
+      position: "Administrator",
+      status: "active",
+      hireDate: new Date()
+    });
 
-    // 3. Create the employee record
-    const { data: employee, error: empError } = await supabase
-      .from("employees")
-      .insert([{
-        organization_id: organizationId,
-        user_id: userId,
-        department_id: dept!.id,
-        full_name: email.split('@')[0],
-        email: email,
-        employee_id: employeeId,
-        position: "Administrator",
-        status: "active",
-        hire_date: new Date().toISOString().split('T')[0]
-      }])
-      .select()
-      .single()
-
-    if (empError) throw empError
-    return employee as Employee
+    return employee.toObject();
   },
 
-  async deleteEmployee(employeeId: string) {
-    const supabase = getSupabaseClient()
+  async generateNextEmployeeId(organizationId: string, organizationName: string) {
+    await connectToDatabase();
+    const count = await Employee.countDocuments({ organizationId: new mongoose.Types.ObjectId(organizationId) });
 
-    const { error } = await supabase
-      .from("employees")
-      .delete()
-      .eq("id", employeeId)
-
-    if (error) throw error
-  },
-
-  async resetEmployeePassword(employeeId: string, defaultPassword: string) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase.rpc('reset_employee_password', {
-      emp_id: employeeId,
-      new_password: defaultPassword
-    })
-
-    if (error) {
-      console.warn("RPC reset_employee_password not found, using fallback simulated behavior")
-      return { success: true, message: "Password reset simulated" }
-    }
-    return data
-  },
-
-  async updateEmployeePassword(employeeId: string, newPassword: string) {
-    const supabase = getSupabaseClient()
-
-    const { data, error } = await supabase.rpc('update_employee_password', {
-      emp_id: employeeId,
-      new_password: newPassword
-    })
-
-    if (error) {
-      console.warn("RPC update_employee_password not found, using fallback simulated behavior")
-      return { success: true, message: "Password update simulated" }
-    }
-    return data
-  },
-
-  async updateSystemRole(employeeId: string, organizationId: string, role: string | null) {
-    const supabase = getSupabaseClient()
-
-    // 1. Get employee user_id
-    const { data: employee, error: empError } = await supabase
-      .from("employees")
-      .select("user_id")
-      .eq("id", employeeId)
-      .single()
-
-    if (empError) throw empError
-    if (!employee.user_id) {
-      throw new Error("This employee hasn't registered a user account yet. Ask them to login to the clock portal first.")
-    }
-
-    if (!role) {
-      // Remove from system roles
-      const { error: deleteError } = await supabase
-        .from("users_organizations")
-        .delete()
-        .eq("user_id", employee.user_id)
-        .eq("organization_id", organizationId)
-
-      if (deleteError) throw deleteError
-      return { success: true }
-    }
-
-    // 2. Upsert the role
-    const { data, error } = await supabase
-      .from("users_organizations")
-      .upsert({
-        user_id: employee.user_id,
-        organization_id: organizationId,
-        role: role
-      }, { onConflict: 'user_id, organization_id' })
-      .select()
-      .single()
-
-    if (error) throw error
-    return data
-  },
-
-  async generateNextEmployeeId(organizationId: string, organizationName: string, client?: any) {
-    const supabase = client || getSupabaseClient()
-
-    // 1. Get count of existing employees
-    const { count, error } = await supabase
-      .from("employees")
-      .select("*", { count: 'exact', head: true })
-      .eq("organization_id", organizationId)
-
-    if (error) throw error
-
-    // 2. Generate prefix from name (uppercase first letters)
     const prefix = organizationName
       .split(/[\s-]+/)
       .map(word => word[0])
       .join("")
       .toUpperCase()
-      .substring(0, 3) // Limit to 3 chars
+      .substring(0, 3);
 
-    const nextNumber = (count || 0) + 1
-    const paddedNumber = nextNumber.toString().padStart(3, '0')
-
-    return `${prefix}-${paddedNumber}`
+    const nextNumber = count + 1;
+    const paddedNumber = nextNumber.toString().padStart(3, '0');
+    return `${prefix}-${paddedNumber}`;
   },
 
   async uploadEmployeeProfileImage(employeeId: string, file: File) {
-    const supabase = getSupabaseClient()
+    // This needs a multi-part form upload to some storage provider (e.g. Cloudinary)
+    // For now, mirroring an error if not implemented
+    throw new Error("File storage migration required (Cloudinary/S3). Supabase storage no longer supported.");
+  },
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${employeeId}/${Date.now()}.${fileExt}`
+  async deleteEmployee(employeeId: string) {
+    await connectToDatabase();
+    // 1. Get employee data to find userId
+    const employee = await Employee.findById(employeeId);
+    if (!employee) throw new Error("Employee not found");
 
-    console.log(`[departmentService] Uploading profile image: ${fileName}`)
-
-    // Upload to Supabase Storage (bucket: employees)
-    // We'll use 'employees' bucket which should be configured for public access
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from("employees")
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: true
-      })
-
-    if (uploadError) {
-      console.error("Error uploading profile image:", uploadError)
-      throw uploadError
+    // 2. Remove user membership if tied to user
+    if (employee.userId) {
+      const user = await User.findById(employee.userId);
+      if (user) {
+        user.memberships = user.memberships.filter(
+          (m: any) => m.organizationId?.toString() !== employee.organizationId?.toString()
+        );
+        await user.save();
+      }
     }
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from("employees")
-      .getPublicUrl(fileName)
+    // 3. Delete employee record
+    await Employee.findByIdAndDelete(employeeId);
+    return { success: true };
+  },
 
-    // Update employee record
-    const { error: dbError } = await supabase
-      .from("employees")
-      .update({ profile_image_url: publicUrl })
-      .eq("id", employeeId)
+  async updateSystemRole(employeeId: string, organizationId: string, newRole: string | null) {
+    await connectToDatabase();
+    const employee = await Employee.findById(employeeId);
+    if (!employee || !employee.userId) return; // Cannot update system role if not linked to user
 
-    if (dbError) {
-      console.error("Error updating employee profile image URL:", dbError)
-      throw dbError
+    const user = await User.findById(employee.userId);
+    if (!user) return;
+
+    // Update or Add membership
+    const membershipIndex = user.memberships.findIndex(
+      (m: any) => m.organizationId?.toString() === organizationId
+    );
+
+    if (newRole) {
+      if (membershipIndex >= 0) {
+        user.memberships[membershipIndex].role = newRole;
+      } else {
+        user.memberships.push({
+          organizationId: new mongoose.Types.ObjectId(organizationId),
+          role: newRole
+        });
+      }
+    } else if (membershipIndex >= 0) {
+      // If role is null, maybe remove membership or set to member? 
+      // Typically we'd keep membership but maybe downgrade. 
+      // For now, let's assume filtering out if explicitly removing, but usually we just change role.
+      user.memberships[membershipIndex].role = 'member';
     }
 
-    return publicUrl
+    await user.save();
+    return { success: true };
   }
-}
+};

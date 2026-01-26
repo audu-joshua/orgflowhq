@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation"
-import { createSupabaseServerClient } from "@/lib/supabaseServer"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { AdminSidebar } from "@/components/admin/AdminSidebar"
 import { AdminHeader } from "@/components/admin/AdminHeader"
 
@@ -8,27 +9,24 @@ export default async function AdminLayout({
 }: {
     children: React.ReactNode
 }) {
-    const supabase = await createSupabaseServerClient()
+    const session = await getServerSession(authOptions) as any
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    if (!session || !session.user) {
         redirect("/login")
     }
 
-    // Verify Super Admin Role
-    const { data: userData } = await supabase
-        .from("users")
-        .select("role, full_name")
-        .eq("id", user.id)
-        .single()
-
-    if (userData?.role !== 'super_admin') {
+    if (session.user.role !== 'super_admin') {
         redirect("/dashboard")
+    }
+
+    const userData = {
+        role: session.user.role,
+        full_name: session.user.name
     }
 
     return (
         <div className="flex min-h-screen bg-[#F8FAFC]">
-            <AdminSidebar user={userData} authUser={user} />
+            <AdminSidebar user={userData} authUser={session.user} />
 
             <div className="flex-1 flex flex-col pl-64">
                 <AdminHeader />

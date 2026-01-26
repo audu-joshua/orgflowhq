@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { scheduleInterviewAction } from "../actions"
 import { useAppStore } from "@/store/useAppStore"
-import { organizationService } from "@/features/organization/services/organizationService"
+import { getOrganizationStaffAction } from "@/features/organization/actions"
 import { toast } from "@/lib/toast"
 import { useEffect } from "react"
 
@@ -56,9 +56,9 @@ export function ScheduleModal({
 
     const loadStaff = async () => {
         try {
-            const data = await organizationService.getOrganizationStaff(organization!.id)
+            const data = await getOrganizationStaffAction(organization!.id)
             // Filter out the current user if they are the one scheduling
-            setStaff(data.filter((s: any) => s.id !== user?.id))
+            setStaff(data as any)
         } catch (error) {
             console.error("Failed to load staff:", error)
         }

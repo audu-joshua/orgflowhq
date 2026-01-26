@@ -1,4 +1,3 @@
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
 import {
     Building2,
     Users,
@@ -19,43 +18,17 @@ import {
 import { format } from "date-fns"
 import Link from "next/link"
 import { OrganizationEmployeeList } from "@/components/admin/OrganizationEmployeeList"
+import { connectToDatabase } from "@/lib/mongodb"
+import { Organization, User } from "@/models/User"
+import { Employee, JobRole, Subscription } from "@/models/Business"
+import mongoose from "mongoose"
 
 export default async function OrganizationDetailPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
-    const adminClient = getSupabaseAdmin()
+    await connectToDatabase()
 
-    // Get organization details with all relations
-    const { data: org, error } = await adminClient
-        .from("organizations")
-        .select(`
-            *,
-            users_organizations (
-                count
-            ),
-            employees (
-                id,
-                full_name,
-                position,
-                profile_image_url
-            ),
-            roles (
-                id,
-                title,
-                status,
-                created_at,
-                slug
-            ),
-            subscriptions (
-                *,
-                plan:plans (*)
-            )
-        `)
-        .eq("slug", slug)
-        .single()
-
-    if (error) {
-        console.error("Error fetching organization detail:", error)
-    }
+    // Get organization details
+    const org: any = await Organization.findOne({ slug })
 
     if (!org) {
         return (
@@ -78,9 +51,16 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
         )
     }
 
-    const currentSubscription = org.subscriptions?.[0] || null
-    const jobOpenings = org.roles || []
-    const employees = org.employees || []
+    const orgId = org._id
+
+    // Fetch Relations
+    const membersCount = await User.countDocuments({ "memberships.organizationId": orgId })
+    const employees = await Employee.find({ organizationId: orgId }).select("fullName position profileImageUrl")
+    const roles = await JobRole.find({ organizationId: orgId }).select("title status createdAt slug")
+    const subscriptions = await Subscription.find({ organizationId: orgId }).populate("planId")
+
+    const currentSubscription = subscriptions?.[0] || null
+    const jobOpenings = roles || []
     const clockUrl = `orgflowhq.com/org/${slug}/clock`
 
     return (
@@ -92,19 +72,19 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
                     <ChevronRight className="h-3 w-3" />
                     <Link href="/admin/organizations" className="hover:text-emerald-600 transition-colors">Organizations</Link>
                     <ChevronRight className="h-3 w-3" />
-                    <span className="text-slate-900">{org.title}</span>
+                    <span className="text-slate-900">{org.name}</span>
                 </div>
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-5">
                         <div className="h-16 w-16 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-700 shadow-inner overflow-hidden border border-emerald-50">
-                            {org.logo_url ? (
-                                <img src={org.logo_url} alt={org.title} className="h-full w-full object-cover" />
+                            {org.logoUrl ? (
+                                <img src={org.logoUrl} alt={org.name} className="h-full w-full object-cover" />
                             ) : (
                                 <Building2 className="h-8 w-8" />
                             )}
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{org.title}</h1>
+                            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">{org.name}</h1>
                             <div className="flex items-center gap-4 mt-1 text-slate-500">
                                 <div className="flex items-center gap-2 bg-slate-100 px-3 py-1 rounded-full group cursor-pointer hover:bg-slate-200 transition-colors">
                                     <span className="text-sm font-medium text-slate-700">{clockUrl}</span>
@@ -133,14 +113,19 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatBox
                     label="Registered Users"
-                    value={org.users_organizations?.[0]?.count || 0}
+                    value={membersCount}
                     icon={Users}
                     color="blue"
                 />
 
                 {/* Clickable Employee List */}
                 <OrganizationEmployeeList
-                    employees={employees}
+                    employees={employees.map(e => ({
+                        id: e._id.toString(),
+                        full_name: e.fullName,
+                        position: e.position,
+                        profile_image_url: e.profileImageUrl
+                    }))}
                     totalCount={employees.length}
                 />
 
@@ -170,9 +155,9 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <DetailItem icon={LinkIcon} label="Website" value={org.website} />
-                            <DetailItem icon={Mail} label="Contact Email" value={org.contact_email} />
-                            <DetailItem icon={MapPin} label="Office Location" value={org.location} />
-                            <DetailItem icon={Calendar} label="Member Since" value={format(new Date(org.created_at), 'MMMM yyyy')} />
+                            <DetailItem icon={Mail} label="Contact Email" value={org.contactEmail} />
+                            <DetailItem icon={MapPin} label="Office Location" value={org.address} />
+                            <DetailItem icon={Calendar} label="Member Since" value={format(new Date(org.createdAt), 'MMMM yyyy')} />
                         </div>
                     </div>
 
@@ -187,10 +172,10 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
                         <div className="divide-y divide-slate-100">
                             {jobOpenings.length > 0 ? (
                                 jobOpenings.map((role: any) => (
-                                    <div key={role.id} className="px-8 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
+                                    <div key={role._id} className="px-8 py-5 flex items-center justify-between hover:bg-slate-50/50 transition-colors">
                                         <div>
                                             <p className="font-semibold text-slate-900">{role.title}</p>
-                                            <p className="text-xs text-slate-500 mt-0.5">Created {format(new Date(role.created_at), 'MMM d, yyyy')}</p>
+                                            <p className="text-xs text-slate-500 mt-0.5">Created {format(new Date(role.createdAt), 'MMM d, yyyy')}</p>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter ${role.status === 'active' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'
@@ -228,7 +213,7 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
                             <div>
                                 <p className="text-slate-400 text-[10px] uppercase tracking-widest font-bold mb-1">Current Plan</p>
                                 <p className="text-xl font-bold text-white">
-                                    {currentSubscription?.plan?.name || "Free Forever"}
+                                    {currentSubscription?.planId?.name || "Free Forever"}
                                 </p>
                             </div>
 
@@ -242,7 +227,7 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
                                 <div className="flex justify-between items-center text-sm mb-4">
                                     <span className="text-slate-400">User Limit</span>
                                     <span className="text-white font-medium">
-                                        {currentSubscription?.plan?.user_limit || "Limited"}
+                                        {currentSubscription?.planId?.limits?.roles || "Limited"}
                                     </span>
                                 </div>
                             </div>
@@ -253,7 +238,7 @@ export default async function OrganizationDetailPage({ params }: { params: Promi
                         </div>
                     </div>
 
-                    {/* Danger Zone Placeholder */}
+                    {/* Administrative Control */}
                     <div className="bg-white rounded-3xl border border-red-100 p-8 shadow-sm">
                         <h3 className="text-red-900 font-semibold mb-4 text-sm">Administrative Control</h3>
                         <p className="text-[11px] text-red-500 mb-6 leading-relaxed">

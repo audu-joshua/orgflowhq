@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { Users, Building2, Plus } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { departmentService } from "../services/departmentService"
+import { getEmployeesByOrganizationAction, getDepartmentsByOrganizationAction } from "../actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { CustomSelect } from "@/components/ui/CustomSelect"
@@ -28,8 +28,8 @@ export function EmployeesPageContent() {
     const loadData = async () => {
       try {
         const [emps, depts] = await Promise.all([
-          departmentService.getEmployeesByOrganization(organization.id),
-          departmentService.getDepartmentsByOrganization(organization.id),
+          getEmployeesByOrganizationAction(organization.id),
+          getDepartmentsByOrganizationAction(organization.id),
         ])
         // Filter out Owner if not logged in as Owner
         const filtered = user?.role === 'owner'
@@ -50,7 +50,7 @@ export function EmployeesPageContent() {
   const refreshEmployees = async () => {
     if (!organization) return
     try {
-      const emps = await departmentService.getEmployeesByOrganization(organization.id)
+      const emps = await getEmployeesByOrganizationAction(organization.id)
       // Filter out Owner if not logged in as Owner
       const filtered = user?.role === 'owner'
         ? emps

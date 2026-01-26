@@ -6,9 +6,8 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { roleService } from "@/features/roles/services/roleService"
-import { applicationService } from "../services/applicationService"
-import { bulkRejectRemainingAction } from "../actions"
+import { getRolesByOrganizationAction } from "@/features/roles/actions"
+import { getApplicationsByOrganizationAction, bulkRejectRemainingAction } from "../actions"
 import { toast } from "@/lib/toast"
 import { ApplicationCard } from "./ApplicationCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
@@ -44,8 +43,8 @@ export function ApplicationsContent() {
     const loadData = async () => {
       try {
         const [rolesData, appsData] = await Promise.all([
-          roleService.getRolesByOrganization(organization.id),
-          applicationService.getApplicationsByOrganization(organization.id)
+          getRolesByOrganizationAction(organization.id),
+          getApplicationsByOrganizationAction(organization.id)
         ])
         setRoles(rolesData)
         setApplications(appsData)

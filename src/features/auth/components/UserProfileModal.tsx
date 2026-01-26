@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Mail, Phone, Calendar, Building, User, Briefcase, Shield, Fingerprint, ExternalLink, LogOut, CheckCircle2, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { departmentService } from "@/features/departments/services/departmentService"
+import { getEmployeeByUserIdAction } from "@/features/departments/actions"
 import { useAppStore } from "@/store/useAppStore"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { toast } from "@/lib/toast"
@@ -30,8 +30,8 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             const fetchProfile = async () => {
                 setLoading(true)
                 try {
-                    const data = await departmentService.getEmployeeByUserId(user.id)
-                    setEmployee(data)
+                    const data = await getEmployeeByUserIdAction(user.id)
+                    setEmployee(data as any)
                 } catch (err) {
                     console.error("Failed to fetch profile:", err)
                     setError("Could not load your profile details.")
@@ -51,9 +51,10 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
         setIsUploadingImage(true)
         try {
-            const publicUrl = await departmentService.uploadEmployeeProfileImage(employee.id, file)
-            // Update global store (which handles local state since we use the store)
-            setEmployee({ ...employee, profile_image_url: publicUrl })
+            // TODO: File storage migration required (Cloudinary/S3). Supabase storage no longer supported.
+            // const publicUrl = await departmentService.uploadEmployeeProfileImage(employee.id, file)
+            // setEmployee({ ...employee, profile_image_url: publicUrl })
+            toast.warning("Profile image upload migration pending.")
             toast.success("Profile image updated")
         } catch (err: any) {
             console.error("Profile image upload failed:", err)

@@ -4,7 +4,6 @@ import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "../hooks/useAuth"
-import { authService } from "../services/authService"
 import Link from "next/link"
 import { Loader2, Eye, EyeOff } from "lucide-react"
 import { toast } from "@/lib/toast"
@@ -32,42 +31,37 @@ export function LoginForm() {
     e.preventDefault()
 
     try {
-      // 0. Pre-login access validation
-      const access = await authService.validateAccessStatus(email)
-      if (!access.allowed) {
-        toast.error(access.error || "Access Denied")
+      const { signIn: nextAuthSignIn, getSession } = await import("next-auth/react")
+
+      const result = await nextAuthSignIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      })
+
+      if (result?.error) {
+        toast.error("Invalid email or password")
         return
       }
 
-      const profile = await signIn(email, password)
-
-      if (!profile) {
-        throw new Error("Could not fetch user profile")
+      const session = await getSession()
+      if (!session || !session.user) {
+        throw new Error("Could not fetch user session")
       }
 
-      // 1. Critical Policy: Termination/Deactivation check
-      if (profile.status === 'terminated' || profile.status === 'inactive') {
-        const { getSupabaseClient } = await import("@/lib/supabaseClient")
-        await getSupabaseClient().auth.signOut()
-        toast.error("You have been Deactivated; Contact Your Hr")
-        return
-      }
+      const user = session.user as any
 
-      // Check for privileged roles
-      const privilegedRoles = ["owner", "admin", "hr", "manager", "finance", "super_admin"]
+      // 1. Critical Policy: Role-based redirects
+      const privilegedRoles = ["owner", "admin", "hr", "manager", "finance"]
 
-      if (profile.role === 'super_admin') {
+      if (user.role === 'super_admin') {
         router.push("/select-portal")
-      } else if (privilegedRoles.includes(profile.role)) {
-        // Privileged roles need an organization
-        if (!profile.organization_id) {
-          toast.error("No active organization found for this account.")
-          return
-        }
+      } else if (privilegedRoles.includes(user.role)) {
         router.push("/dashboard")
-      } else if (profile.organizations?.slug) {
-        // If employee or other role, redirect to clock (or block)
-        router.push(`/org/${profile.organizations.slug}/clock`)
+      } else if (user.memberships && user.memberships.length > 0) {
+        // Redirect to the first organization's clock app for regular employees
+        const primaryOrgSlug = user.memberships[0].slug
+        router.push(`/org/${primaryOrgSlug}/clock`)
       } else {
         toast.error("No active organization found for this account.")
       }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useRouter } from "next/navigation"
+import { useAppStore } from "@/store/useAppStore"
 import {
     ArrowLeft,
     Mail,
@@ -17,7 +18,7 @@ import {
     LayoutDashboard,
     Users
 } from "lucide-react"
-import { applicationService } from "../services/applicationService"
+import { getApplicationByIdAction, updateApplicationStatusAction } from "../actions"
 import { DocumentViewerModal } from "./DocumentViewerModal"
 import { ScheduleModal } from "@/features/interviews/components/ScheduleModal"
 import { APPLICATION_STATUS, STATUS_LABELS } from "@/lib/constants"
@@ -31,6 +32,7 @@ interface ApplicationDetailProps {
 
 export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     const router = useRouter()
+    const { organization } = useAppStore()
     const [application, setApplication] = useState<(Application & { roles?: { title: string } }) | null>(null)
     const [status, setStatus] = useState<string>("")
     const [loading, setLoading] = useState(true)
@@ -65,13 +67,14 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
         setUpdating(true)
         setIsStatusOpen(false)
         try {
-            await applicationService.updateApplicationStage(applicationId, newStage)
+            if (!organization) throw new Error("Org not found");
+            await updateApplicationStatusAction(applicationId, newStage, organization.id)
 
             // Also update local state status mapping if possible, or reload
             // For now, reload simple
-            const updated = await applicationService.getApplicationById(applicationId)
-            setApplication(updated)
-            setStatus(updated.status)
+            const updated = await getApplicationByIdAction(applicationId)
+            setApplication(updated as any)
+            setStatus(updated?.status || "")
         } catch (error) {
             console.error("Failed to update stage:", error)
         } finally {
@@ -103,9 +106,9 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
         const loadApplication = async () => {
             try {
                 setLoading(true)
-                const data = await applicationService.getApplicationById(applicationId)
-                setApplication(data)
-                setStatus(data.status)
+                const data = await getApplicationByIdAction(applicationId)
+                setApplication(data as any)
+                setStatus(data?.status || "")
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load application")
             } finally {
@@ -131,7 +134,8 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
     const handleStatusUpdate = async (newStatus: Application["status"]) => {
         setUpdating(true)
         try {
-            await applicationService.updateApplicationStatus(applicationId, newStatus)
+            if (!organization) throw new Error("Org not found");
+            await updateApplicationStatusAction(applicationId, newStatus, organization.id)
             setStatus(newStatus)
         } catch (error) {
             console.error("Failed to update status:", error)
@@ -207,9 +211,9 @@ export function ApplicationDetail({ applicationId }: ApplicationDetailProps) {
                     roleTitle={application.roles?.title || "Role"}
                     onScheduled={async () => {
                         // Refresh application data
-                        const updated = await applicationService.getApplicationById(applicationId)
-                        setApplication(updated)
-                        setStatus(updated.status)
+                        const updated = await getApplicationByIdAction(applicationId)
+                        setApplication(updated as any)
+                        setStatus(updated?.status || "")
                     }}
                 />
             )}

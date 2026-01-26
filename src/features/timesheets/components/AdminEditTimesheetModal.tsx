@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { X, Clock, FileText, CheckCircle2, Lock } from "lucide-react"
-import { timesheetService } from "@/features/timesheets/services/timesheetService"
+import { adminUpdateTimesheetAction } from "@/features/timesheets/actions"
 import { toast } from "@/lib/toast"
-import type { Timesheet } from "@/features/timesheets/services/timesheetService"
+import type { Timesheet } from "../types"
 import { format } from "date-fns"
 
 interface AdminEditTimesheetModalProps {
@@ -67,13 +67,12 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
                 endDateTime = newClockOut.toISOString()
             }
 
-            await timesheetService.adminUpdateTimesheet(timesheet.id, {
-                clock_out: endDateTime || undefined, // undefined means don't update if null, but here we probably want to set it?
-                // Actually if user clears it, maybe we should set to null? But adminUpdateTimesheet expects string | undefined. 
-                // Let's assume we are setting a value. If they clear it, it effectively "reopens" the shift? 
-                // Let's force a value for now as the main use case is "Clocking Out" or "Fixing Time".
+            const result = await adminUpdateTimesheetAction(timesheet.id, {
+                clock_out: endDateTime || undefined,
                 notes: notes
             })
+
+            if (!result.success) throw new Error(result.error)
 
             toast.success("Timesheet updated successfully")
             onSuccess()

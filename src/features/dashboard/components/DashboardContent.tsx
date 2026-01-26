@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Plus, Users, FileText, CheckCircle, Clock, Briefcase, TrendingUp } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { dashboardService } from "../services/dashboardService"
+import { getDashboardRolesAction, getApplicationStatsAction, getApplicationsOverTimeAction } from "../actions"
 import { RoleCard } from "./RoleCard"
 import { StatCard } from "./StatCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
@@ -44,9 +44,9 @@ export function DashboardContent() {
     const loadData = async () => {
       try {
         const [rolesData, statsData, chartHistory] = await Promise.all([
-          dashboardService.getRoles(organization.id),
-          dashboardService.getApplicationStats(organization.id),
-          dashboardService.getApplicationsOverTime(organization.id)
+          getDashboardRolesAction(organization.id),
+          getApplicationStatsAction(organization.id),
+          getApplicationsOverTimeAction(organization.id)
         ])
         setRoles(rolesData)
         setStats(statsData)

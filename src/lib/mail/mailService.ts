@@ -14,7 +14,7 @@ interface MailOptions {
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.zoho.com",
   port: Number(process.env.SMTP_PORT) || 465,
-  secure: true,
+  secure: Number(process.env.SMTP_PORT) === 465, // true for 465, false for 587
   auth: {
     user: process.env.SMTP_USER || "audu@orgflowhq.com",
     pass: process.env.SMTP_PASSWORD,
@@ -48,9 +48,15 @@ export const mailService = {
       })
       console.log(`[MailService] Email sent to ${to}: ${info.messageId}`)
       return { success: true, messageId: info.messageId }
-    } catch (error) {
-      console.error("[MailService] Error sending email:", error)
-      return { success: false, error }
+    } catch (error: any) {
+      console.error("[MailService] Error sending email:", {
+        to,
+        subject,
+        error: error.message,
+        code: error.code,
+        command: error.command
+      });
+      return { success: false, error: error.message || error }
     }
   },
 
@@ -206,8 +212,8 @@ export const mailService = {
       const doc = new PDFDocument({ margin: 50 });
       const buffers: Buffer[] = [];
 
-      doc.on('data', (buffer) => buffers.push(buffer));
-      doc.on('end', () => resolve(Buffer.concat(buffers)));
+      doc.on('data', (buffer: Buffer) => buffers.push(buffer));
+      doc.on('end', () => resolve(Buffer.concat(buffers as any)));
       doc.on('error', reject);
 
       // Header

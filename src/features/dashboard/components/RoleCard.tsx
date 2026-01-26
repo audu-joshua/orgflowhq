@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Briefcase, Calendar, Power, PowerOff, Loader2, Trash2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { roleService } from "@/features/roles/services/roleService"
+import { updateRoleStatusAction, deleteRoleAction } from "@/features/roles/actions"
 import type { Role } from "@/features/roles/types"
 import { toast } from "@/lib/toast"
 import {
@@ -44,8 +44,8 @@ export function RoleCard({ role: initialRole, onDeleted }: RoleCardProps) {
     setIsUpdating(true)
 
     try {
-      const updatedRole = await roleService.updateRoleStatus(role.id, newStatus)
-      setRole(updatedRole)
+      const updatedRole = await updateRoleStatusAction(role.id, newStatus)
+      setRole(updatedRole as any)
       toast.success(`Role ${newStatus === "active" ? "activated" : "closed"}`, {
         description: `${role.title} is now ${newStatus}.`,
       })
@@ -60,7 +60,7 @@ export function RoleCard({ role: initialRole, onDeleted }: RoleCardProps) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await roleService.deleteRole(role.id)
+      await deleteRoleAction(role.id)
       toast.success("Role deleted successfully", {
         description: `${role.title} has been removed.`,
       })

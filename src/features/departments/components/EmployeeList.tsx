@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Trash2, Mail, Phone, Calendar } from "lucide-react"
-import { departmentService } from "../services/departmentService"
+import { deleteEmployeeAction } from "../actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { formatDate } from "@/lib/utils"
@@ -22,7 +22,7 @@ export function EmployeeList({ employees, departmentId, onRefresh }: EmployeeLis
 
     setDeletingId(employeeId)
     try {
-      await departmentService.deleteEmployee(employeeId)
+      await deleteEmployeeAction(employeeId)
       onRefresh()
     } catch (error) {
       console.error("Failed to delete employee:", error)

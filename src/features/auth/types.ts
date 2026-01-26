@@ -1,12 +1,14 @@
 export interface User {
   id: string
   email: string
-  organization_id: string
-  created_at: string
-  role?: string | null // 'super_admin' | 'org_admin' | 'employee' | etc
+  organization_id?: string
+  created_at?: string
+  createdAt?: string // MongoDB compat
+  role?: string | null
   full_name?: string
   profile_image_url?: string
   status?: string
+  memberships?: any[]
 }
 
 export interface AuthContextType {

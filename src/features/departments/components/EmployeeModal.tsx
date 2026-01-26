@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { X, Mail, Phone, Calendar, Building, User, Trash2, Send, ExternalLink, Briefcase, MapPin, Shield, CheckCircle2, UserPlus, Fingerprint, Copy, Check, Info, Edit2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { departmentService } from "../services/departmentService"
+import { deleteEmployeeAction, updateSystemRoleAction } from "../actions"
 import { DeleteConfirmModal } from "./DeleteConfirmModal"
 import { EditEmployeeModal } from "./EditEmployeeModal"
 import { CustomSelect } from "@/components/ui/CustomSelect"
@@ -40,7 +40,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await departmentService.deleteEmployee(employee.id)
+      await deleteEmployeeAction(employee.id)
       onDeleted?.()
       onClose()
     } catch (error) {
@@ -58,7 +58,8 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   const handleUpdateRole = async (newRole: string | null) => {
     setIsUpdatingRole(true)
     try {
-      await departmentService.updateSystemRole(employee.id, employee.organization_id, newRole)
+      const result = await updateSystemRoleAction(employee.id, employee.organization_id, newRole)
+      if (!result.success) throw new Error(result.error)
       setSystemRole(newRole)
       toast.success(newRole ? `Role updated to ${newRole.toUpperCase()}` : "System access removed")
     } catch (error: any) {

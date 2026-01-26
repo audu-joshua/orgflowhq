@@ -1,68 +1,57 @@
-import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
-import { mailService } from "@/lib/mail/mailService"
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { User } from "@/models/User";
+import { mailService } from "@/lib/mail/mailService";
+import crypto from "crypto";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const { email } = await req.json()
+        await connectToDatabase();
+        const { email } = await req.json();
 
         if (!email) {
-            return NextResponse.json({ error: "Email is required" }, { status: 400 })
+            return NextResponse.json({ error: "Email is required" }, { status: 400 });
         }
 
-        const supabaseAdmin = getSupabaseAdmin()
+        const user = await User.findOne({ email: email.toLowerCase() });
 
-        // Dynamic site URL detection for robustness
-        let siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-
-        // If env var is missing or localhost (in prod), try to use the request origin/host
-        if (!siteUrl || (process.env.NODE_ENV === "production" && siteUrl.includes("localhost"))) {
-            const host = req.headers.get("host")
-            const protocol = host?.includes("localhost") ? "http" : "https"
-            if (host) {
-                siteUrl = `${protocol}://${host}`
-            }
+        if (!user) {
+            // Don't leak user existence
+            return NextResponse.json({
+                success: true,
+                message: "If an account exists, a reset link has been sent."
+            });
         }
 
-        // Fallback
-        siteUrl = (siteUrl || "http://localhost:3000").replace(/\/$/, "")
+        // 1. Generate Reset Token
+        const resetToken = crypto.randomBytes(32).toString("hex");
+        const hashedToken = crypto
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
 
-        const redirectUrl = `${siteUrl}/auth/callback?type=recovery`
+        // 2. Set token and expiry (1 hour)
+        user.resetPasswordToken = hashedToken;
+        user.resetPasswordExpires = new Date(Date.now() + 3600000);
+        await user.save();
 
-        console.log(`[ForgotPassword] Generating link with redirect: ${redirectUrl}`)
+        // 3. Generate Link
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+        const resetLink = `${siteUrl}/reset-password?token=${resetToken}&email=${email}`;
 
-        // Generate a recovery link using admin.generateLink
-        // This gives us full control over the email content
-        // The redirect goes to /auth/callback which will exchange the code and redirect to /reset-password
-        const { data, error } = await supabaseAdmin.auth.admin.generateLink({
-            type: "recovery",
-            email,
-            options: {
-                redirectTo: redirectUrl
-            }
-        })
+        // 4. Send Email
+        const mailResult = await mailService.sendPasswordResetEmail(email, resetLink);
 
-        if (error) {
-            console.error("[ForgotPassword] Supabase error:", error)
-            // Don't leak user existence - always return success
-            return NextResponse.json({ success: true, message: "If an account exists, a reset link has been sent." })
+        if (!mailResult.success) {
+            console.error(`[ForgotPassword] Email send failed for ${email}:`, mailResult.error);
+            return NextResponse.json({ error: "Failed to send reset email. Please contact support." }, { status: 500 });
         }
 
-        const resetLink = data.properties?.action_link
-
-        if (!resetLink) {
-            throw new Error("Failed to generate reset link")
-        }
-
-        // Send our custom branded email
-        await mailService.sendPasswordResetEmail(email, resetLink)
-
-        console.log(`[ForgotPassword] Password reset email sent to ${email}`)
-        return NextResponse.json({ success: true, message: "Reset link sent" })
+        console.log(`[ForgotPassword] Password reset email sent to ${email}`);
+        return NextResponse.json({ success: true, message: "Reset link sent" });
 
     } catch (error: any) {
-        console.error("[ForgotPassword] Unexpected error:", error)
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        console.error("[ForgotPassword] Unexpected error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
-

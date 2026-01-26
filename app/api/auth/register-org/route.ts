@@ -1,148 +1,139 @@
-import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
-import { createClient } from "@supabase/supabase-js"
-import { slugify } from "@/lib/utils"
-import { mailService } from "@/lib/mail/mailService"
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Organization, User } from "@/models/User";
+import { Department, Employee } from "@/models/Business";
+import { slugify } from "@/lib/utils";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../[...nextauth]/route";
+import mongoose from "mongoose";
 
 export async function POST(req: Request) {
     try {
-        const { organizationName, fullName } = await req.json()
+        await connectToDatabase();
+        const { organizationName, fullName } = await req.json();
 
         if (!organizationName) {
-            return NextResponse.json({ error: "Missing organization name" }, { status: 400 })
+            return NextResponse.json({ error: "Missing organization name" }, { status: 400 });
         }
 
         // 1. Verify User Session (Security)
-        const authHeader = req.headers.get("Authorization")
-        if (!authHeader) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        const session = await getServerSession(authOptions) as any;
+        if (!session || !session.user?.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: authHeader } }
-        })
+        const userEmail = session.user.email;
+        const dbUser = await User.findOne({ email: userEmail });
 
-        const { data: { user }, error: authError } = await supabase.auth.getUser()
-
-        if (authError || !user) {
-            return NextResponse.json({ error: "Invalid session" }, { status: 401 })
+        if (!dbUser) {
+            return NextResponse.json({ error: "User profile not found" }, { status: 404 });
         }
 
-        const supabaseAdmin = getSupabaseAdmin()
+        // 2. Provisioning Transactional Logic
+        console.log(`[Provision-Org] Starting atomic setup for ${organizationName} by ${userEmail}`);
 
-        // 2. Provisioning Transactional Logic (Using RPC for Atomicity)
-        console.log(`[Provision-Org] Starting atomic setup for ${organizationName} by ${user.email}`)
+        const mongoSession = await mongoose.startSession();
+        mongoSession.startTransaction();
 
-        // A. Generate Slug
-        let slug = slugify(organizationName)
-        console.log(`[Provision-Org] Generated initial slug: ${slug}`)
+        try {
+            // A. Generate Slug
+            let slug = slugify(organizationName);
+            let finalSlug = slug;
+            let counter = 1;
 
-        // B. Call the Atomic Provisioning Function
-        const { data: result, error: rpcError } = await supabaseAdmin.rpc("provision_organization", {
-            p_user_id: user.id,
-            p_user_email: user.email,
-            p_org_name: organizationName,
-            p_org_slug: slug,
-            p_full_name: fullName || user.user_metadata?.full_name || "Owner"
-        })
-
-        if (rpcError) {
-            console.error("[Provision-Org] RPC Error:", rpcError)
-
-            // Handle Slug Conflict explicitly if the RPC didn't catch it or for retry logic
-            if (rpcError.message?.includes("organizations_slug_key")) {
-                let counter = 1
-                let finalResult = null
-
-                // Retry with incremented slugs (limit to 5 attempts for safety)
-                while (counter <= 5) {
-                    const nextSlug = `${slug}-${counter}`
-                    console.log(`[Provision-Org] Retrying with slug: ${nextSlug}`)
-
-                    const { data: retryData, error: retryError } = await supabaseAdmin.rpc("provision_organization", {
-                        p_user_id: user.id,
-                        p_user_email: user.email,
-                        p_org_name: organizationName,
-                        p_org_slug: nextSlug,
-                        p_full_name: fullName || user.user_metadata?.full_name || "Owner"
-                    })
-
-                    if (!retryError) {
-                        finalResult = retryData
-                        break
-                    }
-
-                    if (!retryError.message?.includes("organizations_slug_key")) {
-                        throw retryError
-                    }
-                    counter++
+            // Check for slug uniqueness
+            while (await Organization.findOne({ slug: finalSlug }).session(mongoSession)) {
+                if (counter > 5) {
+                    throw new Error("Could not generate a unique slug for your organization. Please try a different name.");
                 }
-
-                if (!finalResult) throw new Error("Could not generate a unique slug for your organization. Please try a different name.")
-                return handleSuccess(finalResult, user, organizationName, fullName)
+                finalSlug = `${slug}-${counter}`;
+                counter++;
             }
 
-            throw rpcError
-        }
+            // B. Create Organization
+            const [newOrg] = await Organization.create(
+                [{ name: organizationName, slug: finalSlug }],
+                { session: mongoSession }
+            );
 
-        if (!result.success) {
-            console.error("[Provision-Org] RPC Logic Error:", result.error)
-            throw new Error(result.error || "Provisioning failed")
-        }
+            // C. Create "Management" Department
+            const [managementDept] = await Department.create(
+                [
+                    {
+                        organizationId: newOrg._id,
+                        name: "Management",
+                        description: "Executive and Administrative management team",
+                    },
+                ],
+                { session: mongoSession }
+            );
 
-        return handleSuccess(result, user, organizationName, fullName)
+            // D. Update User Membership
+            dbUser.memberships.push({
+                organizationId: newOrg._id,
+                role: "owner",
+            });
+            await dbUser.save({ session: mongoSession });
+
+            // E. Create Employee Record for Owner
+            await Employee.create(
+                [
+                    {
+                        organizationId: newOrg._id,
+                        userId: dbUser._id,
+                        departmentId: managementDept._id,
+                        fullName: fullName || dbUser.fullName || "Owner",
+                        email: userEmail,
+                        employeeId: "OWN-001",
+                        position: "Owner",
+                        status: "active",
+                        hireDate: new Date(),
+                    },
+                ],
+                { session: mongoSession }
+            );
+
+            await mongoSession.commitTransaction();
+            console.log(`[Provision-Org] Successfully provisioned ${organizationName}`);
+
+            // F. Send Welcome Email (Post-Transaction)
+            try {
+                const { mailService } = await import("@/lib/mail/mailService");
+                await mailService.sendOrgWelcomeEmail(
+                    userEmail,
+                    organizationName,
+                    fullName || dbUser.fullName || "Owner"
+                );
+            } catch (mailErr) {
+                console.error("🚨 [Provision-Org] Mail FAILED:", mailErr);
+            }
+
+            return NextResponse.json({
+                success: true,
+                organizationId: newOrg._id,
+                slug: finalSlug,
+            });
+
+        } catch (transactionError: any) {
+            await mongoSession.abortTransaction();
+            throw transactionError;
+        } finally {
+            mongoSession.endSession();
+        }
 
     } catch (error: any) {
-        console.error("[Provision-Org] Final catch error:", error)
+        console.error("[Provision-Org] Final catch error:", error);
+        let errorMessage = error.message || "Internal Server Error";
 
-        // Map technical database errors to friendly messages
-        let errorMessage = error.message || "Internal Server Error"
-
-        if (errorMessage.includes("employees_employee_id_key")) {
-            errorMessage = "This account is already registered as an employee. Please attempt to sign in."
-        } else if (errorMessage.includes("organizations_slug_key")) {
-            errorMessage = "This organization name is already taken. Please try a different name."
-        } else if (errorMessage.includes("employees_email_key")) {
-            errorMessage = "An employee with this email already exists."
-        } else if (errorMessage.includes("users_pkey")) {
-            errorMessage = "User account already exists."
+        // Map errors to friendly messages
+        if (errorMessage.includes("duplicate key error")) {
+            if (errorMessage.includes("slug")) {
+                errorMessage = "This organization name is already taken. Please try a different name.";
+            } else if (errorMessage.includes("email")) {
+                errorMessage = "An account with this email already exists.";
+            }
         }
 
-        return NextResponse.json({ error: errorMessage }, { status: 500 })
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
-}
-
-async function handleSuccess(result: any, user: any, organizationName: string, fullName: string) {
-    const supabaseAdmin = getSupabaseAdmin()
-
-    // G. Sync Organization ID to Auth Metadata (Critical for Middleware)
-    console.log("[Provision-Org] Updating auth metadata...")
-    const { error: metaError } = await supabaseAdmin.auth.admin.updateUserById(
-        user.id,
-        { user_metadata: { organization_id: result.organization_id } }
-    )
-
-    if (metaError) {
-        console.error("[Provision-Org] Failed to sync auth metadata:", metaError)
-    }
-
-    try {
-        const { mailService } = await import("@/lib/mail/mailService")
-        await mailService.sendOrgWelcomeEmail(
-            user.email!,
-            organizationName,
-            fullName || user.user_metadata?.full_name || "Owner"
-        )
-        console.log("[Provision-Org] Welcome email sent.")
-    } catch (mailErr: any) {
-        console.error("🚨 [Provision-Org] Mail FAILED:", mailErr.message || mailErr)
-    }
-
-    return NextResponse.json({
-        success: true,
-        organizationId: result.organization_id,
-        slug: result.slug
-    })
 }

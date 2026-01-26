@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { X, Calendar, Clock, User, FileText, CheckCircle2 } from "lucide-react"
-import { timesheetService } from "@/features/timesheets/services/timesheetService"
-import { departmentService } from "@/features/departments/services/departmentService"
+import { createTimesheetAction } from "@/features/timesheets/actions"
+import { getEmployeesByOrganizationAction } from "@/features/departments/actions"
 import { useAppStore } from "@/store/useAppStore"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import { toast } from "@/lib/toast"
@@ -40,8 +40,8 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
         if (!organization) return
         setLoading(true)
         try {
-            const data = await departmentService.getEmployeesByOrganization(organization.id)
-            setEmployees(data)
+            const data = await getEmployeesByOrganizationAction(organization.id)
+            setEmployees(data as any)
         } catch (error) {
             toast.error("Failed to load employees")
         } finally {
@@ -61,13 +61,15 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
             const startDateTime = new Date(`${date}T${clockInTime}:00`).toISOString()
             const endDateTime = clockOutTime ? new Date(`${date}T${clockOutTime}:00`).toISOString() : null
 
-            await timesheetService.createTimesheet({
+            const result = await createTimesheetAction({
                 employee_id: selectedEmployeeId,
                 organization_id: organization.id,
                 clock_in: startDateTime,
                 clock_out: endDateTime,
                 notes: notes
             })
+
+            if (!result.success) throw new Error(result.error)
 
             toast.success("Timesheet created successfully")
             onSuccess()

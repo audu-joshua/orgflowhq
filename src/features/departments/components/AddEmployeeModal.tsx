@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Sparkles, Loader2, Plus } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
-import { departmentService } from "../services/departmentService"
+import { getDepartmentsByOrganizationAction, generateNextEmployeeIdAction, createEmployeeAction } from "../actions"
 import { toast } from "@/lib/toast"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import { CreateDepartmentModal } from "./CreateDepartmentModal"
@@ -38,8 +38,8 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
   const fetchDepts = async () => {
     if (!organization) return
     try {
-      const depts = await departmentService.getDepartmentsByOrganization(organization.id)
-      setDepartments(depts)
+      const depts = await getDepartmentsByOrganizationAction(organization.id)
+      setDepartments(depts as any)
       if (depts.length > 0 && !formData.department_id) {
         setFormData(prev => ({ ...prev, department_id: depts[0].id }))
       }
@@ -68,7 +68,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
       const fetchNextId = async () => {
         setIsGeneratingId(true)
         try {
-          const nextId = await departmentService.generateNextEmployeeId(organization.id, organization.name)
+          const nextId = await generateNextEmployeeIdAction(organization.id, organization.name)
           setFormData(prev => ({ ...prev, employee_id: nextId }))
         } catch (err) {
           console.error("Failed to generate ID:", err)
@@ -101,7 +101,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
       if (!organization) throw new Error("Organization not found")
       if (!formData.department_id) throw new Error("Please select a department")
 
-      const newEmployee = await departmentService.createEmployee(organization.id, {
+      const result = await createEmployeeAction(organization.id, {
         user_id: null,
         department_id: formData.department_id,
         full_name: formData.full_name || "",
@@ -115,9 +115,14 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
         activated_at: null,
       })
 
+      if (!result.success) throw new Error(result.error)
+      const newEmployee = result.employee
+
       // If an image was selected, upload it to storage now that we have the employee ID
       if (profileImage && newEmployee) {
-        await departmentService.uploadEmployeeProfileImage(newEmployee.id, profileImage)
+        // TODO: File storage migration required (Cloudinary/S3).
+        // await departmentService.uploadEmployeeProfileImage(newEmployee.id, profileImage)
+        toast.warning("Profile image upload migration pending.")
       }
 
 
