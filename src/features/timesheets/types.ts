@@ -1,18 +1,28 @@
 export interface Timesheet {
     id: string;
-    employee_id: string;
-    organization_id: string;
-    clock_in: string;
-    clock_out: string | null;
+    _id: string;
+    employeeId: string;
+    organizationId: string;
+    clockIn: string;
+    clockOut: string | null;
     status: 'pending' | 'approved' | 'rejected';
     notes?: string;
-    created_at?: string;
+    createdAt?: string;
     employees?: {
-        full_name: string;
+        fullName: string;
         position: string;
+        profileImageUrl?: string | null;
+        id?: string;
     };
-    created_by?: string;
-    created_via?: 'employee' | 'admin_override';
-    override_reason?: string;
+    createdBy?: string;
+    createdVia?: 'employee' | 'admin_override';
+    overrideReason?: string;
     history?: any[];
+
+    // Legacy compatibility if needed
+    employee_id?: string;
+    organization_id?: string;
+    clock_in?: string;
+    clock_out?: string | null;
+    created_at?: string;
 }

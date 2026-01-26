@@ -19,29 +19,28 @@ interface AddEmployeeModalProps {
 export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: AddEmployeeModalProps) {
   const { organization } = useAppStore()
   const [formData, setFormData] = useState({
-    full_name: "",
+    fullName: "",
     email: "",
-    employee_id: "",
+    employeeId: "",
     position: "",
     phone: "",
-    department_id: departmentId || "",
-    hire_date: new Date().toISOString().split('T')[0],
+    departmentId: departmentId || "",
+    hireDate: new Date().toISOString().split('T')[0],
   })
   const [departments, setDepartments] = useState<Department[]>([])
   const [profileImage, setProfileImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [isGeneratingId, setIsGeneratingId] = useState(false)
-  const [error, setError] = useState("")
   const [isAddingDepartment, setIsAddingDepartment] = useState(false)
 
   const fetchDepts = async () => {
     if (!organization) return
     try {
-      const depts = await getDepartmentsByOrganizationAction(organization.id)
+      const depts = await getDepartmentsByOrganizationAction(organization._id)
       setDepartments(depts as any)
-      if (depts.length > 0 && !formData.department_id) {
-        setFormData(prev => ({ ...prev, department_id: depts[0].id }))
+      if (depts.length > 0 && !formData.departmentId) {
+        setFormData(prev => ({ ...prev, departmentId: depts[0]._id }))
       }
     } catch (err) {
       console.error("Failed to fetch departments", err)
@@ -58,18 +57,19 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
   // Sync prop departmentId
   useEffect(() => {
     if (departmentId) {
-      setFormData(prev => ({ ...prev, department_id: departmentId }))
+      setFormData(prev => ({ ...prev, departmentId: departmentId }))
     }
   }, [departmentId])
 
-  // Autofill Employee ID on open
+  // Autofill Employee ID on open or department change
   useEffect(() => {
     if (isOpen && organization) {
       const fetchNextId = async () => {
         setIsGeneratingId(true)
         try {
-          const nextId = await generateNextEmployeeIdAction(organization.id, organization.name)
-          setFormData(prev => ({ ...prev, employee_id: nextId }))
+          const selectedDept = departments.find(d => d._id === formData.departmentId)
+          const nextId = await generateNextEmployeeIdAction(organization._id, organization.name, selectedDept?.name)
+          setFormData(prev => ({ ...prev, employeeId: nextId }))
         } catch (err) {
           console.error("Failed to generate ID:", err)
         } finally {
@@ -78,7 +78,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
       }
       fetchNextId()
     }
-  }, [isOpen, organization])
+  }, [isOpen, organization, formData.departmentId, departments])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -94,57 +94,62 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
     setLoading(true)
 
     try {
       if (!organization) throw new Error("Organization not found")
-      if (!formData.department_id) throw new Error("Please select a department")
+      if (!formData.departmentId) throw new Error("Please select a department")
 
-      const result = await createEmployeeAction(organization.id, {
-        user_id: null,
-        department_id: formData.department_id,
-        full_name: formData.full_name || "",
+      const { uploadFileAction } = await import("@/features/applications/uploadActions")
+      let uploadedImageUrl = null
+
+      if (profileImage) {
+        const imageFormData = new FormData()
+        imageFormData.append("file", profileImage)
+        imageFormData.append("folder", "employee_profiles")
+        const uploadRes: any = await uploadFileAction(imageFormData)
+        if (uploadRes.success) {
+          uploadedImageUrl = uploadRes.url
+        } else {
+          toast.error("Failed to upload profile image")
+        }
+      }
+
+      const result = await createEmployeeAction(organization._id, {
+        userId: null,
+        departmentId: formData.departmentId,
+        fullName: formData.fullName || "",
         email: formData.email || "",
-        employee_id: formData.employee_id || null,
+        employeeId: formData.employeeId || null, // Will be overridden by server-side gen if it was pending? No, we gen it in effect.
         position: formData.position || null,
         phone: formData.phone || null,
-        hire_date: formData.hire_date || null,
-        profile_image_url: null, // Save as null initially, then upload to storage
+        hireDate: formData.hireDate || null,
+        profileImageUrl: uploadedImageUrl,
         status: "invited",
-        activated_at: null,
+        activatedAt: null,
       })
 
       if (!result.success) throw new Error(result.error)
-      const newEmployee = result.employee
-
-      // If an image was selected, upload it to storage now that we have the employee ID
-      if (profileImage && newEmployee) {
-        // TODO: File storage migration required (Cloudinary/S3).
-        // await departmentService.uploadEmployeeProfileImage(newEmployee.id, profileImage)
-        toast.warning("Profile image upload migration pending.")
-      }
-
 
       toast.success("Employee added successfully")
       onSuccess()
       onClose()
       setFormData({
-        full_name: "",
+        fullName: "",
         email: "",
-        employee_id: "",
+        employeeId: "",
         position: "",
         phone: "",
-        department_id: departmentId || "",
-        hire_date: new Date().toISOString().split('T')[0],
+        departmentId: departmentId || "",
+        hireDate: new Date().toISOString().split('T')[0],
       })
       setProfileImage(null)
       setImagePreview("")
     } catch (err: any) {
       if (err.code === "23505" || err.message?.includes("unique_employee_email")) {
-        setError("An employee with this email already exists in the system.")
+        toast.error("An employee with this email already exists in the system.")
       } else {
-        setError(err instanceof Error ? err.message : "Failed to add employee")
+        toast.error(err instanceof Error ? err.message : "Failed to add employee")
       }
     } finally {
       setLoading(false)
@@ -155,7 +160,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
     // Refresh departments list
     await fetchDepts()
     // Select the new department
-    setFormData(prev => ({ ...prev, department_id: newDept.id }))
+    setFormData(prev => ({ ...prev, departmentId: newDept._id }))
     setIsAddingDepartment(false)
     toast.success(`${newDept.name} department created`)
   }
@@ -186,7 +191,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
               <div>
                 <p className="text-[10px] font-bold text-primary uppercase tracking-tight">Assigned Personnel ID</p>
                 <p className="text-lg font-mono font-bold text-foreground">
-                  {isGeneratingId ? "Generating..." : (formData.employee_id || "PENDING")}
+                  {isGeneratingId ? "Generating..." : (formData.employeeId || "PENDING")}
                 </p>
               </div>
               <Sparkles size={20} className="text-primary opacity-50 animate-pulse" />
@@ -203,9 +208,9 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
                     <div className="flex-1">
                       <CustomSelect
                         id="department"
-                        value={formData.department_id}
-                        onChange={(value) => setFormData({ ...formData, department_id: value })}
-                        options={departments.map(d => ({ value: d.id, label: d.name }))}
+                        value={formData.departmentId}
+                        onChange={(value) => setFormData({ ...formData, departmentId: value })}
+                        options={departments.map(d => ({ value: d._id, label: d.name }))}
                         placeholder="Select Department"
                         required
                       />
@@ -223,14 +228,14 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
               )}
 
               <div>
-                <label htmlFor="full_name" className="bloct text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                <label htmlFor="fullName" className="bloct text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                   Full Name <span className="text-destructive">*</span>
                 </label>
                 <input
-                  id="full_name"
+                  id="fullName"
                   type="text"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   required
                   className="w-full px-4 py-3 border border-border rounded-xl bg-background text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                   placeholder="Enter full name"
@@ -281,14 +286,14 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
                   />
                 </div>
                 <div>
-                  <label htmlFor="hire_date" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                  <label htmlFor="hireDate" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                     Hire Date
                   </label>
                   <input
-                    id="hire_date"
+                    id="hireDate"
                     type="date"
-                    value={formData.hire_date}
-                    onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                    value={formData.hireDate}
+                    onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
                     className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-foreground text-sm focus:ring-2 focus:ring-primary outline-none"
                   />
                 </div>
@@ -304,7 +309,7 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
                   ) : (
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                       <span className="text-primary font-bold">
-                        {(formData.full_name || "E")[0].toUpperCase()}
+                        {(formData.fullName || "E")[0].toUpperCase()}
                       </span>
                     </div>
                   )}
@@ -322,12 +327,6 @@ export function AddEmployeeModal({ isOpen, onClose, departmentId, onSuccess }: A
         </div>
 
         <div className="p-6 border-t border-border bg-muted/10">
-          {error && (
-            <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-lg text-[11px] font-bold mb-4 animate-in fade-in slide-in-from-top-1">
-              {error}
-            </div>
-          )}
-
           <div className="flex gap-3">
             <button
               type="button"

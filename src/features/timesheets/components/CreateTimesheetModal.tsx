@@ -6,6 +6,8 @@ import { createTimesheetAction } from "@/features/timesheets/actions"
 import { getEmployeesByOrganizationAction } from "@/features/departments/actions"
 import { useAppStore } from "@/store/useAppStore"
 import { CustomSelect } from "@/components/ui/CustomSelect"
+import { CustomSingleDatePicker } from "@/components/ui/CustomSingleDatePicker"
+import { CustomTimePicker } from "@/components/ui/CustomTimePicker"
 import { toast } from "@/lib/toast"
 import type { Employee } from "@/features/departments/types"
 
@@ -24,8 +26,8 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
     // Form State
     const [selectedEmployeeId, setSelectedEmployeeId] = useState("")
     const [date, setDate] = useState("")
-    const [clockInTime, setClockInTime] = useState("09:00")
-    const [clockOutTime, setClockOutTime] = useState("17:00")
+    const [clockInTime, setClockInTime] = useState("09:00") // 9 AM
+    const [clockOutTime, setClockOutTime] = useState("17:00") // 5 PM
     const [notes, setNotes] = useState("")
 
     useEffect(() => {
@@ -62,10 +64,10 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
             const endDateTime = clockOutTime ? new Date(`${date}T${clockOutTime}:00`).toISOString() : null
 
             const result = await createTimesheetAction({
-                employee_id: selectedEmployeeId,
-                organization_id: organization.id,
-                clock_in: startDateTime,
-                clock_out: endDateTime,
+                employeeId: selectedEmployeeId,
+                organizationId: organization.id,
+                clockIn: startDateTime,
+                clockOut: endDateTime,
                 notes: notes
             })
 
@@ -90,7 +92,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
 
     const employeeOptions = employees.map(emp => ({
         value: emp.id,
-        label: emp.full_name || emp.email || "Unknown Employee"
+        label: emp.fullName || emp.email || "Unknown Employee"
     }))
 
     return (
@@ -98,10 +100,10 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
             <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="p-6 border-b border-border flex items-center justify-between">
+                <div className="p-5 border-b border-border flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-foreground">Create Timesheet</h2>
-                        <p className="text-sm text-muted-foreground">Manually log hours for an employee</p>
+                        <p className="text-xs text-muted-foreground">Manually log hours for an employee</p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-muted rounded-full transition-colors">
                         <X size={20} className="text-muted-foreground" />
@@ -109,7 +111,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-4">
+                <div className="p-5 space-y-3">
 
                     <div className="space-y-1">
                         <label className="text-xs font-bold uppercase text-muted-foreground">Employee</label>
@@ -118,52 +120,40 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                             onChange={setSelectedEmployeeId}
                             options={employeeOptions}
                             placeholder="Select Employee..."
-                            disabled={loading}
+                            isLoading={loading}
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3 items-end">
                         <div className="space-y-1">
                             <label className="text-xs font-bold uppercase text-muted-foreground">Date</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-2.5 text-muted-foreground" size={16} />
-                                <input
-                                    type="date"
-                                    value={date}
-                                    onChange={(e) => setDate(e.target.value)}
-                                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
-                                />
-                            </div>
+                            <CustomSingleDatePicker
+                                value={date}
+                                onChange={setDate}
+                                placeholder="Select Date"
+                            />
                         </div>
                         <div className="space-y-1">
                             {/* Empty spacer or shift type? Keeping simple for now */}
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
                             <label className="text-xs font-bold uppercase text-muted-foreground">Clock In</label>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-2.5 text-green-500" size={16} />
-                                <input
-                                    type="time"
-                                    value={clockInTime}
-                                    onChange={(e) => setClockInTime(e.target.value)}
-                                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
-                                />
-                            </div>
+                            <CustomTimePicker
+                                value={clockInTime}
+                                onChange={setClockInTime}
+                                iconColor="text-green-500"
+                            />
                         </div>
                         <div className="space-y-1">
                             <label className="text-xs font-bold uppercase text-muted-foreground">Clock Out</label>
-                            <div className="relative">
-                                <Clock className="absolute left-3 top-2.5 text-red-500" size={16} />
-                                <input
-                                    type="time"
-                                    value={clockOutTime}
-                                    onChange={(e) => setClockOutTime(e.target.value)}
-                                    className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
-                                />
-                            </div>
+                            <CustomTimePicker
+                                value={clockOutTime}
+                                onChange={setClockOutTime}
+                                iconColor="text-red-500"
+                            />
                         </div>
                     </div>
 
@@ -175,7 +165,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Explain why this manual record is being created..."
-                                rows={3}
+                                rows={2}
                                 className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm resize-none focus:ring-2 focus:ring-primary outline-none"
                             />
                         </div>
@@ -186,7 +176,7 @@ export function CreateTimesheetModal({ isOpen, onClose, onSuccess }: CreateTimes
 
 
                 {/* Footer */}
-                <div className="p-6 border-t border-border bg-muted/20 rounded-b-xl flex justify-end gap-3">
+                <div className="p-5 border-t border-border bg-muted/20 rounded-b-xl flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"

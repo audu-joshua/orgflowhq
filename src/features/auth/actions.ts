@@ -36,9 +36,32 @@ export async function getUserProfileAction(userId: string, scopedOrgId?: string)
                 userId: dbUser._id,
                 organizationId: activeMembership.organizationId?._id
             }).populate("departmentId");
+
+            // AUTO-ACTIVATE: If invited, change to active on first successful profile fetch (login)
+            if (employeeData && employeeData.status === 'invited') {
+                employeeData.status = 'active';
+                employeeData.activatedAt = new Date();
+                await employeeData.save();
+            }
         }
 
         // Return a plain object to avoid serialization issues
+        const orgDoc = activeMembership?.organizationId;
+        const organization = orgDoc ? {
+            id: orgDoc._id.toString(),
+            _id: orgDoc._id.toString(),
+            name: orgDoc.name,
+            slug: orgDoc.slug,
+            logoUrl: orgDoc.logoUrl,
+            address: orgDoc.address,
+            welcomeDocUrl: orgDoc.welcomeDocUrl,
+            website: orgDoc.website,
+            description: orgDoc.description,
+            contactEmail: orgDoc.contactEmail,
+            createdAt: orgDoc.createdAt?.toISOString(),
+            updatedAt: orgDoc.updatedAt?.toISOString(),
+        } : null;
+
         return {
             id: dbUser._id.toString(),
             email: dbUser.email,
@@ -46,11 +69,11 @@ export async function getUserProfileAction(userId: string, scopedOrgId?: string)
             profileImageUrl: dbUser.profileImageUrl || dbUser.image,
             role: activeMembership?.role || dbUser.role,
             systemRole: dbUser.role, // "super_admin" or "user"
-            organization_id: activeMembership?.organizationId?._id?.toString() || "",
-            organizations: activeMembership?.organizationId ? activeMembership.organizationId.toObject() : null,
+            organizationId: organization?._id || "",
+            organization: organization,
             status: employeeData?.status || 'active',
             is_employee_only: dbUser.role !== 'super_admin' && activeMembership?.role === 'member',
-            created_at: (dbUser as any).createdAt?.toISOString() || new Date().toISOString()
+            createdAt: (dbUser as any).createdAt?.toISOString() || new Date().toISOString()
         };
     } catch (error) {
         console.error("[AuthAction] getUserProfile failed:", error);

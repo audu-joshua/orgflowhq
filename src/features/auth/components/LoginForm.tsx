@@ -14,6 +14,7 @@ export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Initial check for termination via URL params
   useState(() => {
@@ -29,6 +30,7 @@ export function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
 
     try {
       const { signIn: nextAuthSignIn, getSession } = await import("next-auth/react")
@@ -53,20 +55,23 @@ export function LoginForm() {
 
       // 1. Critical Policy: Role-based redirects
       const privilegedRoles = ["owner", "admin", "hr", "manager", "finance"]
+      const primaryMembership = user.memberships?.[0]
+      const effectiveRole = user.role === 'super_admin' ? 'super_admin' : (primaryMembership?.role || user.role)
 
-      if (user.role === 'super_admin') {
+      if (effectiveRole === 'super_admin') {
         router.push("/select-portal")
-      } else if (privilegedRoles.includes(user.role)) {
+      } else if (privilegedRoles.includes(effectiveRole)) {
         router.push("/dashboard")
-      } else if (user.memberships && user.memberships.length > 0) {
-        // Redirect to the first organization's clock app for regular employees
-        const primaryOrgSlug = user.memberships[0].slug
-        router.push(`/org/${primaryOrgSlug}/clock`)
+      } else if (primaryMembership?.slug) {
+        // Redirect to the organization's clock app for regular employees
+        router.push(`/org/${primaryMembership.slug}/clock`)
       } else {
         toast.error("No active organization found for this account.")
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Login failed")
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -122,10 +127,10 @@ export function LoginForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || isSubmitting}
           className="w-full h-[52px] px-4 py-3 bg-primary hover:opacity-90 text-primary-foreground rounded-xl disabled:opacity-50 transition-all font-semibold text-lg cursor-pointer flex items-center justify-center gap-2"
         >
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : "Login"}
+          {isSubmitting ? <Loader2 className="w-6 h-6 animate-spin text-white" /> : "Login"}
         </button>
       </form>
 

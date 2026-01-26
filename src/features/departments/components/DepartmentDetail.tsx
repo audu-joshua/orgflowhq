@@ -115,7 +115,7 @@ export function DepartmentDetail({ departmentId }: DepartmentDetailProps) {
       <AddEmployeeModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        departmentId={departmentId}
+        departmentId={department._id}
         onSuccess={handleRefresh}
       />
     </>

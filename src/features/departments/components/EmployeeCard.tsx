@@ -21,7 +21,7 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const getInitial = () => {
-    if (employee.full_name) return employee.full_name[0].toUpperCase()
+    if (employee.fullName) return employee.fullName[0].toUpperCase()
     if (employee.email) return employee.email[0].toUpperCase()
     return "E"
   }
@@ -44,7 +44,7 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteEmployeeAction(employee.id)
+      await deleteEmployeeAction(employee._id)
       onDeleted?.()
       setIsDeleteModalOpen(false)
     } catch (error) {
@@ -62,10 +62,10 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
       >
         {/* Top Image Section */}
         <div className="relative h-44 overflow-hidden">
-          {employee.profile_image_url ? (
+          {employee.profileImageUrl ? (
             <img
-              src={employee.profile_image_url}
-              alt={employee.full_name || "Employee"}
+              src={employee.profileImageUrl}
+              alt={employee.fullName || "Employee"}
               className={`w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ${employee.status === 'inactive' ? 'grayscale' : ''} ${employee.status === 'terminated' ? 'grayscale contrast-125' : ''}`}
             />
           ) : (
@@ -91,7 +91,7 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
         <div className="p-4 space-y-3">
           <div>
             <h3 className="font-bold text-foreground truncate text-base group-hover:text-primary transition-colors">
-              {employee.full_name || "No name"}
+              {employee.fullName || "No name"}
             </h3>
             {employee.position && (
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
@@ -111,10 +111,10 @@ export function EmployeeCard({ employee, onDeleted }: EmployeeCardProps) {
                 <span>{employee.phone}</span>
               </div>
             )}
-            {employee.hire_date && (
+            {employee.hireDate && (
               <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
                 <Calendar size={12} className="shrink-0" />
-                <span>Hired {formatDate(employee.hire_date)}</span>
+                <span>Hired {formatDate(employee.hireDate)}</span>
               </div>
             )}
           </div>

@@ -102,9 +102,9 @@ export async function deleteEmployeeAction(employeeId: string) {
     }
 }
 
-export async function generateNextEmployeeIdAction(organizationId: string, organizationName: string) {
+export async function generateNextEmployeeIdAction(organizationId: string, organizationName: string, departmentName?: string) {
     try {
-        return await departmentService.generateNextEmployeeId(organizationId, organizationName);
+        return await departmentService.generateNextEmployeeId(organizationId, organizationName, departmentName);
     } catch (error) {
         console.error("Failed to generate ID:", error);
         return "PENDING";

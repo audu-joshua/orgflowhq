@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, Loader2 } from "lucide-react"
 
 interface CustomSelectProps {
     value: string
@@ -10,6 +10,7 @@ interface CustomSelectProps {
     placeholder?: string
     required?: boolean
     disabled?: boolean
+    isLoading?: boolean
     id?: string
 }
 
@@ -20,6 +21,7 @@ export function CustomSelect({
     placeholder = "Select an option",
     required = false,
     disabled = false,
+    isLoading = false,
     id
 }: CustomSelectProps) {
     const [isOpen, setIsOpen] = useState(false)
@@ -38,20 +40,25 @@ export function CustomSelect({
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
+    const isDisabled = disabled || isLoading
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
                 type="button"
                 id={id}
-                onClick={() => !disabled && setIsOpen(!isOpen)}
-                disabled={disabled}
-                className={`w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-between transition-colors ${disabled ? "opacity-50 cursor-not-allowed bg-muted" : "cursor-pointer hover:bg-muted/50"}`}
+                onClick={() => !isDisabled && setIsOpen(!isOpen)}
+                disabled={isDisabled}
+                className={`w-full px-4 py-2 border border-border bg-input text-foreground rounded-lg focus:outline-none focus:ring-2 focus:ring-primary flex items-center justify-between transition-colors ${isDisabled ? "opacity-50 cursor-not-allowed bg-muted" : "cursor-pointer hover:bg-muted/50"}`}
             >
-                <span className={selectedOption ? "text-foreground" : "text-muted-foreground"}>
-                    {selectedOption ? selectedOption.label : placeholder}
-                </span>
+                <div className="flex items-center gap-2 overflow-hidden">
+                    {isLoading && <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />}
+                    <span className={`truncate ${selectedOption ? "text-foreground" : "text-muted-foreground"}`}>
+                        {isLoading ? "Loading..." : (selectedOption ? selectedOption.label : placeholder)}
+                    </span>
+                </div>
                 <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
+                    className={`w-4 h-4 text-muted-foreground transition-transform shrink-0 ${isOpen ? "rotate-180" : ""}`}
                 />
             </button>
 

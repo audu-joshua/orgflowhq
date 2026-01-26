@@ -95,8 +95,8 @@ export default function SettingsPage() {
         if (organization) {
             setName(organization.name || "")
             setAddress(organization.address || "")
-            setLogoPreview(organization.logo_url || null)
-            setWelcomeDocUrl(organization.welcome_doc_url || null)
+            setLogoPreview(organization.logoUrl || null)
+            setWelcomeDocUrl(organization.welcomeDocUrl || null)
         }
     }, [organization])
 
@@ -126,16 +126,45 @@ export default function SettingsPage() {
         setLoading(true)
 
         try {
-            // Note: Cloudinary/Storage logic would go here, then API update
-            // For now, we simulate the update using the organizationService which is Mongo-ready
-            // But we call a server action or API for actual persistence to avoid direct Mongoose in client
+            const { uploadFileAction } = await import("@/features/applications/uploadActions")
+
+            let finalLogoUrl = organization.logoUrl
+            let finalWelcomeDocUrl = organization.welcomeDocUrl
+
+            // 1. Upload Logo if changed
+            if (logo) {
+                const formData = new FormData()
+                formData.append("file", logo)
+                formData.append("folder", "organization_logo")
+                const uploadRes: any = await uploadFileAction(formData)
+                if (uploadRes.success) {
+                    finalLogoUrl = uploadRes.url
+                } else {
+                    throw new Error(uploadRes.error || "Failed to upload logo")
+                }
+            }
+
+            // 2. Upload Welcome Doc if changed
+            if (welcomeDoc) {
+                const formData = new FormData()
+                formData.append("file", welcomeDoc)
+                formData.append("folder", "organization_docs")
+                const uploadRes: any = await uploadFileAction(formData)
+                if (uploadRes.success) {
+                    finalWelcomeDocUrl = uploadRes.url
+                } else {
+                    throw new Error(uploadRes.error || "Failed to upload welcome document")
+                }
+            }
 
             const updateData: any = {
                 name: name.trim(),
                 address: address.trim(),
+                logoUrl: finalLogoUrl,
+                welcomeDocUrl: finalWelcomeDocUrl
             }
 
-            const response = await fetch(`/api/organizations/${organization.id}`, {
+            const response = await fetch(`/api/organizations/${organization._id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updateData)
@@ -163,7 +192,7 @@ export default function SettingsPage() {
             const res = await fetch("/api/organizations/close/initiate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ organizationId: organization?.id })
+                body: JSON.stringify({ organizationId: organization?._id })
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
@@ -182,7 +211,7 @@ export default function SettingsPage() {
             const res = await fetch("/api/organizations/close/confirm", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ organizationId: organization?.id, pin: deletePin })
+                body: JSON.stringify({ organizationId: organization?._id, pin: deletePin })
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error)
@@ -284,6 +313,48 @@ export default function SettingsPage() {
                             </div>
                         </div>
 
+                        {/* Welcome Handbook Section */}
+                        <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
+                            <div className="space-y-1">
+                                <label className="text-sm font-medium leading-none">Welcome Handbook</label>
+                            </div>
+                            <div className="max-w-md space-y-4">
+                                <div className="flex flex-col gap-3">
+                                    <Input
+                                        id="handbook-upload"
+                                        type="file"
+                                        accept=".pdf"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                if (file.type !== 'application/pdf') {
+                                                    toast.error("Please upload a PDF file.")
+                                                    return
+                                                }
+                                                setWelcomeDoc(file)
+                                            }
+                                        }}
+                                        className="cursor-pointer"
+                                    />
+                                    {welcomeDoc && (
+                                        <div className="text-xs text-primary bg-primary/10 px-3 py-2 rounded-md flex items-center gap-2">
+                                            <Upload className="w-3 h-3" /> Selected: {welcomeDoc.name}
+                                        </div>
+                                    )}
+                                    {welcomeDocUrl && !welcomeDoc && (
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <Check className="w-3 h-3 text-green-500" />
+                                            <span>Handbook is uploaded and active.</span>
+                                            <a href={welcomeDocUrl} target="_blank" className="text-primary hover:underline ml-1">View</a>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    This PDF will be sent to all new employees in their invitation email.
+                                </p>
+                            </div>
+                        </div>
+
                         {/* Clock Link Section */}
                         <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start pt-6 border-t border-border/40">
                             <div className="space-y-1">
@@ -303,7 +374,7 @@ export default function SettingsPage() {
                                             const url = `${window.location.origin}/org/${organization.slug}/clock`;
                                             navigator.clipboard.writeText(url);
                                             setIsCopied(true);
-                                            toast.success("Logo URL copied!");
+                                            toast.success("Link copied!");
                                             setTimeout(() => setIsCopied(false), 2000);
                                         }}
                                     >
@@ -328,7 +399,7 @@ export default function SettingsPage() {
                                 disabled={loading || !hasChanges}
                                 className="min-w-[120px] cursor-pointer"
                             >
-                                {loading ? "Saving..." : "Save Changes"}
+                                {loading ? <Loader2 className="w-5 h-5 animate-spin text-white" /> : "Save Changes"}
                             </Button>
                         </div>
                     </form>

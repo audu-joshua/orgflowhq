@@ -14,13 +14,14 @@ async function requireSuperAdmin() {
     if (!session || !session.user) throw new Error("Unauthorized");
 
     await connectToDatabase();
-    const user = await User.findById(session.user.id);
+    // Use lean() for performance and to get a plain object
+    const user = await User.findById(session.user.id).lean();
 
     if (!user || user.role !== 'super_admin') {
         throw new Error("Forbidden: Super Admin Access Required");
     }
 
-    return user;
+    return true; // No need to return the full user object if not used
 }
 
 export async function getSystemStats() {
@@ -47,11 +48,15 @@ export async function getLatestOrganizations(limit = 5) {
 
     const orgs = await Organization.find()
         .sort({ createdAt: -1 })
-        .limit(limit);
+        .limit(limit)
+        .lean();
 
-    // We can't easily do the "count" join like Supabase in Mongoose without aggregation or multiple queries
-    // For now, returning orgs and mapping them
-    return orgs.map(org => org.toObject());
+    return orgs.map((org: any) => ({
+        ...org,
+        _id: org._id.toString(),
+        createdAt: org.createdAt?.toISOString(),
+        updatedAt: org.updatedAt?.toISOString(),
+    }));
 }
 
 export async function getAllTenants(page = 1, pageSize = 20) {
@@ -63,11 +68,20 @@ export async function getAllTenants(page = 1, pageSize = 20) {
         Organization.find()
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(pageSize),
+            .limit(pageSize)
+            .lean(),
         Organization.countDocuments()
     ]);
 
-    return { data: data.map(d => d.toObject()), count };
+    return {
+        data: data.map((d: any) => ({
+            ...d,
+            _id: d._id.toString(),
+            createdAt: d.createdAt?.toISOString(),
+            updatedAt: d.updatedAt?.toISOString(),
+        })),
+        count
+    };
 }
 
 export async function getAllUsers(page = 1, pageSize = 20, search?: string) {
@@ -88,9 +102,18 @@ export async function getAllUsers(page = 1, pageSize = 20, search?: string) {
         User.find(query)
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(pageSize),
+            .limit(pageSize)
+            .lean(),
         User.countDocuments(query)
     ]);
 
-    return { data: data.map(d => d.toObject()), count };
+    return {
+        data: data.map((d: any) => ({
+            ...d,
+            _id: d._id.toString(),
+            createdAt: d.createdAt?.toISOString(),
+            updatedAt: d.updatedAt?.toISOString(),
+        })),
+        count
+    };
 }

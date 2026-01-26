@@ -21,7 +21,7 @@ export function DepartmentsContent() {
 
   const loadDepartments = async () => {
     try {
-      const data = await getDepartmentsByOrganizationAction(organization!.id)
+      const data = await getDepartmentsByOrganizationAction(organization!._id)
       setDepartments(data as any)
     } catch (error) {
       console.error("Failed to load departments:", error)
@@ -40,7 +40,7 @@ export function DepartmentsContent() {
   }
 
   const handleDeleted = (id: string) => {
-    setDepartments(prev => prev.filter(d => d.id !== id))
+    setDepartments(prev => prev.filter(d => d._id !== id))
     // Silent background refresh to ensure consistency
     loadDepartments()
   }
@@ -76,7 +76,7 @@ export function DepartmentsContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {departments.map((department) => (
               <DepartmentCard
-                key={department.id}
+                key={department._id}
                 department={department}
                 onDeleted={handleDeleted}
               />

@@ -30,9 +30,15 @@ export async function getEmployeeProfileBySlug(slug: string) {
         return {
             ...obj,
             id: obj._id.toString(),
+            _id: obj._id.toString(),
+            fullName: obj.fullName,
+            profileImageUrl: obj.profileImageUrl,
+            organizationId: obj.organizationId?._id?.toString(),
+            departmentId: obj.departmentId ? { _id: obj.departmentId._id.toString(), name: obj.departmentId.name } : null,
+            // Legacy compatibility for any remaining components
             organization_id: obj.organizationId?._id?.toString(),
-            organizations: obj.organizationId,
-            departments: obj.departmentId ? { name: obj.departmentId.name } : null
+            full_name: obj.fullName,
+            profile_image_url: obj.profileImageUrl,
         };
     } catch (error) {
         console.error("Failed to fetch employee profile:", error);
@@ -56,9 +62,15 @@ export async function getAllUserEmployees() {
             return {
                 ...obj,
                 id: obj._id.toString(),
+                _id: obj._id.toString(),
+                fullName: obj.fullName,
+                profileImageUrl: obj.profileImageUrl,
+                organizationId: obj.organizationId?._id?.toString(),
+                departmentId: obj.departmentId ? { _id: obj.departmentId._id.toString(), name: obj.departmentId.name } : null,
+                // Legacy compatibility
                 organization_id: obj.organizationId?._id?.toString(),
-                organizations: obj.organizationId,
-                departments: obj.departmentId ? { name: obj.departmentId.name } : null
+                full_name: obj.fullName,
+                profile_image_url: obj.profileImageUrl,
             };
         });
     } catch (error) {

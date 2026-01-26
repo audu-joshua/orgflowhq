@@ -40,7 +40,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      await deleteEmployeeAction(employee.id)
+      await deleteEmployeeAction(employee._id)
       onDeleted?.()
       onClose()
     } catch (error) {
@@ -51,14 +51,14 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   }
 
   const handleSendEmail = () => {
-    const mailtoLink = `mailto:${employee.email}?subject=${encodeURIComponent(emailSubject || `Internal Update for ${employee.full_name}`)}&body=${encodeURIComponent(emailBody || 'Hello ' + employee.full_name + ',')}`
+    const mailtoLink = `mailto:${employee.email}?subject=${encodeURIComponent(emailSubject || `Internal Update for ${employee.fullName}`)}&body=${encodeURIComponent(emailBody || 'Hello ' + employee.fullName + ',')}`
     window.location.href = mailtoLink
   }
 
   const handleUpdateRole = async (newRole: string | null) => {
     setIsUpdatingRole(true)
     try {
-      const result = await updateSystemRoleAction(employee.id, employee.organization_id, newRole)
+      const result = await updateSystemRoleAction(employee._id, employee.organizationId || employee.organization_id || "", newRole)
       if (!result.success) throw new Error(result.error)
       setSystemRole(newRole)
       toast.success(newRole ? `Role updated to ${newRole.toUpperCase()}` : "System access removed")
@@ -80,7 +80,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
   if (!isOpen) return null
 
   const getInitial = () => {
-    if (employee.full_name) return employee.full_name[0].toUpperCase()
+    if (employee.fullName) return employee.fullName[0].toUpperCase()
     if (employee.email) return employee.email[0].toUpperCase()
     return "E"
   }
@@ -141,10 +141,10 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
             <div className="lg:col-span-3 space-y-6">
               <div className="flex flex-col items-center p-6 bg-muted/20 border border-border rounded-2xl text-center">
                 <div className="relative">
-                  {employee.profile_image_url ? (
+                  {employee.profileImageUrl ? (
                     <img
-                      src={employee.profile_image_url}
-                      alt={employee.full_name || "Employee"}
+                      src={employee.profileImageUrl}
+                      alt={employee.fullName || "Employee"}
                       className={`w-32 h-32 rounded-2xl object-cover border-4 border-background shadow-lg mb-4 ${employee.status === 'inactive' ? 'grayscale' : ''} ${employee.status === 'terminated' ? 'grayscale contrast-125' : ''}`}
                     />
                   ) : (
@@ -156,7 +156,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                     <div className="absolute inset-0 w-32 h-32 rounded-2xl bg-destructive/20 mix-blend-multiply pointer-events-none" />
                   )}
                 </div>
-                <h3 className="text-2xl font-bold text-foreground leading-tight px-2">{employee.full_name || "No name"}</h3>
+                <h3 className="text-2xl font-bold text-foreground leading-tight px-2">{employee.fullName || "No name"}</h3>
                 <p className="text-sm text-muted-foreground mt-1 font-medium">{employee.position || "Staff Member"}</p>
 
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -218,7 +218,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
                     <Calendar size={14} />
                     <span className="text-[10px] font-bold uppercase tracking-tight">Join Date</span>
                   </div>
-                  <p className="font-bold text-foreground">{employee.hire_date ? formatDate(employee.hire_date) : "N/A"}</p>
+                  <p className="font-bold text-foreground">{employee.hireDate ? formatDate(employee.hireDate) : "N/A"}</p>
                 </div>
                 <div className="p-4 bg-card border border-border rounded-xl space-y-1 flex flex-col justify-center">
                   <div className="flex items-center gap-2 text-primary mb-1">
@@ -317,7 +317,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
           onClose={() => setIsDeleteModalOpen(false)}
           onConfirm={handleDelete}
           title="Delete Employee"
-          description={`Are you sure you want to remove ${employee.full_name}? This will permanently delete their records.`}
+          description={`Are you sure you want to remove ${employee.fullName}? This will permanently delete their records.`}
         />
 
         <RolePromotionModal
@@ -325,7 +325,7 @@ export function EmployeeModal({ employee, isOpen, onClose, onDeleted }: Employee
           onClose={() => setShowPromotionModal(false)}
           onConfirm={handleUpdateRole}
           currentRole={systemRole}
-          employeeName={employee.full_name || employee.email || "Employee"}
+          employeeName={employee.fullName || employee.email || "Employee"}
         />
       </div>
     </div>

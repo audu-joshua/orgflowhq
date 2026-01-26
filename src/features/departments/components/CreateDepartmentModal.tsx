@@ -28,7 +28,7 @@ export function CreateDepartmentModal({ isOpen, onClose, onSuccess }: CreateDepa
 
     try {
       if (!organization) throw new Error("Organization not found")
-      const result = await createDepartmentAction(organization.id, { name, description })
+      const result = await createDepartmentAction(organization._id, { name, description })
       if (!result.success) throw new Error(result.error)
       onSuccess?.(result.department as any)
       onClose()

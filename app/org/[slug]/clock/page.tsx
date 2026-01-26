@@ -49,6 +49,7 @@ export default function ClockPage() {
     const [showVoteOverlay, setShowVoteOverlay] = useState(false)
     const [showRevealOverlay, setShowRevealOverlay] = useState(false)
     const [isUploadingImage, setIsUploadingImage] = useState(false)
+    const [isClocking, setIsClocking] = useState(false)
 
     useEffect(() => {
         const initPage = async () => {
@@ -81,7 +82,7 @@ export default function ClockPage() {
                 const records = await getEmployeeTimesheetsAction(profile.id)
                 setTimesheets(records as any)
 
-                const active = records.find(r => !r.clock_out)
+                const active = records.find(r => !r.clockOut)
                 setCurrentTimesheet(active || null)
             } else {
                 // Check if user has any records at all
@@ -145,35 +146,39 @@ export default function ClockPage() {
 
     const handleClockIn = async () => {
         if (!employee || !organization || !session?.user) return
-        setLoading(true)
+        setIsClocking(true)
         try {
-            const res = await clockInAction(employee.id, organization.id, (session.user as any).id)
+            const res = await clockInAction(employee._id, organization._id, (session.user as any).id)
             if (!res.success) throw new Error(res.error)
 
             const record = res.record
             setCurrentTimesheet(record as any)
             setTimesheets([record, ...timesheets] as any)
+            toast.success("Clocked in successfully")
         } catch (err) {
             setError("Failed to clock in")
+            toast.error("Failed to clock in")
         } finally {
-            setLoading(false)
+            setIsClocking(false)
         }
     }
 
     const handleClockOut = async () => {
         if (!currentTimesheet) return
-        setLoading(true)
+        setIsClocking(true)
         try {
-            const res = await clockOutAction(currentTimesheet.id)
+            const res = await clockOutAction(currentTimesheet._id)
             if (!res.success) throw new Error(res.error)
             const updated = res.record
             if (!updated) throw new Error("Failed to retrieve updated record")
             setCurrentTimesheet(null)
-            setTimesheets(timesheets.map(t => t.id === updated.id ? updated : t) as any)
+            setTimesheets(timesheets.map(t => (t._id === updated._id || t.id === updated.id) ? updated : t) as any)
+            toast.success("Clocked out successfully")
         } catch (err) {
             setError("Failed to clock out")
+            toast.error("Failed to clock out")
         } finally {
-            setLoading(false)
+            setIsClocking(false)
         }
     }
 
@@ -214,9 +219,9 @@ export default function ClockPage() {
             // checking service: returns string url? No, throws error for now.
             // If it returned, it would be await ... 
 
-            const publicUrl = await uploadEmployeeProfileImageAction(employee.id, formData)
+            const publicUrl = await uploadEmployeeProfileImageAction(employee._id, formData)
             // type casting unsafe if return is unexpected
-            setEmployee({ ...employee, profile_image_url: publicUrl })
+            setEmployee({ ...employee, profileImageUrl: publicUrl })
             toast.success("Profile image updated")
         } catch (err: any) {
             console.error("Profile image upload failed:", err)
@@ -231,7 +236,7 @@ export default function ClockPage() {
         const matchesStatus = statusFilter === 'all' || ts.status === statusFilter
 
         let matchesTime = true
-        const date = parseISO(ts.clock_in)
+        const date = parseISO(ts.clockIn)
         const now = new Date()
 
         if (timeFilter === 'week') {
@@ -246,12 +251,12 @@ export default function ClockPage() {
     const handleDownload = () => {
         const headers = ["Employee Name", "Date", "Clock In", "Clock Out", "Duration (Hrs)", "Status"]
         const rows = filteredTimesheets.map(ts => {
-            const start = new Date(ts.clock_in)
-            const end = ts.clock_out ? new Date(ts.clock_out) : null
+            const start = new Date(ts.clockIn)
+            const end = ts.clockOut ? new Date(ts.clockOut) : null
             const duration = end ? ((end.getTime() - start.getTime()) / (1000 * 60 * 60)).toFixed(2) : "Active"
 
             return [
-                employee?.full_name || "Unknown",
+                employee?.fullName || "Unknown",
                 start.toLocaleDateString(),
                 start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 end ? end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--",
@@ -345,16 +350,16 @@ export default function ClockPage() {
             <div className="sticky top-4 z-50 p-4 bg-card/80 backdrop-blur-md border border-border rounded-xl shadow-lg flex items-center justify-between transition-all">
                 <div className="flex items-center gap-4">
                     <div className="relative group shrink-0">
-                        {employee?.profile_image_url || session?.user?.image ? (
+                        {employee?.profileImageUrl || session?.user?.image ? (
                             <img
-                                src={employee?.profile_image_url || session?.user?.image || ""}
+                                src={employee?.profileImageUrl || (session?.user?.image as string) || ""}
                                 alt="Profile"
                                 className="w-12 h-12 rounded-full border-2 border-primary object-cover transition-opacity group-hover:opacity-70"
                             />
                         ) : (
                             <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 transition-opacity group-hover:opacity-70">
                                 <span className="text-primary font-bold text-lg">
-                                    {(employee?.full_name || session?.user?.name || session?.user?.email)?.[0].toUpperCase()}
+                                    {(employee?.fullName || session?.user?.name || session?.user?.email)?.[0].toUpperCase()}
                                 </span>
                             </div>
                         )}
@@ -383,10 +388,10 @@ export default function ClockPage() {
                     </div>
                     <div className="min-w-0 pr-4">
                         <h2 className="text-md font-bold text-foreground leading-tight truncate">
-                            {employee?.full_name || session?.user?.name || session?.user?.email}
+                            {employee?.fullName || session?.user?.name || session?.user?.email}
                         </h2>
                         <p className="text-xs text-muted-foreground truncate">
-                            {employee?.position || (employee?.departments?.name ? `${employee.departments.name} Team` : "Member")}
+                            {employee?.position || (employee?.departmentId?.name ? `${employee.departmentId.name} Team` : "Member")}
                         </p>
                     </div>
                 </div>
@@ -452,17 +457,21 @@ export default function ClockPage() {
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-green-600 uppercase tracking-tight">Active Session</p>
-                                                <p className="text-lg font-bold text-foreground">Clocked in at {new Date(currentTimesheet.clock_in).toLocaleTimeString()}</p>
+                                                <p className="text-lg font-bold text-foreground">Clocked in at {new Date(currentTimesheet.clockIn).toLocaleTimeString()}</p>
                                             </div>
                                         </div>
                                     </div>
 
                                     <button
                                         onClick={handleClockOut}
-                                        disabled={loading}
-                                        className="w-full py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px]"
+                                        disabled={isClocking}
+                                        className="w-full py-6 bg-destructive text-destructive-foreground rounded-2xl font-bold text-xl shadow-lg shadow-destructive/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px] cursor-pointer disabled:opacity-80"
                                     >
-                                        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><LogOut size={24} /> Clock Out Now</>}
+                                        {isClocking ? (
+                                            <><Loader2 className="w-8 h-8 animate-spin" /> Ending session...</>
+                                        ) : (
+                                            <><LogOut size={24} /> Clock Out Now</>
+                                        )}
                                     </button>
                                 </div>
                             ) : (
@@ -473,10 +482,14 @@ export default function ClockPage() {
 
                                     <button
                                         onClick={handleClockIn}
-                                        disabled={loading}
-                                        className="w-full py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px]"
+                                        disabled={isClocking}
+                                        className="w-full py-6 bg-primary text-primary-foreground rounded-2xl font-bold text-xl shadow-lg shadow-primary/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-3 h-[84px] cursor-pointer disabled:opacity-80"
                                     >
-                                        {loading ? <Loader2 className="w-8 h-8 animate-spin" /> : <><Clock size={24} /> Clock In Now</>}
+                                        {isClocking ? (
+                                            <><Loader2 className="w-8 h-8 animate-spin" /> Starting session...</>
+                                        ) : (
+                                            <><Clock size={24} /> Clock In Now</>
+                                        )}
                                     </button>
                                 </div>
                             )}
@@ -542,11 +555,11 @@ export default function ClockPage() {
                                 filteredTimesheets.slice(0, 10).map((ts) => (
                                     <div key={ts.id} className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-border/50">
                                         <div className="flex items-center gap-4">
-                                            <div className={`w-2 h-2 rounded-full ${ts.clock_out ? 'bg-muted-foreground' : 'bg-green-500 animate-pulse'}`} />
+                                            <div className={`w-2 h-2 rounded-full ${ts.clockOut ? 'bg-muted-foreground' : 'bg-green-500 animate-pulse'}`} />
                                             <div>
-                                                <p className="text-sm font-bold text-foreground">{new Date(ts.clock_in).toLocaleDateString()}</p>
+                                                <p className="text-sm font-bold text-foreground">{new Date(ts.clockIn).toLocaleDateString()}</p>
                                                 <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">
-                                                    {new Date(ts.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {ts.clock_out ? new Date(ts.clock_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}
+                                                    {new Date(ts.clockIn).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {ts.clockOut ? new Date(ts.clockOut).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Active'}
                                                 </p>
                                             </div>
                                         </div>
@@ -580,16 +593,16 @@ export default function ClockPage() {
                         isOpen={showVoteOverlay}
                         onClose={() => setShowVoteOverlay(false)}
                         competitionId={eotmCompetition.id}
-                        voterId={employee.id}
-                        voterRole={employee.system_role || 'employee'}
-                        organizationId={organization!.id}
+                        voterId={employee._id}
+                        voterRole={employee.systemRole || 'employee'}
+                        organizationId={organization!._id}
                     />
                     <EOTMRevealOverlay
                         isOpen={showRevealOverlay}
                         onClose={() => setShowRevealOverlay(false)}
                         winner={eotmWinner}
                         organizationName={organization!.name}
-                        organizationLogo={organization?.logo_url}
+                        organizationLogo={organization?.logoUrl}
                     />
                 </>
             )}

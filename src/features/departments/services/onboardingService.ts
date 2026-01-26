@@ -53,7 +53,7 @@ export const onboardingService = {
         const orgSlug = org.slug;
 
         // 3. Generate Employee ID
-        const employeeId = await departmentService.generateNextEmployeeId(organizationId, orgName);
+        const employeeId = await departmentService.generateNextEmployeeId(organizationId, orgName, targetDeptName);
 
         // 4. Provision User Account
         let user = await User.findOne({ email: applicantEmail });
@@ -112,7 +112,8 @@ export const onboardingService = {
                 applicantName,
                 clockLink,
                 isNewUser,
-                employeeId
+                employeeId,
+                org.welcomeDocUrl
             );
         } catch (mailErr) {
             console.error("[onboardHiredCandidate] Invitation email failed:", mailErr);

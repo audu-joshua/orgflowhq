@@ -34,7 +34,9 @@ export async function connectToDatabase() {
         return;
     }
 
-    return mongoose.connect(uri);
+    return mongoose.connect(uri, {
+        serverSelectionTimeoutMS: 15000, // 15 seconds timeout
+    });
 }
 
 // Export a module-scoped MongoClient promise. By doing this in a

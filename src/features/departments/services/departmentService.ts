@@ -3,6 +3,8 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { Department, Employee } from "@/models/Business";
 import { User, Organization } from "@/models/User";
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
+import { mailService } from "@/lib/mail/mailService";
 
 export const departmentService = {
   async createDepartment(organizationId: string, departmentData: any) {
@@ -11,7 +13,12 @@ export const departmentService = {
       ...departmentData,
       organizationId: new mongoose.Types.ObjectId(organizationId)
     });
-    return data.toObject();
+    const obj = data.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString()
+    };
   },
 
   async updateDepartment(departmentId: string, departmentData: any) {
@@ -22,7 +29,12 @@ export const departmentService = {
       { new: true }
     );
     if (!data) throw new Error("Department not found");
-    return data.toObject();
+    const obj = data.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString()
+    };
   },
 
   async deleteDepartment(departmentId: string) {
@@ -36,9 +48,12 @@ export const departmentService = {
     if (!dept) throw new Error("Department not found");
 
     const employeeCount = await Employee.countDocuments({ departmentId: dept._id });
+    const obj = dept.toObject();
 
     return {
-      ...dept.toObject(),
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString(),
       employees: [{ count: employeeCount }] // Mirroring Supabase structure for UI compat
     };
   },
@@ -51,8 +66,11 @@ export const departmentService = {
 
     const departmentsWithCount = await Promise.all(depts.map(async (dept) => {
       const count = await Employee.countDocuments({ departmentId: dept._id });
+      const obj = dept.toObject();
       return {
-        ...dept.toObject(),
+        ...obj,
+        id: obj._id.toString(),
+        _id: obj._id.toString(),
         employees: [{ count }]
       };
     }));
@@ -63,49 +81,65 @@ export const departmentService = {
   async createEmployee(organizationId: string, employeeData: any) {
     await connectToDatabase();
 
-    const { email, employee_id, full_name } = employeeData;
-    if (!email || !employee_id || !full_name) {
+    const { email, employeeId, fullName } = employeeData;
+    // Handle both naming conventions for safety
+    const finalEmail = email;
+    const finalEmployeeId = employeeId || employeeData.employee_id;
+    const finalFullName = fullName || employeeData.full_name;
+
+    if (!finalEmail || !finalEmployeeId || !finalFullName) {
       throw new Error("Missing required fields for employee creation");
     }
 
     // 1. Provision Auth via API
     const { userId, error } = await this.provisionAuthAccount({
-      email,
-      employeeId: employee_id,
-      fullName: full_name,
+      email: finalEmail,
+      employeeId: finalEmployeeId,
+      fullName: finalFullName,
       organizationId
     });
 
     if (error) throw new Error(`Failed to create employee account: ${error}`);
+    if (!userId) throw new Error("Failed to retrieve user ID after provisioning");
 
     // 2. Create local employee record
     const data = await Employee.create({
-      fullName: full_name,
-      email,
-      employeeId: employee_id,
+      fullName: finalFullName,
+      email: finalEmail,
+      employeeId: finalEmployeeId,
       position: employeeData.position,
       phone: employeeData.phone,
-      hireDate: employeeData.hire_date ? new Date(employeeData.hire_date) : undefined,
+      profileImageUrl: employeeData.profileImageUrl || employeeData.profile_image_url,
+      hireDate: (employeeData.hireDate || employeeData.hire_date) ? new Date(employeeData.hireDate || employeeData.hire_date) : undefined,
       status: employeeData.status || "invited",
       organizationId: new mongoose.Types.ObjectId(organizationId),
-      departmentId: employeeData.department_id ? new mongoose.Types.ObjectId(employeeData.department_id) : undefined,
+      departmentId: (employeeData.departmentId || employeeData.department_id) ? new mongoose.Types.ObjectId(employeeData.departmentId || employeeData.department_id) : undefined,
       userId: new mongoose.Types.ObjectId(userId)
     });
 
-    return data.toObject();
+    const obj = data.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString(),
+      fullName: obj.fullName,
+      profileImageUrl: obj.profileImageUrl,
+      hireDate: obj.hireDate?.toISOString()
+    };
   },
 
   async updateEmployee(employeeId: string, employeeData: any) {
     await connectToDatabase();
 
-    // Map frontend snake_case to mongoose camelCase if necessary
+    // Map frontend camelCase/snake_case to mongoose camelCase
     const updates: any = {};
-    if (employeeData.full_name) updates.fullName = employeeData.full_name;
+    if (employeeData.fullName || employeeData.full_name) updates.fullName = employeeData.fullName || employeeData.full_name;
     if (employeeData.position) updates.position = employeeData.position;
     if (employeeData.phone) updates.phone = employeeData.phone;
     if (employeeData.status) updates.status = employeeData.status;
-    if (employeeData.department_id) updates.departmentId = new mongoose.Types.ObjectId(employeeData.department_id);
-    if (employeeData.hire_date) updates.hireDate = new Date(employeeData.hire_date);
+    if (employeeData.profileImageUrl || employeeData.profile_image_url) updates.profileImageUrl = employeeData.profileImageUrl || employeeData.profile_image_url;
+    if (employeeData.departmentId || employeeData.department_id) updates.departmentId = new mongoose.Types.ObjectId(employeeData.departmentId || employeeData.department_id);
+    if (employeeData.hireDate || employeeData.hire_date) updates.hireDate = new Date(employeeData.hireDate || employeeData.hire_date);
 
     const data = await Employee.findByIdAndUpdate(
       employeeId,
@@ -113,21 +147,78 @@ export const departmentService = {
       { new: true }
     );
     if (!data) throw new Error("Employee not found");
-    return data.toObject();
+    const obj = data.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString(),
+      fullName: obj.fullName,
+      profileImageUrl: obj.profileImageUrl,
+      hireDate: obj.hireDate?.toISOString()
+    };
   },
 
   async provisionAuthAccount(data: { email: string, employeeId: string, fullName: string, organizationId: string }) {
     try {
-      // In a real server context, this would be an internal call or a fetch to self
-      const response = await fetch("/api/admin/employees/provision", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      await connectToDatabase();
+      const { email: rawEmail, employeeId: rawEmployeeId, fullName, organizationId } = data;
+      const email = rawEmail.trim().toLowerCase();
+      const employeeId = rawEmployeeId.trim();
 
-      const result = await response.json();
-      if (!response.ok) return { userId: null, error: result.error || "Provisioning failed" };
-      return { userId: result.userId, error: null };
+      // 1. Logic mirrored from API route
+      const org = await Organization.findById(organizationId);
+      if (!org) throw new Error("Organization not found");
+
+      const orgName = org.name;
+      const orgSlug = org.slug;
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+      const clockLink = `${siteUrl}/org/${orgSlug}/clock`;
+
+      let user = await User.findOne({ email });
+      let userId: string;
+      let isNewUser = false;
+
+      const hashedPassword = await bcrypt.hash(employeeId, 12);
+
+      if (user) {
+        user.password = hashedPassword;
+        const hasMembership = user.memberships.some(
+          (m: any) => m.organizationId?.toString() === organizationId
+        );
+        if (!hasMembership) {
+          user.memberships.push({ organizationId: new mongoose.Types.ObjectId(organizationId), role: "member" });
+        }
+        await user.save();
+        userId = user._id.toString();
+      } else {
+        const newUser = await User.create({
+          email,
+          password: hashedPassword,
+          fullName,
+          name: fullName,
+          role: "user",
+          memberships: [{ organizationId: new mongoose.Types.ObjectId(organizationId), role: "member" }]
+        });
+        userId = newUser._id.toString();
+        isNewUser = true;
+      }
+
+      // 2. Send Invitation Email
+      try {
+        await mailService.sendEmployeeInviteEmail(
+          email,
+          orgName,
+          fullName,
+          clockLink,
+          isNewUser,
+          employeeId,
+          org.welcomeDocUrl
+        );
+      } catch (mailErr) {
+        console.error("[Provision] mailService error:", mailErr);
+      }
+
+      return { userId, error: null };
     } catch (err: any) {
       return { userId: null, error: err.message };
     }
@@ -138,7 +229,17 @@ export const departmentService = {
     const employees = await Employee.find({
       departmentId: new mongoose.Types.ObjectId(departmentId)
     }).sort({ createdAt: -1 });
-    return employees.map(e => e.toObject());
+    return employees.map(emp => {
+      const obj = emp.toObject();
+      return {
+        ...obj,
+        id: obj._id.toString(),
+        _id: obj._id.toString(),
+        fullName: obj.fullName,
+        profileImageUrl: obj.profileImageUrl,
+        hireDate: obj.hireDate?.toISOString()
+      };
+    });
   },
 
   async getEmployeesByOrganization(organizationId: string) {
@@ -159,9 +260,16 @@ export const departmentService = {
         );
         systemRole = membership?.role || null;
       }
+      const obj = emp.toObject();
       return {
-        ...emp.toObject(),
-        system_role: systemRole
+        ...obj,
+        id: obj._id.toString(),
+        _id: obj._id.toString(),
+        fullName: obj.fullName,
+        profileImageUrl: obj.profileImageUrl,
+        hireDate: obj.hireDate?.toISOString(),
+        system_role: systemRole,
+        systemRole: systemRole
       };
     }));
 
@@ -180,6 +288,11 @@ export const departmentService = {
     const obj = data.toObject();
     return {
       ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString(),
+      fullName: obj.fullName,
+      profileImageUrl: obj.profileImageUrl,
+      hireDate: obj.hireDate?.toISOString(),
       organizations: obj.organizationId,
       departments: obj.departmentId ? { name: obj.departmentId.name } : null
     };
@@ -200,7 +313,7 @@ export const departmentService = {
 
     // 2. Generate ID
     const org = await Organization.findById(organizationId);
-    const employeeId = await this.generateNextEmployeeId(organizationId, org?.name || "SYS");
+    const employeeId = await this.generateNextEmployeeId(organizationId, org?.name || "SYS", "Management");
 
     // 3. Create Employee
     const employee = await Employee.create({
@@ -215,23 +328,45 @@ export const departmentService = {
       hireDate: new Date()
     });
 
-    return employee.toObject();
+    const obj = employee.toObject();
+    return {
+      ...obj,
+      id: obj._id.toString(),
+      _id: obj._id.toString(),
+      fullName: obj.fullName,
+      profileImageUrl: obj.profileImageUrl,
+      hireDate: obj.hireDate?.toISOString()
+    };
   },
 
-  async generateNextEmployeeId(organizationId: string, organizationName: string) {
+  async generateNextEmployeeId(organizationId: string, organizationName: string, departmentName?: string) {
     await connectToDatabase();
     const count = await Employee.countDocuments({ organizationId: new mongoose.Types.ObjectId(organizationId) });
 
-    const prefix = organizationName
+    const orgPrefix = organizationName
       .split(/[\s-]+/)
       .map(word => word[0])
       .join("")
       .toUpperCase()
       .substring(0, 3);
 
+    let deptPrefix = "";
+    if (departmentName && departmentName !== "Select Department") {
+      deptPrefix = departmentName
+        .split(/[\s-]+/)
+        .map(word => word[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 3);
+    }
+
     const nextNumber = count + 1;
     const paddedNumber = nextNumber.toString().padStart(3, '0');
-    return `${prefix}-${paddedNumber}`;
+
+    if (deptPrefix) {
+      return `${orgPrefix}-${deptPrefix}-${paddedNumber}`;
+    }
+    return `${orgPrefix}-${paddedNumber}`;
   },
 
   async uploadEmployeeProfileImage(employeeId: string, file: File) {

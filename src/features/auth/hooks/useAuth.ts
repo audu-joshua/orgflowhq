@@ -16,19 +16,19 @@ export function useAuth() {
     try {
       const profile = await getUserProfileAction(userId, orgId)
       if (profile) {
-        if (profile.organizations) {
-          setOrganization(profile.organizations as any)
+        if (profile.organization) {
+          setOrganization(profile.organization as any)
         }
 
         setUser({
           id: profile.id,
           email: profile.email,
-          organization_id: profile.organization_id,
+          organizationId: profile.organizationId,
           role: profile.role,
-          full_name: profile.fullName,
-          profile_image_url: profile.profileImageUrl,
+          fullName: profile.fullName,
+          profileImageUrl: profile.profileImageUrl,
           status: profile.status,
-          created_at: profile.created_at,
+          createdAt: profile.createdAt,
         })
         return profile
       }

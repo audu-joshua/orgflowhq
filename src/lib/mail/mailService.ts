@@ -175,7 +175,7 @@ export const mailService = {
     })
   },
 
-  async sendEmployeeInviteEmail(to: string, orgName: string, employeeName: string, clockLink: string, isNewUser: boolean = true, employeeId?: string) {
+  async sendEmployeeInviteEmail(to: string, orgName: string, employeeName: string, clockLink: string, isNewUser: boolean = true, employeeId?: string, welcomeDocUrl?: string) {
     const body = `
         <h2 style="color: #0d1e4c; margin-top: 0;">Hi ${employeeName},</h2>
         <p>You have been added to <strong>${orgName}</strong> on OrgFlow.</p>
@@ -191,6 +191,14 @@ export const mailService = {
         <div style="margin: 16px 0; text-align: center;">
           <a href="${clockLink}" style="background-color: #0fadaa; color: #fff; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 16px;">Go to Clock Portal</a>
         </div>
+
+        ${welcomeDocUrl ? `
+        <div style="background-color: #f0fdfa; border: 1px solid #ccfbf1; padding: 20px; border-radius: 12px; margin: 24px 0; text-align: center;">
+          <p style="margin: 0 0 10px 0; color: #134e4a; font-size: 14px;"><strong>Company Welcome Handbook</strong></p>
+          <p style="margin: 0 0 15px 0; color: #134e4a; font-size: 13px;">Please find your organization's welcome handbook attached for your review.</p>
+          <a href="${welcomeDocUrl}" style="background-color: #0d1e4c; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; font-size: 14px;">Download Handbook</a>
+        </div>
+        ` : ''}
 
         <p style="margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 14px; text-align: center; color: #666;">
           Best regards,<br>

@@ -1,10 +1,14 @@
 export interface Organization {
   id: string
+  _id: string
   name: string
   slug: string
-  logo_url?: string | null
+  logoUrl?: string | null
   address?: string | null
-  welcome_doc_url?: string | null
-  created_at?: string
-  updated_at?: string
+  welcomeDocUrl?: string | null
+  website?: string | null
+  description?: string | null
+  contactEmail?: string | null
+  createdAt?: string
+  updatedAt?: string
 }
