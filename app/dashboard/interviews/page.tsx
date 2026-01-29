@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 import { connectToDatabase } from "@/lib/mongodb"
 import { UserIntegration } from "@/models/User"
-import mongoose from "mongoose"
 
 export default async function InterviewsPage() {
     const session = await getServerSession(authOptions) as any
@@ -12,7 +11,7 @@ export default async function InterviewsPage() {
     if (session?.user) {
         await connectToDatabase()
         const integration = await UserIntegration.findOne({
-            userId: new mongoose.Types.ObjectId((session.user as any).id),
+            userId: (session.user as any).id,
             provider: 'google'
         })
         isGoogleConnected = !!integration

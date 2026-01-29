@@ -5,7 +5,6 @@ import { connectToDatabase } from "@/lib/mongodb"
 import { JobRole } from "@/models/Business"
 import { Application } from "@/models/Recruitment"
 import { Organization } from "@/models/User"
-import mongoose from "mongoose"
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params

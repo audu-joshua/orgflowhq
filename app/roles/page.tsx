@@ -3,11 +3,24 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search, MapPin, Briefcase, Building2, ArrowRight, LayoutGrid, List, Sparkles } from "lucide-react"
-import { roleService, RoleWithImages } from "@/features/roles/services/roleService"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { Navbar } from "@/components/layout/Navbar"
 import { Footer } from "@/components/layout/Footer"
 import Link from "next/link"
+
+interface RoleWithImages {
+    id: string
+    title: string
+    slug: string
+    department?: string
+    location?: string
+    employment_type?: string
+    organizations?: {
+        name?: string
+        logo_url?: string
+    }
+    role_images?: Array<{ image_url: string }>
+}
 
 export default function PublicRolesPage() {
     const [roles, setRoles] = useState<RoleWithImages[]>([])
@@ -18,7 +31,9 @@ export default function PublicRolesPage() {
     useEffect(() => {
         const loadRoles = async () => {
             try {
-                const data = await roleService.getAllOpenRoles()
+                const response = await fetch('/api/roles/public')
+                if (!response.ok) throw new Error('Failed to fetch roles')
+                const data = await response.json()
                 setRoles(data)
             } catch (err) {
                 console.error("Failed to load roles:", err)

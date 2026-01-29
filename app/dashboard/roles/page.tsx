@@ -5,13 +5,11 @@ import { useRouter } from "next/navigation"
 import { Plus, Power, PowerOff, Loader2 } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { dashboardService } from "@/features/dashboard/services/dashboardService"
 import { RoleCard } from "@/features/dashboard/components/RoleCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import type { Role } from "@/features/roles/types"
 import { MigrationHelper } from "@/components/admin/MigrationHelper"
-import { roleService } from "@/features/roles/services/roleService"
 import { toast } from "@/lib/toast"
 
 export default function RolesPage() {
@@ -26,7 +24,9 @@ export default function RolesPage() {
     if (!organization) return
     try {
       setLoading(true)
-      const data = await dashboardService.getRoles(organization.id)
+      const response = await fetch(`/api/roles?organizationId=${organization.id}`)
+      if (!response.ok) throw new Error('Failed to fetch roles')
+      const data = await response.json()
       setRoles(data)
     } catch (error) {
       console.error("Failed to load roles:", error)
@@ -43,7 +43,8 @@ export default function RolesPage() {
   const handleDeleted = (roleId: string) => {
     setRoles(prev => prev.filter(r => r.id !== roleId))
     // Optional: refresh background data without loading spinner
-    dashboardService.getRoles(organization!.id)
+    fetch(`/api/roles?organizationId=${organization!.id}`)
+      .then(res => res.json())
       .then(setRoles)
       .catch(console.error)
   }
@@ -53,9 +54,18 @@ export default function RolesPage() {
     setUpdatingStatus(status)
 
     try {
-      await roleService.updateAllRolesStatus(organization.id, status)
+      const response = await fetch('/api/roles/bulk-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organizationId: organization.id, status })
+      })
+
+      if (!response.ok) throw new Error('Bulk update failed')
+
       // Refresh the roles list
-      const updatedRoles = await dashboardService.getRoles(organization.id)
+      const rolesResponse = await fetch(`/api/roles?organizationId=${organization.id}`)
+      if (!rolesResponse.ok) throw new Error('Failed to refresh roles')
+      const updatedRoles = await rolesResponse.json()
       setRoles(updatedRoles)
       toast.success(`All roles ${status === "active" ? "activated" : "deactivated"} successfully`)
     } catch (error) {
