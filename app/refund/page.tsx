@@ -37,7 +37,7 @@ export default function RefundPolicy() {
 
                         <h2 className="text-2xl font-semibold mt-8 mb-4">5. Contact Us</h2>
                         <p>
-                            If you have any questions about our Refund Policy, please contact us at support@orgflowhq.com.
+                            If you have any questions about our Refund Policy, please contact us at help@orgflowhq.com.
                         </p>
 
                         <div className="mt-8 pt-8 border-t">

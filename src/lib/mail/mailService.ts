@@ -411,7 +411,7 @@ export const mailService = {
           <p style="color:#666666; font-size:14px; line-height:1.6; margin:0;">
             Best regards,<br>
             <strong style="color:#111827;">OrgFlow Team</strong><br>
-            support@orgflowhq.com
+            help@orgflowhq.com
           </p>
         </div>
     `

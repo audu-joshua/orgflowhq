@@ -53,7 +53,7 @@ export function Footer() {
                         <div className="col-span-2 sm:col-span-1 border-t border-white/5 pt-8 sm:pt-0 sm:border-0 text-center sm:text-left">
                             <h4 className="hidden sm:block text-white font-semibold mb-6">Contact Us</h4>
                             <p className="text-sm leading-relaxed text-[#0fadaa] font-medium mb-1">
-                                support@orgflowhq.com
+                                help@orgflowhq.com
                             </p>
                             <p className="hidden sm:block text-sm leading-relaxed opacity-60">
                                 Global Workforce Management<br />
