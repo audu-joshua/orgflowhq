@@ -54,7 +54,7 @@ export const departmentService = {
       ...obj,
       id: obj._id.toString(),
       _id: obj._id.toString(),
-      employees: [{ count: employeeCount }] // Mirroring Supabase structure for UI compat
+      employees: [{ count: employeeCount }] // Maintain structure for UI compatibility
     };
   },
 
@@ -372,7 +372,7 @@ export const departmentService = {
   async uploadEmployeeProfileImage(employeeId: string, file: File) {
     // This needs a multi-part form upload to some storage provider (e.g. Cloudinary)
     // For now, mirroring an error if not implemented
-    throw new Error("File storage migration required (Cloudinary/S3). Supabase storage no longer supported.");
+    throw new Error("File storage migration required (Cloudinary/S3).");
   },
 
   async deleteEmployee(employeeId: string) {

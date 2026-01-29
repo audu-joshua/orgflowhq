@@ -273,6 +273,12 @@ export function Pricing() {
                         </Link>
                     </div>
                 </div>
+
+                <div className="mt-16 text-center max-w-3xl mx-auto">
+                    <p className="text-sm text-muted-foreground/60 italic">
+                        "OrgFlowHQ is a self-service SaaS platform. We do not provide human-driven services such as consulting, outsourcing, or managed services as part of our plans."
+                    </p>
+                </div>
             </div>
         </section>
     )

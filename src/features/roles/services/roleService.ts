@@ -142,7 +142,7 @@ export const roleService = {
     await Application.deleteMany({ roleId: new mongoose.Types.ObjectId(roleId) });
     const data = await JobRole.findByIdAndDelete(roleId);
     if (!data) throw new Error("Role not found");
-    return [data.toObject()]; // Mirroring Supabase return
+    return [data.toObject()]; // Return object in array for consistency
   },
 
   async getRoleById(roleId: string) {
@@ -157,7 +157,7 @@ export const roleService = {
   },
 
   async uploadRoleImage(roleId: string, file: File, displayOrder: number = 0) {
-    throw new Error("File storage migration required (Cloudinary/S3). Supabase storage no longer supported.");
+    throw new Error("File storage migration required (Cloudinary/S3).");
   },
 
   async deleteRoleImage(roleId: string, imageId: string) {

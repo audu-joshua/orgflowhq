@@ -86,7 +86,7 @@ export const authService = {
     };
   },
 
-  // Mocking or removing Supabase specific methods
+  // Authentication methods
   async signOut() {
     // NextAuth handles signout via its own utility
   },

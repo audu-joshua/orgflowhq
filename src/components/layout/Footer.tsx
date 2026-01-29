@@ -66,11 +66,12 @@ export function Footer() {
                 {/* Footer Bottom */}
                 <div className="pt-4 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
                     <p className="text-[11px] text-slate-600">
-                        © {new Date().getFullYear()} OrgFlow Co. All rights reserved.
+                        © {new Date().getFullYear()} OrgFlowHQ. All rights reserved.
                     </p>
                     <div className="flex gap-8 text-[11px]">
                         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
                         <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
+                        <Link href="/refund" className="hover:text-white transition-colors">Refund Policy</Link>
                         <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
                     </div>
                 </div>

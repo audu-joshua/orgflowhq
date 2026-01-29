@@ -5,7 +5,7 @@ export default function LoginPage() {
   return (
     <AuthPageLayout
       title="Login"
-      imagePath="/login_image.jpg"
+      imagePath="/login_image.webp"
       subtitle="Login to you Account"
       showSocialAuth={false}
     >

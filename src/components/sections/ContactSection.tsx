@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Loader2, CheckCircle2, AlertCircle, ChevronDown } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
@@ -258,7 +259,7 @@ export default function ContactSection() {
                                 </button>
 
                                 <p className="text-center text-[10px] text-slate-500">
-                                    By contacting with us you agree to our <a href="#" className="underline">Terms</a> and <a href="#" className="underline">Privacy Policy</a>
+                                    By contacting with us you agree to our <Link href="/terms" className="underline">Terms</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>
                                 </p>
                             </form>
                         )}
