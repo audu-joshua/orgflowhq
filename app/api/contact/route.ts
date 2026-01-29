@@ -10,14 +10,14 @@ export async function POST(req: Request) {
             port: Number(process.env.SMTP_PORT) || 465,
             secure: true,
             auth: {
-                user: process.env.SMTP_USER || 'support@orgflowhq.com',
+                user: process.env.SMTP_USER || 'help@orgflowhq.com',
                 pass: process.env.SMTP_PASSWORD, // User needs to set this in .env.local
             },
         });
 
         const mailOptions = {
-            from: process.env.SMTP_USER || 'support@orgflowhq.com',
-            to: 'support@orgflowhq.com',
+            from: process.env.SMTP_USER || 'help@orgflowhq.com',
+            to: 'help@orgflowhq.com',
             subject: `New Contact Form Submission from ${firstName} ${lastName}`,
             text: `
         First Name: ${firstName}

@@ -91,7 +91,7 @@ export async function scheduleInterviewAction(formData: FormData) {
 
         const orgName = orgData?.name || "OrgFlow";
         const orgAddress = orgData?.address || location || "TBD";
-        const orgEmail = ownerRelation?.email || "support@orgflowhq.com";
+        const orgEmail = ownerRelation?.email || "help@orgflowhq.com";
 
         // 6. Send Email Invitation
         const dateFormatted = scheduledAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });

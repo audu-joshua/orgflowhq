@@ -6,7 +6,7 @@ export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-24 pb-12">
+      <main className="flex-grow pt-28 pb-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <h1 className="text-3xl font-bold mb-6">Terms of Service</h1>
           <div className="prose dark:prose-invert max-w-none">
@@ -14,12 +14,12 @@ export default function TermsOfService() {
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using OrgFlow, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
+              By accessing or using OrgFlowHQ, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
             </p>
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">2. Description of Service</h2>
             <p>
-              OrgFlow provides a platform for HR management and applicant tracking. We reserve the right to modify or discontinue the service at any time.
+              OrgFlowHQ provides a platform for HR management and applicant tracking. We reserve the right to modify or discontinue the service at any time.
             </p>
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">3. User Accounts</h2>
@@ -34,17 +34,17 @@ export default function TermsOfService() {
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">5. Google Integration</h2>
             <p>
-              By connecting your Google account, you grant OrgFlow permission to access your Google Calendar to schedule interviews on your behalf. You may revoke this access at any time via your Google Account security settings.
+              By connecting your Google account, you grant OrgFlowHQ permission to access your Google Calendar to schedule interviews on your behalf. You may revoke this access at any time via your Google Account security settings.
             </p>
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">6. Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, OrgFlow shall not be liable for any indirect, incidental, special, or consequential damages arising out of or in connection with your use of the service.
+              To the maximum extent permitted by law, OrgFlowHQ shall not be liable for any indirect, incidental, special, or consequential damages arising out of or in connection with your use of the service.
             </p>
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">7. Contact</h2>
             <p>
-              For any questions regarding these terms, please contact us at support@orgflowhq.com.
+              For any questions regarding these terms, please contact us at help@orgflowhq.com.
             </p>
 
             <div className="mt-8 pt-8 border-t">

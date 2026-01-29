@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
-      <main className="flex-grow pt-24 pb-12">
+      <main className="flex-grow pt-28 pb-12">
         <div className="container mx-auto px-4 max-w-4xl">
           <h1 className="text-3xl font-bold mb-6">Privacy Policy</h1>
           <div className="prose dark:prose-invert max-w-none">
@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">1. Introduction</h2>
             <p>
-              OrgFlow ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you access our recruiting and HR management platform.
+              OrgFlowHQ ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you access our recruiting and HR management platform.
             </p>
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">2. Google User Data</h2>
@@ -46,7 +46,7 @@ export default function PrivacyPolicy() {
 
             <h2 className="text-2xl font-semibold mt-8 mb-4">5. Contact Us</h2>
             <p>
-              If you have questions about this Privacy Policy, please contact us at support@orgflowhq.com.
+              If you have questions about this Privacy Policy, please contact us at help@orgflowhq.com.
             </p>
 
             <div className="mt-8 pt-8 border-t">
