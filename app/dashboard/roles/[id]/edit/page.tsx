@@ -2,7 +2,6 @@
 
 import { useParams, useRouter } from "next/navigation"
 import { RoleForm } from "@/features/roles/components/RoleForm"
-import { roleService } from "@/features/roles/services/roleService"
 import { useState, useEffect } from "react"
 import type { Role, RoleImage } from "@/features/roles/types"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
@@ -21,7 +20,9 @@ export default function EditRolePage() {
             if (!id) return
             try {
                 setLoading(true)
-                const data = await roleService.getRoleById(id)
+                const response = await fetch(`/api/roles/${id}`)
+                if (!response.ok) throw new Error('Failed to fetch role')
+                const data = await response.json()
                 setRole(data)
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Failed to load role")
