@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { X, Clock, FileText, CheckCircle2, Lock } from "lucide-react"
-import { timesheetService } from "@/features/timesheets/services/timesheetService"
+import { adminUpdateTimesheetAction } from "@/features/timesheets/actions"
+import { CustomTimePicker } from "@/components/ui/CustomTimePicker"
 import { toast } from "@/lib/toast"
-import type { Timesheet } from "@/features/timesheets/services/timesheetService"
+import type { Timesheet } from "../types"
 import { format } from "date-fns"
 
 interface AdminEditTimesheetModalProps {
@@ -25,8 +26,8 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
     useEffect(() => {
         if (isOpen && timesheet) {
             // Extract time from ISO string for input[type="time"]
-            if (timesheet.clock_out) {
-                const dateObj = new Date(timesheet.clock_out)
+            if (timesheet.clockOut) {
+                const dateObj = new Date(timesheet.clockOut)
                 const hours = dateObj.getHours().toString().padStart(2, '0')
                 const minutes = dateObj.getMinutes().toString().padStart(2, '0')
                 setClockOutTime(`${hours}:${minutes}`)
@@ -50,30 +51,29 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
                 // OR preserve the date part of the existing clock_out if it exists.
                 // If clock_out was null, we assume same day as clock_in.
 
-                const baseDate = new Date(timesheet.clock_in)
+                const baseDate = new Date(timesheet.clockIn)
                 const [hours, minutes] = clockOutTime.split(':').map(Number)
 
-                // Create new date object based on clock_in date
+                // Create new date object based on clockIn date
                 const newClockOut = new Date(baseDate)
                 newClockOut.setHours(hours, minutes, 0, 0)
 
                 // Handle overnight shifts? 
-                // If new time is earlier than clock_in, maybe it's next day? 
+                // If new time is earlier than clockIn, maybe it's next day? 
                 // Use a simple heuristic: if clockOut < clockIn, add 1 day.
-                if (newClockOut < new Date(timesheet.clock_in)) {
+                if (newClockOut < new Date(timesheet.clockIn)) {
                     newClockOut.setDate(newClockOut.getDate() + 1)
                 }
 
                 endDateTime = newClockOut.toISOString()
             }
 
-            await timesheetService.adminUpdateTimesheet(timesheet.id, {
-                clock_out: endDateTime || undefined, // undefined means don't update if null, but here we probably want to set it?
-                // Actually if user clears it, maybe we should set to null? But adminUpdateTimesheet expects string | undefined. 
-                // Let's assume we are setting a value. If they clear it, it effectively "reopens" the shift? 
-                // Let's force a value for now as the main use case is "Clocking Out" or "Fixing Time".
+            const result = await adminUpdateTimesheetAction(timesheet.id, {
+                clockOut: endDateTime || undefined,
                 notes: notes
             })
+
+            if (!result.success) throw new Error(result.error)
 
             toast.success("Timesheet updated successfully")
             onSuccess()
@@ -88,15 +88,15 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
 
     if (!isOpen || !timesheet) return null
 
-    const clockInDisplay = format(new Date(timesheet.clock_in), "p")
-    const dateDisplay = format(new Date(timesheet.clock_in), "PPP")
+    const clockInDisplay = format(new Date(timesheet.clockIn), "p")
+    const dateDisplay = format(new Date(timesheet.clockIn), "PPP")
 
     return (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
             <div className="bg-card border border-border rounded-xl w-full max-w-lg shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
 
                 {/* Header */}
-                <div className="p-6 border-b border-border flex items-center justify-between">
+                <div className="p-5 border-b border-border flex items-center justify-between">
                     <div>
                         <h2 className="text-xl font-bold text-foreground">Edit Timesheet</h2>
                         <div className="flex items-center gap-2 mt-1">
@@ -110,7 +110,7 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
                 </div>
 
                 {/* Body */}
-                <div className="p-6 space-y-6">
+                <div className="p-5 space-y-4">
 
                     <div className="p-4 bg-muted/40 rounded-lg border border-border flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -127,15 +127,11 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
 
                     <div className="space-y-1">
                         <label className="text-xs font-bold uppercase text-muted-foreground">Clock Out</label>
-                        <div className="relative">
-                            <Clock className="absolute left-3 top-2.5 text-red-500" size={16} />
-                            <input
-                                type="time"
-                                value={clockOutTime}
-                                onChange={(e) => setClockOutTime(e.target.value)}
-                                className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm focus:ring-2 focus:ring-primary outline-none"
-                            />
-                        </div>
+                        <CustomTimePicker
+                            value={clockOutTime}
+                            onChange={setClockOutTime}
+                            iconColor="text-red-500"
+                        />
                         <p className="text-[10px] text-muted-foreground pt-1">
                             Modifying this will close the shift at the specified time.
                         </p>
@@ -149,7 +145,7 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Reason for modification..."
-                                rows={3}
+                                rows={2}
                                 className="w-full pl-10 pr-3 py-2 border border-border rounded-lg bg-background text-sm resize-none focus:ring-2 focus:ring-primary outline-none"
                             />
                         </div>
@@ -158,7 +154,7 @@ export function AdminEditTimesheetModal({ timesheet, isOpen, onClose, onSuccess,
                 </div>
 
                 {/* Footer */}
-                <div className="p-6 border-t border-border bg-muted/20 rounded-b-xl flex justify-end gap-3">
+                <div className="p-5 border-t border-border bg-muted/20 rounded-b-xl flex justify-end gap-3">
                     <button
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-bold text-muted-foreground hover:text-foreground transition-colors"

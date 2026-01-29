@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from "react"
 import { useAppStore } from "@/store/useAppStore"
-import { timesheetService, Timesheet } from "@/features/timesheets/services/timesheetService"
-import { departmentService } from "@/features/departments/services/departmentService"
-import { Check, X, Clock, User, Filter, Search, AlertCircle, Download, Calendar, Plus, Edit2 } from "lucide-react"
+import {
+    getAllTimesheetsAction,
+    updateTimesheetStatusAction,
+    updateTimesheetsStatusAction
+} from "@/features/timesheets/actions"
+import { getEmployeesByOrganizationAction } from "@/features/departments/actions"
+import type { Timesheet } from "@/features/timesheets/types"
+import { Check, X, Clock, User, Filter, Search, AlertCircle, Download, Calendar, Plus, Edit2, Loader2 } from "lucide-react"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
+import { toast } from "@/lib/toast"
 import { formatDate } from "@/lib/utils"
 import { CustomSelect } from "@/components/ui/CustomSelect"
+import { CustomDatePicker, type DateRange } from "@/components/ui/CustomDatePicker"
 import { CreateTimesheetModal } from "@/features/timesheets/components/CreateTimesheetModal"
 import { AdminEditTimesheetModal } from "@/features/timesheets/components/AdminEditTimesheetModal"
 import { TimesheetDetailModal } from "@/features/timesheets/components/TimesheetDetailModal"
-import { subMonths, subYears, isAfter, parseISO } from "date-fns"
+import { subMonths, subYears, isAfter, parseISO, isWithinInterval, startOfMonth, endOfMonth } from "date-fns"
 
 export default function TimesheetsPage() {
     const { user, organization } = useAppStore()
@@ -21,8 +28,13 @@ export default function TimesheetsPage() {
     const [error, setError] = useState("")
     const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
     const [employeeFilter, setEmployeeFilter] = useState('all')
-    const [dateRange, setDateRange] = useState<'1m' | '6m' | '1y'>('1m')
+    const [dateRange, setDateRange] = useState<DateRange>({
+        start: startOfMonth(new Date()),
+        end: endOfMonth(new Date()),
+        label: "This Month"
+    })
     const [searchTerm, setSearchTerm] = useState("")
+    const [actionLoading, setActionLoading] = useState<{ id: string; status: 'approved' | 'rejected' } | null>(null)
 
     // Admin Modal State
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -39,11 +51,11 @@ export default function TimesheetsPage() {
     const fetchTimesheets = async () => {
         setLoading(true)
         try {
-            const data = await timesheetService.getAllTimesheets(organization!.id)
-            setTimesheets(data)
+            const data = await getAllTimesheetsAction(organization!.id)
+            setTimesheets(data as any)
 
-            const emps = await departmentService.getEmployeesByOrganization(organization!.id)
-            setEmployees(emps)
+            const emps = await getEmployeesByOrganizationAction(organization!.id)
+            setEmployees(emps as any)
         } catch (err) {
             setError("Failed to fetch timesheets")
         } finally {
@@ -52,11 +64,15 @@ export default function TimesheetsPage() {
     }
 
     const handleStatusUpdate = async (id: string, status: 'approved' | 'rejected') => {
+        setActionLoading({ id, status })
         try {
-            await timesheetService.updateTimesheetStatus(id, status)
+            await updateTimesheetStatusAction(id, status)
             setTimesheets(timesheets.map(ts => ts.id === id ? { ...ts, status } : ts))
+            toast.success(`Timesheet ${status === 'approved' ? 'approved' : 'rejected'}`)
         } catch (err) {
-            setError("Failed to update status")
+            toast.error("Failed to update status")
+        } finally {
+            setActionLoading(null)
         }
     }
 
@@ -72,7 +88,7 @@ export default function TimesheetsPage() {
         }
 
         try {
-            await timesheetService.updateTimesheetsStatus(pendingIds, status)
+            await updateTimesheetsStatusAction(pendingIds, status)
             setTimesheets(timesheets.map(ts => pendingIds.includes(ts.id) ? { ...ts, status } : ts))
         } catch (err) {
             setError("Failed to perform bulk action")
@@ -81,20 +97,14 @@ export default function TimesheetsPage() {
 
     const filteredTimesheets = timesheets.filter(ts => {
         const matchesStatus = filter === 'all' || ts.status === filter
-        const matchesEmployee = employeeFilter === 'all' || ts.employee_id === employeeFilter || ts.employees?.id === employeeFilter
-        const matchesSearch = ts.employees?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        const matchesEmployee = employeeFilter === 'all' || ts.employeeId === employeeFilter || ts.employees?.id === employeeFilter
+        const matchesSearch = ts.employees?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             ts.employees?.position?.toLowerCase().includes(searchTerm.toLowerCase())
 
         let matchesDate = true
-        if (ts.clock_in) {
-            const date = parseISO(ts.clock_in)
-            const now = new Date()
-            let cutoff = subMonths(now, 1) // default 1m
-
-            if (dateRange === '6m') cutoff = subMonths(now, 6)
-            if (dateRange === '1y') cutoff = subYears(now, 1)
-
-            matchesDate = isAfter(date, cutoff)
+        if (ts.clockIn && dateRange) {
+            const date = parseISO(ts.clockIn)
+            matchesDate = isWithinInterval(date, { start: dateRange.start, end: dateRange.end })
         }
 
         return matchesStatus && matchesSearch && matchesDate && matchesEmployee
@@ -103,14 +113,14 @@ export default function TimesheetsPage() {
     const handleDownload = () => {
         const headers = ["Employee", "Date", "Clock In", "Clock Out", "Duration", "Status"]
         const rows = filteredTimesheets.map(ts => {
-            const clockIn = new Date(ts.clock_in)
-            const clockOut = ts.clock_out ? new Date(ts.clock_out) : null
+            const clockIn = new Date(ts.clockIn)
+            const clockOut = ts.clockOut ? new Date(ts.clockOut) : null
             const duration = clockOut
                 ? `${Math.floor((clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60))}h ${Math.floor(((clockOut.getTime() - clockIn.getTime()) / (1000 * 60)) % 60)}m`
                 : 'Active'
 
             return [
-                ts.employees?.full_name || "Unknown",
+                ts.employees?.fullName || "Unknown",
                 clockIn.toLocaleDateString(),
                 clockIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 clockOut ? clockOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "--",
@@ -125,7 +135,7 @@ export default function TimesheetsPage() {
         const encodedUri = encodeURI(csvContent)
         const link = document.createElement("a")
         link.setAttribute("href", encodedUri)
-        link.setAttribute("download", `timesheets_report_${dateRange}_${new Date().toISOString().split('T')[0]}.csv`)
+        link.setAttribute("download", `timesheets_report_${dateRange?.label || 'custom'}_${new Date().toISOString().split('T')[0]}.csv`)
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -158,7 +168,7 @@ export default function TimesheetsPage() {
 
             <div className="flex flex-col md:flex-row items-center gap-4 bg-card p-4 rounded-xl border border-border">
                 {/* Search */}
-                <div className="flex-1 w-full md:w-auto min-w-[200px] relative">
+                <div className="w-full md:w-64 relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
                     <input
                         type="text"
@@ -171,19 +181,11 @@ export default function TimesheetsPage() {
 
                 {/* Filters Row */}
                 <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-                    {/* Date Range Dropdown */}
-                    <div className="w-36">
-                        <CustomSelect
-                            value={dateRange}
-                            onChange={(val) => setDateRange(val as any)}
-                            options={[
-                                { value: '1m', label: 'Last Month' },
-                                { value: '6m', label: 'Last 6 Months' },
-                                { value: '1y', label: 'Last Year' },
-                            ]}
-                            placeholder="Date Range"
-                        />
-                    </div>
+                    {/* Date Range Picker */}
+                    <CustomDatePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                    />
 
                     {/* Employee Select */}
                     <div className="w-48">
@@ -192,7 +194,7 @@ export default function TimesheetsPage() {
                             onChange={setEmployeeFilter}
                             options={[
                                 { value: 'all', label: 'All Employees' },
-                                ...employees.map(emp => ({ value: emp.id, label: emp.full_name }))
+                                ...employees.map(emp => ({ value: emp.id, label: emp.fullName }))
                             ]}
                             placeholder="All Employees"
                         />
@@ -266,8 +268,8 @@ export default function TimesheetsPage() {
                     <tbody className="divide-y divide-border">
                         {filteredTimesheets.length > 0 ? (
                             filteredTimesheets.map((ts) => {
-                                const clockIn = new Date(ts.clock_in)
-                                const clockOut = ts.clock_out ? new Date(ts.clock_out) : null
+                                const clockIn = new Date(ts.clockIn)
+                                const clockOut = ts.clockOut ? new Date(ts.clockOut) : null
                                 const duration = clockOut
                                     ? `${Math.floor((clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60))}h ${Math.floor(((clockOut.getTime() - clockIn.getTime()) / (1000 * 60)) % 60)}m`
                                     : 'Active'
@@ -283,20 +285,24 @@ export default function TimesheetsPage() {
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center font-bold text-primary">
-                                                    {ts.employees?.full_name?.[0] || 'E'}
-                                                </div>
+                                                {ts.employees?.profileImageUrl ? (
+                                                    <img src={ts.employees.profileImageUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                                                ) : (
+                                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center font-bold text-primary">
+                                                        {ts.employees?.fullName?.[0] || 'E'}
+                                                    </div>
+                                                )}
                                                 <div>
-                                                    <p className="font-bold text-foreground">{ts.employees?.full_name || 'Unknown'}</p>
+                                                    <p className="font-bold text-foreground">{ts.employees?.fullName || 'Unknown'}</p>
                                                     <p className="text-xs text-muted-foreground">{ts.employees?.position || 'Staff'}</p>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-medium">{formatDate(ts.clock_in)}</td>
+                                        <td className="px-6 py-4 text-sm font-medium">{formatDate(ts.clockIn)}</td>
                                         <td className="px-6 py-4 text-sm font-mono">{clockIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                         <td className="px-6 py-4 text-sm font-mono">{clockOut ? clockOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</td>
                                         <td className="px-6 py-4">
-                                            <span className={`text-xs font-bold ${ts.clock_out ? 'text-muted-foreground' : 'text-green-500 animate-pulse'}`}>
+                                            <span className={`text-xs font-bold ${ts.clockOut ? 'text-muted-foreground' : 'text-green-500 animate-pulse'}`}>
                                                 {duration}
                                             </span>
                                         </td>
@@ -311,29 +317,43 @@ export default function TimesheetsPage() {
                                         <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex items-center justify-end gap-2">
                                                 {/* Pending Actions */}
-                                                {ts.status === 'pending' && ts.clock_out && canApprove && (
-                                                    <>
+                                                {ts.status === 'pending' && ts.clockOut && canApprove && (
+                                                    <div className="flex items-center gap-2">
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
+                                                                if (actionLoading) return
                                                                 handleStatusUpdate(ts.id, 'approved')
                                                             }}
-                                                            className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-500/10"
+                                                            disabled={!!actionLoading}
+                                                            className={`relative p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors shadow-lg shadow-green-500/10 cursor-pointer disabled:opacity-50`}
                                                             title="Approve"
                                                         >
-                                                            <Check size={16} />
+                                                            <Check size={16} className={actionLoading?.id === ts.id && actionLoading?.status === 'approved' ? 'opacity-20' : ''} />
+                                                            {actionLoading?.id === ts.id && actionLoading?.status === 'approved' && (
+                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                    <Loader2 size={14} className="animate-spin text-white" />
+                                                                </div>
+                                                            )}
                                                         </button>
                                                         <button
                                                             onClick={(e) => {
                                                                 e.stopPropagation()
+                                                                if (actionLoading) return
                                                                 handleStatusUpdate(ts.id, 'rejected')
                                                             }}
-                                                            className="p-2 bg-destructive text-white rounded-lg hover:bg-destructive-600 transition-colors shadow-lg shadow-destructive/10"
+                                                            disabled={!!actionLoading}
+                                                            className={`relative p-2 bg-destructive text-white rounded-lg hover:bg-destructive-600 transition-colors shadow-lg shadow-destructive/10 cursor-pointer disabled:opacity-50`}
                                                             title="Reject"
                                                         >
-                                                            <X size={16} />
+                                                            <X size={16} className={actionLoading?.id === ts.id && actionLoading?.status === 'rejected' ? 'opacity-20' : ''} />
+                                                            {actionLoading?.id === ts.id && actionLoading?.status === 'rejected' && (
+                                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                                    <Loader2 size={14} className="animate-spin text-white" />
+                                                                </div>
+                                                            )}
                                                         </button>
-                                                    </>
+                                                    </div>
                                                 )}
 
                                                 {/* Edit/Manage Action for Admins */}
@@ -378,7 +398,7 @@ export default function TimesheetsPage() {
                 onClose={() => setIsEditModalOpen(false)}
                 onSuccess={fetchTimesheets}
                 timesheet={selectedTimesheet}
-                employeeName={selectedTimesheet?.employees?.full_name || "Employee"}
+                employeeName={selectedTimesheet?.employees?.fullName || "Employee"}
             />
 
             <TimesheetDetailModal

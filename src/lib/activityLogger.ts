@@ -1,6 +1,8 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
+import { connectToDatabase } from "@/lib/mongodb";
+import { ActivityLog } from "@/models/Business";
+import mongoose from "mongoose";
 
-export type ActivityEntityType = 'application' | 'interview' | 'role'
+export type ActivityEntityType = 'application' | 'interview' | 'role' | 'employee'
 
 export const activityLogger = {
     async logActivity(
@@ -11,21 +13,16 @@ export const activityLogger = {
         description?: string,
         performedBy?: string // Optional, null means system
     ) {
-        const supabase = getSupabaseClient()
-
         try {
-            const { error } = await supabase.from('activity_logs').insert([{
-                organization_id: organizationId,
-                entity_type: entityType,
-                entity_id: entityId,
+            await connectToDatabase();
+            await ActivityLog.create({
+                organizationId: new mongoose.Types.ObjectId(organizationId),
+                entityType,
+                entityId,
                 action,
                 description,
-                performed_by: performedBy || null
-            }])
-
-            if (error) {
-                console.error("Error logging activity:", error)
-            }
+                performedBy: performedBy ? new mongoose.Types.ObjectId(performedBy) : undefined
+            });
         } catch (e) {
             console.error("Exception logging activity:", e)
         }

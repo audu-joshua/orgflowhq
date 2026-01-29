@@ -1,122 +1,51 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-    let response = NextResponse.next({
-        request: {
-            headers: request.headers,
+export default withAuth(
+    function middleware(req) {
+        const token = req.nextauth.token;
+        const path = req.nextUrl.pathname;
+
+        // 0. Redirect non-www to www for SEO consistency
+        const hostname = req.headers.get('host') || '';
+        if (process.env.NODE_ENV === 'production' && hostname === 'orgflowhq.com') {
+            const url = req.nextUrl.clone();
+            url.hostname = 'www.orgflowhq.com';
+            return NextResponse.redirect(url);
+        }
+
+        // 1. Guard for Super Admin routes
+        if (path.startsWith("/admin") && token?.role !== "super_admin") {
+            return NextResponse.redirect(new URL("/select-portal", req.url));
+        }
+
+        // 2. Guard for select-portal (Only super_admin)
+        if (path.startsWith("/select-portal") && token?.role !== "super_admin") {
+            return NextResponse.redirect(new URL("/dashboard", req.url));
+        }
+
+        // 3. Organization check (Optional but good for ensuring they have memberships)
+        // If they are on /dashboard or /org and have no memberships, we might allow it 
+        // or redirect to a "no org" state. Existing middleware allowed it ("Orphaned user").
+
+        return NextResponse.next();
+    },
+    {
+        callbacks: {
+            authorized: ({ token }) => !!token,
         },
-    })
-
-    // 0. Redirect non-www to www for SEO consistency
-    // Only apply in production or when not localhost
-    const hostname = request.headers.get('host') || ''
-    if (process.env.NODE_ENV === 'production' && hostname === 'orgflowhq.com') {
-        const url = request.nextUrl.clone()
-        url.hostname = 'www.orgflowhq.com'
-        return NextResponse.redirect(url)
     }
-
-    // 1. Initialize Supabase Client
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value
-                },
-                set(name: string, value: string, options: CookieOptions) {
-                    request.cookies.set({ name, value, ...options })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({ name, value, ...options })
-                },
-                remove(name: string, options: CookieOptions) {
-                    request.cookies.set({ name, value: "", ...options })
-                    response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
-                    })
-                    response.cookies.set({ name, value: "", ...options })
-                },
-            },
-        }
-    )
-
-    // 2. Refresh Session
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const path = request.nextUrl.pathname
-
-    // 3. Define Public and Protected Routes
-    const isAuthRoute = path.startsWith('/login') || path.startsWith('/register') || path.startsWith('/auth') || path.startsWith('/forgot-password') || path.startsWith('/reset-password')
-    const isOnboardingRoute = path.startsWith('/onboarding')
-    const isDashboardRoute = path.startsWith('/dashboard') || path.startsWith('/org')
-    const isApiRoute = path.startsWith('/api')
-
-    // 4. Handle Unauthenticated Users
-    if (!user) {
-        console.log(`[Middleware] No user found for ${path}`)
-        // If trying to access protected routes, redirect to login
-        if (isDashboardRoute || isOnboardingRoute) {
-            const url = request.nextUrl.clone()
-            url.pathname = '/login'
-            return NextResponse.redirect(url)
-        }
-        // Allow public routes
-        return response
-    }
-
-    // 5. Handle Authenticated Users
-    if (user) {
-        const orgId = user.user_metadata?.organization_id
-        const portalParam = request.nextUrl.searchParams.get('portal')
-        const isExplicitlyChoosingOrg = portalParam === 'org'
-
-        console.log(`[Middleware] User authenticated. OrgID: ${orgId}, Path: ${path}, Portal: ${portalParam}, isExplicitlyChoosingOrg: ${isExplicitlyChoosingOrg}`)
-
-        // Scenario A: Missing Organization (Orphaned)
-        // Allowing them to stay on auth/public pages or dashboard. 
-        // We no longer redirect to onboarding as it can obstruct the flow.
-        if (!orgId && !isOnboardingRoute && !isApiRoute) {
-            console.log(`[Middleware] Orphaned user on ${path} - Allowing through without redirection`)
-        }
-
-        // Scenario B: Has Organization
-        // If user has org and tries to access onboarding, redirect to dashboard
-        if (orgId && isOnboardingRoute) {
-            console.log(`[Middleware] User with Org on onboarding -> Redirecting to dashboard`)
-            const url = request.nextUrl.clone()
-            url.pathname = '/dashboard'
-            return NextResponse.redirect(url)
-        }
-
-        // Redirect logged-in users away from auth pages
-        if (path === '/login' || path === '/register') {
-            console.log(`[Middleware] User on auth page -> Redirecting to dashboard`)
-            const url = request.nextUrl.clone()
-            url.pathname = '/dashboard'
-            return NextResponse.redirect(url)
-        }
-    }
-
-    return response
-}
+);
 
 export const config = {
     matcher: [
         /*
-         * Match all request paths except for the ones starting with:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * Feel free to modify this pattern to include more paths.
+         * Match protected routes
          */
-        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+        "/dashboard/:path*",
+        "/admin/:path*",
+        "/select-portal",
+        "/org/:path*",
+        "/onboarding/:path*",
     ],
-}
+};

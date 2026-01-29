@@ -1,21 +1,21 @@
 import { InterviewsList } from "@/features/interviews/components/InterviewsList"
-import { createSupabaseServerClient } from "@/lib/supabaseServer"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
+import { connectToDatabase } from "@/lib/mongodb"
+import { UserIntegration } from "@/models/User"
+import mongoose from "mongoose"
 
 export default async function InterviewsPage() {
-    const supabase = await createSupabaseServerClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
+    const session = await getServerSession(authOptions) as any
     let isGoogleConnected = false
 
-    if (user) {
-        const { data } = await supabase
-            .from('user_integrations')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('provider', 'google')
-            .single()
-
-        isGoogleConnected = !!data
+    if (session?.user) {
+        await connectToDatabase()
+        const integration = await UserIntegration.findOne({
+            userId: new mongoose.Types.ObjectId((session.user as any).id),
+            provider: 'google'
+        })
+        isGoogleConnected = !!integration
     }
 
     return (

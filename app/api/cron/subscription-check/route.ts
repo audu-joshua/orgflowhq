@@ -1,94 +1,85 @@
-
-import { NextRequest, NextResponse } from "next/server"
-import { supabaseAdmin } from "@/lib/supabaseAdmin"
-import { mailService } from "@/lib/mail/mailService"
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { Subscription, Plan } from "@/models/Business";
+import { Organization, User } from "@/models/User";
+import { mailService } from "@/lib/mail/mailService";
+import mongoose from "mongoose";
 
 export async function GET(req: NextRequest) {
-    // Basic security: Check for a secret key if valid CRON
-    // const authHeader = req.headers.get('authorization')
-    // if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({error: 'Unauthorized'}, {status: 401})
+    const authHeader = req.headers.get('authorization');
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     try {
-        const now = new Date()
-        const tomorrow = new Date(now)
-        tomorrow.setDate(tomorrow.getDate() + 1)
-
-        const threeDaysAgo = new Date(now)
-        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3)
+        await connectToDatabase();
+        const now = new Date();
 
         // 1. Fetch Active Subscriptions
-        const { data: subs, error } = await supabaseAdmin
-            .from("subscriptions")
-            .select(`
-                *,
-                plan:plans(*),
-                organization:organizations(
-                    id, 
-                    name, 
-                    users_organizations(
-                        user_id, 
-                        role,
-                        users(email, full_name)
-                    )
-                )
-            `)
-            .eq("status", "active")
-
-        if (error) throw error
+        const subs = await Subscription.find({ status: "active" })
+            .populate("planId")
+            .populate("organizationId");
 
         const results = {
             remindersSent: 0,
             cancelled: 0,
             errors: [] as string[]
-        }
+        };
 
         for (const sub of subs) {
             try {
-                // Find Owner
-                const owner = sub.organization?.users_organizations?.find((uo: any) => uo.role === 'owner')?.users
-                if (!owner || !owner.email) continue
+                const org = await Organization.findById(sub.organizationId);
+                if (!org) continue;
 
-                const expiryDate = new Date(sub.current_period_end)
-                const renewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
+                // Find Owner using memberships
+                const owner = await User.findOne({
+                    "memberships": {
+                        $elemMatch: { organizationId: org._id, role: "owner" }
+                    }
+                });
+
+                if (!owner || !owner.email) continue;
+
+                const expiryDate = new Date(sub.currentPeriodEnd);
+                const renewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`;
 
                 // Calculate difference in days
-                const diffTime = expiryDate.getTime() - now.getTime()
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+                const diffTime = expiryDate.getTime() - now.getTime();
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-                // Case 1: Expires Tomorrow (Day before)
+                // Case 1: Expires Tomorrow
                 if (diffDays === 1) {
-                    await mailService.sendSubscriptionReminder(owner.email, owner.full_name, 1, renewUrl)
-                    results.remindersSent++
+                    await mailService.sendSubscriptionReminder(owner.email, owner.fullName || owner.name, 1, renewUrl);
+                    results.remindersSent++;
                 }
-                // Case 2: Expired recently (Grace period, daily reminder)
+                // Case 2: Expired recently
                 else if (diffDays <= 0 && diffDays > -3) {
-                    await mailService.sendSubscriptionReminder(owner.email, owner.full_name, diffDays, renewUrl)
-                    results.remindersSent++
+                    await mailService.sendSubscriptionReminder(owner.email, owner.fullName || owner.name, diffDays, renewUrl);
+                    results.remindersSent++;
                 }
-                // Case 3: Expired > 3 days (Cancel)
+                // Case 3: Expired > 3 days
                 else if (diffDays <= -3) {
-                    // Update status to cancelled (or 'past_due' if you prefer)
-                    await supabaseAdmin
-                        .from("subscriptions")
-                        .update({ status: 'cancelled' })
-                        .eq("id", sub.id)
+                    sub.status = 'cancelled';
+                    await sub.save();
 
-                    // Downgrade logic could go here (e.g. switch plan_id to free)
-
-                    await mailService.sendSubscriptionCancellation(owner.email, owner.full_name, sub.plan?.name || "Premium")
-                    results.cancelled++
+                    await mailService.sendSubscriptionCancellation(
+                        owner.email,
+                        owner.fullName || owner.name,
+                        (sub.planId as any).name || "Premium"
+                    );
+                    results.cancelled++;
                 }
 
             } catch (err: any) {
-                console.error(`Error processing sub ${sub.id}:`, err)
-                results.errors.push(sub.id)
+                console.error(`Error processing sub ${sub._id}:`, err);
+                results.errors.push(sub._id.toString());
             }
         }
 
-        return NextResponse.json({ success: true, results })
+        return NextResponse.json({ success: true, results });
 
     } catch (error: any) {
-        console.error("Cron Error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error("Cron Error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

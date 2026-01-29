@@ -2,7 +2,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { Building, Users, Trash2, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { departmentService } from "../services/departmentService"
+import { deleteDepartmentAction } from "../actions"
 import { toast } from "@/lib/toast"
 import {
   AlertDialog,
@@ -34,9 +34,9 @@ export function DepartmentCard({ department, onDeleted }: DepartmentCardProps) {
 
     setIsDeleting(true)
     try {
-      await departmentService.deleteDepartment(department.id)
+      await deleteDepartmentAction(department._id)
       toast.success("Department deleted successfully")
-      onDeleted?.(department.id)
+      onDeleted?.(department._id)
     } catch (error) {
       console.error("Failed to delete department:", error)
       toast.error("Failed to delete department. Please try again.")
@@ -47,7 +47,7 @@ export function DepartmentCard({ department, onDeleted }: DepartmentCardProps) {
 
   return (
     <div className="relative group">
-      <Link href={`/dashboard/departments/${department.id}`} className="block h-full">
+      <Link href={`/dashboard/departments/${department._id}`} className="block h-full">
         <div className="bg-card rounded-xl border border-border p-6 hover:shadow-lg transition-all cursor-pointer h-full hover:border-primary/20">
           <div className="flex items-start justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -70,7 +70,7 @@ export function DepartmentCard({ department, onDeleted }: DepartmentCardProps) {
             </div>
 
             <div className="pt-3 border-t border-border">
-              <p className="text-xs text-muted-foreground font-medium">Created {formatDate(department.created_at)}</p>
+              <p className="text-xs text-muted-foreground font-medium">Created {formatDate(department.createdAt)}</p>
             </div>
           </div>
         </div>

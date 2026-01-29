@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Trash2, Mail, Phone, Calendar } from "lucide-react"
-import { departmentService } from "../services/departmentService"
+import { deleteEmployeeAction } from "../actions"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { EmptyState } from "@/components/shared/EmptyState"
 import { formatDate } from "@/lib/utils"
@@ -22,7 +22,7 @@ export function EmployeeList({ employees, departmentId, onRefresh }: EmployeeLis
 
     setDeletingId(employeeId)
     try {
-      await departmentService.deleteEmployee(employeeId)
+      await deleteEmployeeAction(employeeId)
       onRefresh()
     } catch (error) {
       console.error("Failed to delete employee:", error)
@@ -44,26 +44,26 @@ export function EmployeeList({ employees, departmentId, onRefresh }: EmployeeLis
     <div className="space-y-4">
       {employees.map((employee) => (
         <div
-          key={employee.id}
+          key={employee._id}
           className="bg-background border border-border rounded-lg p-4 hover:shadow-md transition-shadow"
         >
           <div className="flex items-start justify-between gap-4">
-            {employee.profile_image_url ? (
+            {employee.profileImageUrl ? (
               <img
-                src={employee.profile_image_url}
-                alt={employee.full_name || "Employee"}
+                src={employee.profileImageUrl}
+                alt={employee.fullName || "Employee"}
                 className="w-12 h-12 rounded-full object-cover"
               />
             ) : (
               <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                 <span className="text-primary font-semibold text-lg">
-                  {(employee.full_name || employee.email || "E")[0].toUpperCase()}
+                  {(employee.fullName || employee.email || "E")[0].toUpperCase()}
                 </span>
               </div>
             )}
             <div className="flex-1">
               <h3 className="font-semibold text-foreground">
-                {employee.full_name || "No name"}
+                {employee.fullName}
               </h3>
               {employee.position && (
                 <p className="text-sm text-muted-foreground">{employee.position}</p>
@@ -81,20 +81,25 @@ export function EmployeeList({ employees, departmentId, onRefresh }: EmployeeLis
                     <span>{employee.phone}</span>
                   </div>
                 )}
-                {employee.hire_date && (
+                {employee.hireDate ? (
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Calendar size={14} />
-                    <span>{formatDate(employee.hire_date)}</span>
+                    <button
+                      onClick={() => { }}
+                      className="cursor-default"
+                    >
+                      <Calendar size={14} />
+                    </button>
+                    <span>{formatDate(employee.hireDate)}</span>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
             <button
-              onClick={() => handleDelete(employee.id)}
-              disabled={deletingId === employee.id}
-              className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors disabled:opacity-50"
+              onClick={() => handleDelete(employee._id)}
+              disabled={deletingId === employee._id}
+              className="text-destructive hover:bg-destructive/10 p-2 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {deletingId === employee.id ? (
+              {deletingId === employee._id ? (
                 <LoadingSpinner />
               ) : (
                 <Trash2 size={20} />

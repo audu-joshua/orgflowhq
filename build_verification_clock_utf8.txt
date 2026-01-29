@@ -1,0 +1,780 @@
+﻿
+> my-v0-project@0.1.0 build
+> next build
+
+npm : [baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, 
+please update: `npm i baseline-browser-mapping@latest -D`
+At line:1 char:1
++ npm run build > build_verification_clock.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([baseline-brows...ping@latest -D`:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ΓÜá `eslint` configuration in next.config.mjs is no longer supported. See more info here: 
+https://nextjs.org/docs/app/api-reference/cli/next#next-lint-options
+ΓÜá Invalid next.config.mjs options detected: 
+ΓÜá     Unrecognized key(s) in object: 'eslint'
+ΓÜá See more info here: https://nextjs.org/docs/messages/invalid-next-config
+Γû▓ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+
+  Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please 
+update: `npm i baseline-browser-mapping@latest -D`
+
+> Build error occurred
+Error: Turbopack build failed with 22 errors:
+./node_modules/.pnpm/mongoose@9.1.5/node_modules/mongoose/lib/mongoose.js:42:31
+Module not found: Can't resolve 'async_hooks'
+[0m [90m 40 |[39m [36mconst[39m objectIdHexRegexp [33m=[39m [35m/^[0-9A-Fa-f]{24}$/[39m[33m;[39m
+ [90m 41 |[39m
+[31m[1m>[22m[39m[90m 42 |[39m [36mconst[39m { [33mAsyncLocalStorage[39m } [33m=[39m 
+require([32m'async_hooks'[39m)[33m;[39m
+ [90m    |[39m                               [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[
+22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m
+ [90m 43 |[39m
+ [90m 44 |[39m [90m/**[39m
+ [90m 45 |[39m [90m * Mongoose constructor.[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongoose@9.1.5/node_modules/mongoose/lib/mongoose.js [Client Component Browser]
+    ./node_modules/.pnpm/mongoose@9.1.5/node_modules/mongoose/lib/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongoose@9.1.5/node_modules/mongoose/index.js [Client Component Browser]
+    ./src/features/dashboard/services/dashboardService.ts [Client Component Browser]
+    ./app/dashboard/roles/page.tsx [Client Component Browser]
+    ./app/dashboard/roles/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/mongocryptd_manager.js:39:27
+Module not found: Can't resolve 'child_process'
+[0m [90m 37 |[39m         [36mconst[39m cmdName [33m=[39m [36mthis[39m[33m.[39mspawnPath [33m||[39m 
+[32m'mongocryptd'[39m[33m;[39m
+ [90m 38 |[39m         [90m// eslint-disable-next-line @typescript-eslint/no-require-imports[39m
+[31m[1m>[22m[39m[90m 39 |[39m         [36mconst[39m { spawn } [33m=[39m 
+require([32m'child_process'[39m)[33m;[39m
+ [90m    |[39m                           [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m
+[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m
+[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22
+m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[2
+2m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 40 |[39m         [90m// Spawned with stdio: ignore and detached: true[39m
+ [90m 41 |[39m         [90m// to ensure child can outlive parent.[39m
+ [90m 42 |[39m         [36mthis[39m[33m.[39m_child [33m=[39m spawn(cmdName[33m,[39m 
+[36mthis[39m[33m.[39mspawnArgs[33m,[39m {[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/mongocryptd_manager.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/gssapi.js:6:13
+Module not found: Can't resolve 'dns'
+[0m [90m 4 |[39m exports[33m.[39mperformGSSAPICanonicalizeHostName [33m=[39m 
+performGSSAPICanonicalizeHostName[33m;[39m
+ [90m 5 |[39m exports[33m.[39mresolveCname [33m=[39m resolveCname[33m;[39m
+[31m[1m>[22m[39m[90m 6 |[39m [36mconst[39m dns [33m=[39m require([32m"dns"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 7 |[39m [36mconst[39m deps_1 [33m=[39m require([32m"../../deps"[39m)[33m;[39m
+ [90m 8 |[39m [36mconst[39m error_1 [33m=[39m require([32m"../../error"[39m)[33m;[39m
+ [90m 9 |[39m [36mconst[39m utils_1 [33m=[39m require([32m"../../utils"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/gssapi.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/dashboard/services/dashboardService.ts [Client Component Browser]
+    ./app/dashboard/roles/page.tsx [Client Component Browser]
+    ./app/dashboard/roles/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/connection_string.js:6:13
+Module not found: Can't resolve 'dns'
+[0m [90m 4 |[39m exports[33m.[39mresolveSRVRecord [33m=[39m resolveSRVRecord[33m;[39m
+ [90m 5 |[39m exports[33m.[39mparseOptions [33m=[39m parseOptions[33m;[39m
+[31m[1m>[22m[39m[90m 6 |[39m [36mconst[39m dns [33m=[39m require([32m"dns"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 7 |[39m [36mconst[39m mongodb_connection_string_url_1 [33m=[39m 
+require([32m"mongodb-connection-string-url"[39m)[33m;[39m
+ [90m 8 |[39m [36mconst[39m url_1 [33m=[39m require([32m"url"[39m)[33m;[39m
+ [90m 9 |[39m [36mconst[39m mongo_credentials_1 [33m=[39m 
+require([32m"./cmap/auth/mongo_credentials"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/connection_string.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/roles/services/roleService.ts [Client Component Browser]
+    ./app/roles/page.tsx [Client Component Browser]
+    ./app/roles/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/sdam/srv_polling.js:4:13
+Module not found: Can't resolve 'dns'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39m[33mSrvPoller[39m [33m=[39m exports[33m.[39m[33mSrvPollingEvent[39m 
+[33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m dns [33m=[39m require([32m"dns"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mconst[39m timers_1 [33m=[39m require([32m"timers"[39m)[33m;[39m
+ [90m 6 |[39m [36mconst[39m error_1 [33m=[39m require([32m"../error"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m mongo_types_1 [33m=[39m require([32m"../mongo_types"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/sdam/srv_polling.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/gcp-residency.js:24:14
+Module not found: Can't resolve 'fs'
+[0m [90m 22 |[39m exports[33m.[39misGoogleComputeEngine [33m=[39m isGoogleComputeEngine[33m;[39m
+ [90m 23 |[39m exports[33m.[39mdetectGCPResidency [33m=[39m detectGCPResidency[33m;[39m
+[31m[1m>[22m[39m[90m 24 |[39m [36mconst[39m fs_1 [33m=[39m require([32m"fs"[39m)[33m;[39m
+ [90m    |[39m              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 25 |[39m [36mconst[39m os_1 [33m=[39m require([32m"os"[39m)[33m;[39m
+ [90m 26 |[39m [90m/**[39m
+ [90m 27 |[39m [90m * Known paths unique to Google Compute Engine Linux instances[39m[0m
+
+
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/gcp-residency.js
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js
+    ./node_modules/.pnpm/google-auth-library@10.5.0/node_modules/google-auth-library/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/gcp-residency.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/token_machine_workflow.js:4:12
+Module not found: Can't resolve 'fs'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39mcallback [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m fs [33m=[39m require([32m"fs"[39m)[33m;[39m
+ [90m   |[39m            [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[
+22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mconst[39m error_1 [33m=[39m require([32m"../../../error"[39m)[33m;[39m
+ [90m 6 |[39m [90m/** Error for when the token is missing in the environment. */[39m
+ [90m 7 |[39m [36mconst[39m [33mTOKEN_MISSING_ERROR[39m [33m=[39m [32m'OIDC_TOKEN_FILE must be set in the 
+environment.'[39m[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/token_machine_workflow.js 
+[Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client_auth_providers.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/departments/services/departmentService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client.js:4:14
+Module not found: Can't resolve 'fs'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39m[33mMongoClient[39m [33m=[39m exports[33m.[39m[33mServerApiVersion[39m 
+[33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m fs_1 [33m=[39m require([32m"fs"[39m)[33m;[39m
+ [90m   |[39m              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mconst[39m _1 [33m=[39m require([32m"."[39m)[33m;[39m
+ [90m 6 |[39m [36mconst[39m bson_1 [33m=[39m require([32m"./bson"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m change_stream_1 [33m=[39m require([32m"./change_stream"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/utils.js:54:14
+Module not found: Can't resolve 'fs'
+[0m [90m 52 |[39m exports[33m.[39mabortable [33m=[39m abortable[33m;[39m
+ [90m 53 |[39m [36mconst[39m crypto [33m=[39m require([32m"crypto"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 54 |[39m [36mconst[39m fs_1 [33m=[39m require([32m"fs"[39m)[33m;[39m
+ [90m    |[39m              [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1
+m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 55 |[39m [36mconst[39m http [33m=[39m require([32m"http"[39m)[33m;[39m
+ [90m 56 |[39m [36mconst[39m timers_1 [33m=[39m require([32m"timers"[39m)[33m;[39m
+ [90m 57 |[39m [36mconst[39m url [33m=[39m require([32m"url"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/utils.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/change_stream.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/roles/services/roleService.ts [Client Component Browser]
+    ./app/dashboard/roles/[id]/edit/page.tsx [Client Component Browser]
+    ./app/dashboard/roles/[id]/edit/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js:4:12
+Module not found: Can't resolve 'fs/promises'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39m[33mStateMachine[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m fs [33m=[39m require([32m"fs/promises"[39m)[33m;[39m
+ [90m   |[39m            [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[
+22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+ [90m 6 |[39m [36mconst[39m tls [33m=[39m require([32m"tls"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m bson_1 [33m=[39m require([32m"../bson"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/k8s_machine_workflow.js:4:20
+Module not found: Can't resolve 'fs/promises'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39mcallback [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m promises_1 [33m=[39m require([32m"fs/promises"[39m)[33m;[39m
+ [90m   |[39m                    [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[
+31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [90m/** The fallback file name */[39m
+ [90m 6 |[39m [36mconst[39m [33mFALLBACK_FILENAME[39m [33m=[39m 
+[32m'/var/run/secrets/kubernetes.io/serviceaccount/token'[39m[33m;[39m
+ [90m 7 |[39m [90m/** The azure environment variable for the file name. */[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/k8s_machine_workflow.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client_auth_providers.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/departments/services/departmentService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/agent-base@7.1.4/node_modules/agent-base/dist/index.js:30:26
+Module not found: Can't resolve 'net'
+[0m [90m 28 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 29 |[39m exports[33m.[39m[33mAgent[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 30 |[39m [36mconst[39m net [33m=[39m __importStar(require([32m"net"[39m))[33m;[39m
+ [90m    |[39m                          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[
+39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m
+[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 31 |[39m [36mconst[39m http [33m=[39m __importStar(require([32m"http"[39m))[33m;[39m
+ [90m 32 |[39m [36mconst[39m https_1 [33m=[39m require([32m"https"[39m)[33m;[39m
+ [90m 33 |[39m __exportStar(require([32m"./helpers"[39m)[33m,[39m exports)[33m;[39m[0m
+
+
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/agent-base@7.1.4/node_modules/agent-base/dist/index.js
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js
+    ./node_modules/.pnpm/googleapis-common@8.0.1/node_modules/googleapis-common/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/agent-base@7.1.4/node_modules/agent-base/dist/index.js [Client Component Browser]
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js:30:26
+Module not found: Can't resolve 'net'
+[0m [90m 28 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 29 |[39m exports[33m.[39m[33mHttpsProxyAgent[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 30 |[39m [36mconst[39m net [33m=[39m __importStar(require([32m"net"[39m))[33m;[39m
+ [90m    |[39m                          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[
+39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m
+[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 31 |[39m [36mconst[39m tls [33m=[39m __importStar(require([32m"tls"[39m))[33m;[39m
+ [90m 32 |[39m [36mconst[39m assert_1 [33m=[39m __importDefault(require([32m"assert"[39m))[33m;[39m
+ [90m 33 |[39m [36mconst[39m debug_1 [33m=[39m __importDefault(require([32m"debug"[39m))[33m;[39m[0m
+
+
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js
+    ./node_modules/.pnpm/googleapis-common@8.0.1/node_modules/googleapis-common/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js:5:13
+Module not found: Can't resolve 'net'
+[0m [90m 3 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 4 |[39m exports[33m.[39m[33mAutoEncrypter[39m [33m=[39m 
+exports[33m.[39m[33mAutoEncryptionLoggerLevel[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 6 |[39m [36mconst[39m bson_1 [33m=[39m require([32m"../bson"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m constants_1 [33m=[39m require([32m"../constants"[39m)[33m;[39m
+ [90m 8 |[39m [36mconst[39m deps_1 [33m=[39m require([32m"../deps"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js:5:13
+Module not found: Can't resolve 'net'
+[0m [90m 3 |[39m exports[33m.[39m[33mStateMachine[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+ [90m 4 |[39m [36mconst[39m fs [33m=[39m require([32m"fs/promises"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 5 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 6 |[39m [36mconst[39m tls [33m=[39m require([32m"tls"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m bson_1 [33m=[39m require([32m"../bson"[39m)[33m;[39m
+ [90m 8 |[39m [36mconst[39m abstract_cursor_1 [33m=[39m 
+require([32m"../cursor/abstract_cursor"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/connect.js:9:13
+Module not found: Can't resolve 'net'
+[0m [90m  7 |[39m exports[33m.[39mprepareHandshakeDocument [33m=[39m prepareHandshakeDocument[33m;[39m
+ [90m  8 |[39m exports[33m.[39mmakeSocket [33m=[39m makeSocket[33m;[39m
+[31m[1m>[22m[39m[90m  9 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+ [90m    |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 10 |[39m [36mconst[39m tls [33m=[39m require([32m"tls"[39m)[33m;[39m
+ [90m 11 |[39m [36mconst[39m constants_1 [33m=[39m require([32m"../constants"[39m)[33m;[39m
+ [90m 12 |[39m [36mconst[39m deps_1 [33m=[39m require([32m"../deps"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/connect.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/sdam/monitor.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/connection_string.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/roles/services/roleService.ts [Client Component Browser]
+    ./app/roles/page.tsx [Client Component Browser]
+    ./app/roles/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/callback_workflow.js:4:20
+Module not found: Can't resolve 'timers/promises'
+[0m [90m 2 |[39m [33mObject[39m[33m.[39mdefineProperty(exports[33m,[39m [32m"__esModule"[39m[33m,[39m { 
+value[33m:[39m [36mtrue[39m })[33m;[39m
+ [90m 3 |[39m exports[33m.[39m[33mCallbackWorkflow[39m [33m=[39m 
+exports[33m.[39m[33mAUTOMATED_TIMEOUT_MS[39m [33m=[39m exports[33m.[39m[33mHUMAN_TIMEOUT_MS[39m [33m=[39m 
+[36mvoid[39m [35m0[39m[33m;[39m
+[31m[1m>[22m[39m[90m 4 |[39m [36mconst[39m promises_1 [33m=[39m 
+require([32m"timers/promises"[39m)[33m;[39m
+ [90m   |[39m                    [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31
+m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[3
+1m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[
+31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 5 |[39m [36mconst[39m error_1 [33m=[39m require([32m"../../../error"[39m)[33m;[39m
+ [90m 6 |[39m [36mconst[39m utils_1 [33m=[39m require([32m"../../../utils"[39m)[33m;[39m
+ [90m 7 |[39m [36mconst[39m command_builders_1 [33m=[39m require([32m"./command_builders"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/callback_workflow.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/auth/mongodb_oidc/human_callback_workflow.js 
+[Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client_auth_providers.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/departments/services/departmentService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js:31:26
+Module not found: Can't resolve 'tls'
+[0m [90m 29 |[39m exports[33m.[39m[33mHttpsProxyAgent[39m [33m=[39m [36mvoid[39m [35m0[39m[33m;[39m
+ [90m 30 |[39m [36mconst[39m net [33m=[39m __importStar(require([32m"net"[39m))[33m;[39m
+[31m[1m>[22m[39m[90m 31 |[39m [36mconst[39m tls [33m=[39m __importStar(require([32m"tls"[39m))[33m;[39m
+ [90m    |[39m                          [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[
+39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m
+[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 32 |[39m [36mconst[39m assert_1 [33m=[39m __importDefault(require([32m"assert"[39m))[33m;[39m
+ [90m 33 |[39m [36mconst[39m debug_1 [33m=[39m __importDefault(require([32m"debug"[39m))[33m;[39m
+ [90m 34 |[39m [36mconst[39m agent_base_1 [33m=[39m require([32m"agent-base"[39m)[33m;[39m[0m
+
+
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js
+    ./node_modules/.pnpm/googleapis-common@8.0.1/node_modules/googleapis-common/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/https-proxy-agent@7.0.6/node_modules/https-proxy-agent/dist/index.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js:6:13
+Module not found: Can't resolve 'tls'
+[0m [90m 4 |[39m [36mconst[39m fs [33m=[39m require([32m"fs/promises"[39m)[33m;[39m
+ [90m 5 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 6 |[39m [36mconst[39m tls [33m=[39m require([32m"tls"[39m)[33m;[39m
+ [90m   |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 7 |[39m [36mconst[39m bson_1 [33m=[39m require([32m"../bson"[39m)[33m;[39m
+ [90m 8 |[39m [36mconst[39m abstract_cursor_1 [33m=[39m require([32m"../cursor/abstract_cursor"[39m)[33m;[39m
+ [90m 9 |[39m [36mconst[39m deps_1 [33m=[39m require([32m"../deps"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/state_machine.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/client-side-encryption/auto_encrypter.js [Client 
+Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/connect.js:10:13
+Module not found: Can't resolve 'tls'
+[0m [90m  8 |[39m exports[33m.[39mmakeSocket [33m=[39m makeSocket[33m;[39m
+ [90m  9 |[39m [36mconst[39m net [33m=[39m require([32m"net"[39m)[33m;[39m
+[31m[1m>[22m[39m[90m 10 |[39m [36mconst[39m tls [33m=[39m require([32m"tls"[39m)[33m;[39m
+ [90m    |[39m             [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^
+[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m
+^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 11 |[39m [36mconst[39m constants_1 [33m=[39m require([32m"../constants"[39m)[33m;[39m
+ [90m 12 |[39m [36mconst[39m deps_1 [33m=[39m require([32m"../deps"[39m)[33m;[39m
+ [90m 13 |[39m [36mconst[39m error_1 [33m=[39m require([32m"../error"[39m)[33m;[39m[0m
+
+
+
+Import trace:
+  Client Component Browser:
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/connect.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/sdam/monitor.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/connection_string.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/mongo_client.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/roles/services/roleService.ts [Client Component Browser]
+    ./app/roles/page.tsx [Client Component Browser]
+    ./app/roles/page.tsx [Server Component]
+
+https://nextjs.org/docs/messages/module-not-found
+
+
+./node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/from.js
+Code generation for chunk item errored
+An error occurred while generating the chunk item 
+[project]/node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/from.js [app-client] (ecmascript) <locals>
+
+Caused by:
+- the chunking context (unknown) does not support external modules (request: node:fs)
+
+Debug info:
+- An error occurred while generating the chunk item 
+[project]/node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/from.js [app-client] (ecmascript) <locals>
+- Execution of <MergedEcmascriptModuleChunkItem as EcmascriptChunkItem>::content_with_async_module_info failed
+- Execution of *EcmascriptChunkItemContent::new failed
+- Execution of EcmascriptModuleContent::new_merged failed
+- the chunking context (unknown) does not support external modules (request: node:fs)
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/from.js
+    ./node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js
+    ./node_modules/.pnpm/googleapis-common@8.0.1/node_modules/googleapis-common/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/fetch-blob@3.2.0/node_modules/fetch-blob/from.js [Client Component Browser]
+    ./node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+
+./node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js
+Code generation for chunk item errored
+An error occurred while generating the chunk item 
+[project]/node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js [app-client] (ecmascript)
+
+Caused by:
+- the chunking context (unknown) does not support external modules (request: node:net)
+
+Debug info:
+- An error occurred while generating the chunk item 
+[project]/node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js [app-client] (ecmascript)
+- Execution of <MergedEcmascriptModuleChunkItem as EcmascriptChunkItem>::content_with_async_module_info failed
+- Execution of *EcmascriptChunkItemContent::new failed
+- Execution of EcmascriptModuleContent::new_merged failed
+- the chunking context (unknown) does not support external modules (request: node:net)
+
+Import traces:
+  App Route:
+    ./node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js
+    ./node_modules/.pnpm/googleapis-common@8.0.1/node_modules/googleapis-common/build/src/index.js
+    ./node_modules/.pnpm/googleapis@170.0.0/node_modules/googleapis/build/src/index.js
+    ./src/lib/google/calendar.ts
+    ./app/api/auth/google/connect/route.ts
+
+  Client Component Browser:
+    ./node_modules/.pnpm/node-fetch@3.3.2/node_modules/node-fetch/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/gaxios.js [Client Component Browser]
+    ./node_modules/.pnpm/gaxios@7.1.3/node_modules/gaxios/build/cjs/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/gcp-metadata@8.1.2/node_modules/gcp-metadata/build/src/index.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/deps.js [Client Component Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/cmap/wire_protocol/compression.js [Client Component 
+Browser]
+    ./node_modules/.pnpm/mongodb@7.0.0/node_modules/mongodb/lib/index.js [Client Component Browser]
+    ./src/lib/mongodb.ts [Client Component Browser]
+    ./src/features/timesheets/services/timesheetService.ts [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Client Component Browser]
+    ./app/dashboard/timesheets/page.tsx [Server Component]
+
+
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)

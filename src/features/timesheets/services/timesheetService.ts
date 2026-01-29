@@ -1,150 +1,211 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { Timesheet as TimesheetModel } from "@/models/Business";
+import mongoose from "mongoose";
 
 export interface Timesheet {
-    id: string
-    employee_id: string
-    organization_id: string
-    clock_in: string
-    clock_out: string | null
-    status: 'pending' | 'approved' | 'rejected'
-    notes?: string
-    created_at?: string
+    id: string;
+    _id: string;
+    employeeId: string;
+    organizationId: string;
+    clockIn: string;
+    clockOut: string | null;
+    status: 'pending' | 'approved' | 'rejected';
+    notes?: string;
+    createdAt?: string;
     employees?: {
-        full_name: string
-        position: string
-    }
-    // Audit Fields
-    created_by?: string
-    created_via?: 'employee' | 'admin_override'
-    override_reason?: string
-    history?: any[]
+        fullName: string;
+        position: string;
+        profileImageUrl?: string | null;
+        id?: string;
+        // Legacy
+        full_name?: string;
+    };
+    createdBy?: string;
+    createdVia?: 'employee' | 'admin_override';
+    overrideReason?: string;
+    history?: any[];
+
+    // Legacy
+    employee_id: string;
+    organization_id: string;
+    clock_in: string;
+    clock_out: string | null;
+    created_at?: string;
 }
 
+const mapModelToType = (doc: any): Timesheet => {
+    const obj = doc.toObject ? doc.toObject() : doc;
+    const empId = obj.employeeId?._id?.toString() || obj.employeeId?.toString();
+    const orgId = obj.organizationId?._id?.toString() || obj.organizationId?.toString();
+
+    return {
+        id: obj._id.toString(),
+        _id: obj._id.toString(),
+        employeeId: empId,
+        organizationId: orgId,
+        clockIn: obj.clockIn?.toISOString(),
+        clockOut: obj.clockOut?.toISOString() || null,
+        status: obj.status,
+        notes: obj.notes,
+        createdAt: obj.createdAt?.toISOString(),
+        employees: obj.employeeId?.fullName ? {
+            fullName: obj.employeeId.fullName,
+            position: obj.employeeId.position,
+            profileImageUrl: obj.employeeId.profileImageUrl,
+            id: empId
+        } : undefined,
+        createdBy: obj.createdBy?.toString(),
+        createdVia: obj.createdVia,
+        overrideReason: obj.overrideReason || obj.override_reason,
+        history: obj.history,
+
+        // Legacy compatibility
+        employee_id: empId,
+        organization_id: orgId,
+        clock_in: obj.clockIn?.toISOString(),
+        clock_out: obj.clockOut?.toISOString() || null,
+        created_at: obj.createdAt?.toISOString(),
+    };
+};
+
 export const timesheetService = {
-    async clockIn(employeeId: string, organizationId: string) {
-        const supabase = getSupabaseClient()
-        // Get current user ID for audit
-        const { data: { user } } = await supabase.auth.getUser()
+    async clockIn(employeeId: string, organizationId: string, userId?: string) {
+        await connectToDatabase();
 
-        const { data, error } = await supabase
-            .from("timesheets")
-            .insert([{
-                employee_id: employeeId,
-                organization_id: organizationId,
-                clock_in: new Date().toISOString(),
-                status: 'pending',
-                created_via: 'employee',
-                created_by: user?.id
-            }])
-            .select()
-            .single()
+        const record = await TimesheetModel.create({
+            employeeId: new mongoose.Types.ObjectId(employeeId),
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            clockIn: new Date(),
+            status: 'pending',
+            createdVia: 'employee',
+            createdBy: userId ? new mongoose.Types.ObjectId(userId) : undefined
+        });
 
-        if (error) throw error
-        return data as Timesheet
+        return mapModelToType(record);
     },
 
     async clockOut(timesheetId: string) {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .update({
-                clock_out: new Date().toISOString()
-            })
-            .eq("id", timesheetId)
-            .select()
-            .single()
+        await connectToDatabase();
 
-        if (error) throw error
-        return data as Timesheet
+        const record = await TimesheetModel.findByIdAndUpdate(
+            timesheetId,
+            { clockOut: new Date() },
+            { new: true }
+        );
+
+        if (!record) throw new Error("Timesheet not found");
+        return mapModelToType(record);
     },
 
     async getEmployeeTimesheets(employeeId: string) {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .select("*")
-            .eq("employee_id", employeeId)
-            .order("clock_in", { ascending: false })
+        await connectToDatabase();
 
-        if (error) throw error
-        return data as Timesheet[]
+        const records = await TimesheetModel.find({
+            employeeId: new mongoose.Types.ObjectId(employeeId)
+        }).sort({ clockIn: -1 });
+
+        return records.map(mapModelToType);
     },
 
     async getAllTimesheets(organizationId: string) {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .select("*, employees(full_name, position)")
-            .eq("organization_id", organizationId)
-            .order("clock_in", { ascending: false })
+        await connectToDatabase();
 
-        if (error) throw error
-        return data
+        const records = await TimesheetModel.find({
+            organizationId: new mongoose.Types.ObjectId(organizationId)
+        })
+            .populate({
+                path: 'employeeId',
+                select: 'fullName position profileImageUrl'
+            })
+            .sort({ clockIn: -1 });
+
+        return records.map(mapModelToType);
     },
 
     async updateTimesheetStatus(timesheetId: string, status: 'approved' | 'rejected') {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .update({ status })
-            .eq("id", timesheetId)
-            .select()
-            .single()
+        await connectToDatabase();
 
-        if (error) throw error
-        return data
+        const record = await TimesheetModel.findByIdAndUpdate(
+            timesheetId,
+            { status },
+            { new: true }
+        );
+
+        if (!record) throw new Error("Timesheet not found");
+        return mapModelToType(record);
     },
 
     async updateTimesheetsStatus(timesheetIds: string[], status: 'approved' | 'rejected') {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .update({ status })
-            .in("id", timesheetIds)
-            .select()
+        await connectToDatabase();
 
-        if (error) throw error
-        return data
+        await TimesheetModel.updateMany(
+            { _id: { $in: timesheetIds.map(id => new mongoose.Types.ObjectId(id)) } },
+            { status }
+        );
+
+        const records = await TimesheetModel.find({
+            _id: { $in: timesheetIds.map(id => new mongoose.Types.ObjectId(id)) }
+        });
+
+        return records.map(mapModelToType);
     },
 
     async createTimesheet(timesheet: {
-        employee_id: string
-        organization_id: string
-        clock_in: string
-        clock_out?: string | null
-        notes?: string
+        employeeId?: string;
+        employee_id?: string;
+        organizationId?: string;
+        organization_id?: string;
+        clockIn?: string;
+        clock_in?: string;
+        clockOut?: string | null;
+        clock_out?: string | null;
+        notes?: string;
+        userId?: string;
+        user_id?: string;
     }) {
-        const supabase = getSupabaseClient()
-        // Get current user ID for audit
-        const { data: { user } } = await supabase.auth.getUser()
+        await connectToDatabase();
 
-        const { data, error } = await supabase
-            .from("timesheets")
-            .insert([{
-                ...timesheet,
-                status: 'approved', // Admin-created timesheets are auto-approved
-                created_via: 'admin_override',
-                created_by: user?.id,
-                override_reason: timesheet.notes // Map notes to override_reason for admin creation
-            }])
-            .select()
-            .single()
+        const finalEmployeeId = timesheet.employeeId || timesheet.employee_id;
+        const finalOrganizationId = timesheet.organizationId || timesheet.organization_id;
+        const finalClockIn = timesheet.clockIn || timesheet.clock_in;
+        const finalClockOut = timesheet.clockOut || timesheet.clock_out;
+        const finalUserId = timesheet.userId || timesheet.user_id;
 
-        if (error) throw error
-        return data as Timesheet
+        if (!finalEmployeeId || !finalOrganizationId || !finalClockIn) {
+            throw new Error("Missing required fields for timesheet creation");
+        }
+
+        const record = await TimesheetModel.create({
+            employeeId: new mongoose.Types.ObjectId(finalEmployeeId),
+            organizationId: new mongoose.Types.ObjectId(finalOrganizationId),
+            clockIn: new Date(finalClockIn),
+            clockOut: finalClockOut ? new Date(finalClockOut) : undefined,
+            notes: timesheet.notes,
+            status: 'approved', // Admin-created timesheets are auto-approved
+            createdVia: 'admin_override',
+            createdBy: finalUserId ? new mongoose.Types.ObjectId(finalUserId) : undefined,
+            overrideReason: timesheet.notes
+        });
+
+        return mapModelToType(record);
     },
 
-    async adminUpdateTimesheet(timesheetId: string, updates: { clock_out?: string, notes?: string }) {
-        // Enforce restriction: No clock_in updates allowed here
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("timesheets")
-            .update(updates)
-            .eq("id", timesheetId)
-            .select()
-            .single()
+    async adminUpdateTimesheet(timesheetId: string, updates: { clockOut?: string, clock_out?: string, notes?: string }) {
+        await connectToDatabase();
 
-        if (error) throw error
-        return data as Timesheet
+        const mongoUpdates: any = {};
+        const finalClockOut = updates.clockOut || updates.clock_out;
+        if (finalClockOut) mongoUpdates.clockOut = new Date(finalClockOut);
+        if (updates.notes) mongoUpdates.notes = updates.notes;
+
+        const record = await TimesheetModel.findByIdAndUpdate(
+            timesheetId,
+            mongoUpdates,
+            { new: true }
+        );
+
+        if (!record) throw new Error("Timesheet not found");
+        return mapModelToType(record);
     }
-}
+};

@@ -1,72 +1,66 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import type { Interview } from "../types"
-import { applicationService } from "@/features/applications/services/applicationService"
-import { activityLogger } from "@/lib/activityLogger"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { Interview } from "@/models/Recruitment";
+import { Application } from "@/models/Recruitment";
+import { JobRole } from "@/models/Business";
+import { applicationService } from "@/features/applications/services/applicationService";
+import { activityLogger } from "@/lib/activityLogger";
+import mongoose from "mongoose";
 
 interface ScheduleInterviewParams {
-    organizationId: string
-    applicantId: string
-    roleId: string
-    type: 'virtual' | 'in_person'
-    scheduledAt: Date
-    duration: number
-    meetingLink?: string
-    location?: string
-    candidateName: string // For email
-    roleTitle: string     // For email
-    candidateEmail: string // For email
-    performedBy: string   // User ID of HR
+    organizationId: string;
+    applicantId: string;
+    roleId: string;
+    type: 'virtual' | 'in_person';
+    scheduledAt: Date;
+    duration: number;
+    meetingLink?: string;
+    location?: string;
+    candidateName: string;
+    roleTitle: string;
+    candidateEmail: string;
+    performedBy: string;
 }
 
 export const interviewService = {
     async scheduleInterview(params: ScheduleInterviewParams) {
-        const supabase = getSupabaseClient()
+        await connectToDatabase();
         const {
             organizationId, applicantId, roleId, type, scheduledAt,
             duration, meetingLink, location, candidateName,
             roleTitle, candidateEmail, performedBy
-        } = params
+        } = params;
 
         // 1. Create Interview Record
-        const { data: interview, error } = await supabase
-            .from("interviews")
-            .insert([{
-                organization_id: organizationId,
-                applicant_id: applicantId,
-                role_id: roleId,
-                type,
-                scheduled_at: scheduledAt.toISOString(),
-                duration,
-                meeting_link: meetingLink,
-                location,
-                status: 'scheduled'
-            }])
-            .select()
-            .single()
+        const interview = await Interview.create({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            applicationId: new mongoose.Types.ObjectId(applicantId),
+            roleId: new mongoose.Types.ObjectId(roleId),
+            type,
+            scheduledAt,
+            duration,
+            meetingLink,
+            location,
+            status: 'scheduled',
+            organizerId: new mongoose.Types.ObjectId(performedBy)
+        });
 
-        if (error) {
-            console.error("Error scheduling interview:", error)
-            throw error
-        }
+        // 2. Update Application Stage
+        await applicationService.updateApplicationStage(applicantId, "Interview Scheduled");
 
-        await applicationService.updateApplicationStage(applicantId, "Interview Scheduled")
+        const dateStr = scheduledAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = scheduledAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-        // 3. Email sent by Server Action
-
-        const dateStr = scheduledAt.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
-        const timeStr = scheduledAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-
-        // 4. Log Activity
+        // 3. Log Activity
         await activityLogger.logActivity(
             organizationId,
             'interview',
-            interview.id,
+            interview._id.toString(),
             'scheduled',
             `Interview scheduled for ${dateStr} at ${timeStr}`,
             performedBy
-        )
+        );
 
-        // Log for applicant as well
         await activityLogger.logActivity(
             organizationId,
             'application',
@@ -74,43 +68,64 @@ export const interviewService = {
             'interview_scheduled',
             `Interview scheduled for ${roleTitle}`,
             performedBy
-        )
+        );
 
-        return interview as Interview
+        return this.mapModelToType(interview);
     },
 
     async getInterviewsByRole(roleId: string) {
-        const supabase = getSupabaseClient()
+        await connectToDatabase();
+        const records = await Interview.find({
+            roleId: new mongoose.Types.ObjectId(roleId)
+        }).populate("applicationId").sort({ scheduledAt: 1 });
 
-        const { data, error } = await supabase
-            .from("interviews")
-            .select(`
-        *,
-        applications:applicant_id (applicant_name, applicant_email)
-      `)
-            .eq("role_id", roleId)
-            .order("scheduled_at", { ascending: true })
-
-        if (error) throw error
-        return data
+        return records.map(this.mapModelToType);
     },
 
     async getInterviewsByOrganization(organizationId: string) {
-        const supabase = getSupabaseClient()
+        await connectToDatabase();
+        const records = await Interview.find({
+            organizationId: new mongoose.Types.ObjectId(organizationId)
+        })
+            .populate("roleId")
+            .populate("applicationId")
+            .sort({ scheduledAt: 1 });
 
-        const { data, error } = await supabase
-            .from("interviews")
-            .select(`
-                *,
-                roles (title),
-                applications (applicant_name, applicant_email)
-            `)
-            .eq("organization_id", organizationId)
-            // Filter only scheduled or completed? Let's show all for now, or maybe just scheduled/completed.
-            // .neq("status", "missed") 
-            .order("scheduled_at", { ascending: true })
+        return records.map(doc => {
+            const obj = doc.toObject();
+            return {
+                ...this.mapModelToType(doc),
+                roles: obj.roleId ? { title: obj.roleId.title } : undefined,
+                applications: obj.applicationId ? {
+                    applicant_name: obj.applicationId.applicantName,
+                    applicant_email: obj.applicationId.applicantEmail
+                } : undefined
+            };
+        });
+    },
 
-        if (error) throw error
-        return data as (Interview & { roles: { title: string }, applications: { applicant_name: string, applicant_email: string } })[]
+    mapModelToType(doc: any) {
+        const obj = doc.toObject ? doc.toObject() : doc;
+        return {
+            id: obj._id.toString(),
+            organization_id: obj.organizationId.toString(),
+            applicant_id: obj.applicationId?._id?.toString() || obj.applicationId?.toString(),
+            role_id: obj.roleId?._id?.toString() || obj.roleId?.toString(),
+            type: obj.type,
+            status: obj.status,
+            scheduled_at: obj.scheduledAt.toISOString(),
+            duration: obj.duration,
+            meeting_link: obj.meetingLink,
+            location: obj.location,
+            organizer_id: obj.organizerId?.toString(),
+            google_event_id: obj.googleEventId,
+            created_at: obj.createdAt.toISOString(),
+            updated_at: obj.updatedAt.toISOString(),
+            // UI Compat
+            applications: obj.applicationId ? {
+                applicant_name: obj.applicationId.applicantName,
+                applicant_email: obj.applicationId.applicantEmail
+            } : undefined
+        };
     }
 }

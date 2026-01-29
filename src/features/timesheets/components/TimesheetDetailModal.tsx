@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { X, Clock, FileText, User, ShieldAlert, Calendar } from "lucide-react"
 import { format } from "date-fns"
-import type { Timesheet } from "@/features/timesheets/services/timesheetService"
+import type { Timesheet } from "../types"
 import type { Employee } from "@/features/departments/types"
 
 interface TimesheetDetailModalProps {
@@ -16,18 +16,18 @@ interface TimesheetDetailModalProps {
 export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: TimesheetDetailModalProps) {
     if (!isOpen || !timesheet) return null
 
-    const employee = employees.find(e => e.id === timesheet.employee_id)
-    const creator = employees.find(e => e.user_id === timesheet.created_by)
+    const employee = employees.find(e => e.id === timesheet.employeeId || e._id === timesheet.employeeId)
+    const creator = employees.find(e => e.userId === timesheet.createdBy || e.id === timesheet.createdBy)
 
     // Format Times
-    const clockIn = new Date(timesheet.clock_in)
-    const clockOut = timesheet.clock_out ? new Date(timesheet.clock_out) : null
+    const clockIn = new Date(timesheet.clockIn)
+    const clockOut = timesheet.clockOut ? new Date(timesheet.clockOut) : null
 
     const duration = clockOut
         ? `${Math.floor((clockOut.getTime() - clockIn.getTime()) / (1000 * 60 * 60))}h ${Math.floor(((clockOut.getTime() - clockIn.getTime()) / (1000 * 60)) % 60)}m`
         : 'Active Session'
 
-    const wasAdminCreated = timesheet.created_via === 'admin_override'
+    const wasAdminCreated = timesheet.createdVia === 'admin_override'
 
     return (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
@@ -36,11 +36,15 @@ export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: 
                 {/* Header */}
                 <div className="p-6 border-b border-border flex items-center justify-between bg-muted/30 shrink-0">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg">
-                            {employee?.full_name?.[0] || "E"}
-                        </div>
+                        {employee?.profileImageUrl ? (
+                            <img src={employee.profileImageUrl} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        ) : (
+                            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg">
+                                {employee?.fullName?.[0] || "E"}
+                            </div>
+                        )}
                         <div>
-                            <h2 className="text-lg font-bold text-foreground">{employee?.full_name || "Unknown Employee"}</h2>
+                            <h2 className="text-lg font-bold text-foreground">{employee?.fullName || "Unknown Employee"}</h2>
                             <p className="text-sm text-muted-foreground">{employee?.position || "Staff Member"}</p>
                         </div>
                     </div>
@@ -105,7 +109,7 @@ export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: 
                                     <span className={`text-xs px-2 py-0.5 rounded border ${wasAdminCreated ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-muted text-muted-foreground border-border'}`}>
                                         {wasAdminCreated ? 'Admin Override' : 'Standard Clock-In'}
                                     </span>
-                                    <span className="text-xs">• {format(new Date(timesheet.created_at || timesheet.clock_in), "PP p")}</span>
+                                    <span className="text-xs">• {format(new Date(timesheet.createdAt || timesheet.clockIn), "PP p")}</span>
                                 </div>
                             </div>
 
@@ -115,9 +119,9 @@ export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: 
                                     <div className="flex items-start gap-2">
                                         <User size={14} className="mt-0.5 text-orange-500" />
                                         <div className="space-y-1">
-                                            <p className="text-xs text-orange-600 font-medium">Created by: {creator?.full_name || "Unknown Admin"}</p>
-                                            {timesheet.override_reason && (
-                                                <p className="text-xs text-muted-foreground italic">"{timesheet.override_reason}"</p>
+                                            <p className="text-xs text-orange-600 font-medium">Created by: {creator?.fullName || "Unknown Admin"}</p>
+                                            {timesheet.overrideReason && (
+                                                <p className="text-xs text-muted-foreground italic">"{timesheet.overrideReason}"</p>
                                             )}
                                         </div>
                                     </div>
@@ -141,7 +145,7 @@ export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: 
                                     <h4 className="text-xs font-bold uppercase text-muted-foreground mb-4">Modification History</h4>
                                     <div className="space-y-6">
                                         {[...timesheet.history].reverse().map((log: any, index: number) => {
-                                            const actor = employees.find(e => e.user_id === log.actor_id)
+                                            const actor = employees.find(e => e.userId === log.actor_id || e.id === log.actor_id)
                                             const changeTime = new Date(log.timestamp)
                                             return (
                                                 <div key={index} className="relative pl-4 border-l-2 border-muted">
@@ -150,7 +154,7 @@ export function TimesheetDetailModal({ timesheet, isOpen, onClose, employees }: 
                                                     <div className="flex flex-col">
                                                         <div className="flex items-center gap-2 mb-1">
                                                             <span className="text-sm font-semibold text-foreground">
-                                                                {actor?.full_name || "Unknown User"}
+                                                                {actor?.fullName || "Unknown User"}
                                                             </span>
                                                             <span className="text-xs text-muted-foreground">
                                                                 {format(changeTime, "PP p")}

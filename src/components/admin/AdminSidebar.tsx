@@ -5,21 +5,17 @@ import { usePathname } from "next/navigation"
 import {
     LayoutDashboard,
     Building2,
-    Users,
     CreditCard,
     FileText,
     Settings,
     LogOut,
-    ArrowUpRight,
-    Activity,
-    ShieldCheck
+    Loader2
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 import React, { useState } from "react"
 import { useRouter } from "next/navigation"
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import { Loader2 } from "lucide-react"
+import { signOut } from "next-auth/react"
 
 const adminNavItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -37,10 +33,7 @@ export function AdminSidebar({ user, authUser }: { user: any; authUser: any }) {
     const handleLogout = async () => {
         try {
             setIsLoggingOut(true)
-            const supabase = getSupabaseClient()
-            await supabase.auth.signOut()
-            router.refresh()
-            router.push("/login")
+            await signOut({ callbackUrl: "/login" })
         } catch (error) {
             console.error("Logout failed:", error)
         } finally {

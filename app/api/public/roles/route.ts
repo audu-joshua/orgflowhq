@@ -1,28 +1,37 @@
-import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
+import { NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { JobRole } from "@/models/Business";
 
 export async function GET() {
     try {
-        const supabaseAdmin = getSupabaseAdmin()
+        await connectToDatabase();
 
-        const { data, error } = await supabaseAdmin
-            .from("roles")
-            .select(`
-        *,
-        role_images(*),
-        organizations(name, logo_url)
-      `)
-            .eq("status", "active")
-            .order("created_at", { ascending: false })
+        const roles = await JobRole.find({ status: "active" })
+            .populate("organizationId", "name logoUrl")
+            .sort({ createdAt: -1 });
 
-        if (error) {
-            console.error("[API Roles] Database error:", error)
-            return NextResponse.json({ error: "Failed to fetch roles" }, { status: 500 })
-        }
+        // Map to UI compat structure
+        const mappedRoles = roles.map((role: any) => {
+            const obj = role.toObject();
+            return {
+                ...obj,
+                id: obj._id.toString(),
+                organization_id: obj.organizationId?._id?.toString() || obj.organizationId?.toString(),
+                organizations: obj.organizationId ? {
+                    name: obj.organizationId.name,
+                    logo_url: obj.organizationId.logoUrl
+                } : null,
+                role_images: (obj.images || []).map((img: any) => ({
+                    id: img._id?.toString(),
+                    image_url: img.imageUrl,
+                    display_order: img.displayOrder
+                }))
+            };
+        });
 
-        return NextResponse.json(data)
+        return NextResponse.json(mappedRoles);
     } catch (error: any) {
-        console.error("[API Roles] Unexpected error:", error)
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
+        console.error("[API Roles] Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

@@ -4,8 +4,8 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Trash2, Edit3, Share2, MapPin, Briefcase, Users as UsersIcon, Link2, CheckCircle2, LayoutDashboard, Settings } from "lucide-react"
 import Link from "next/link"
-import { roleService } from "../services/roleService"
-import { applicationService } from "@/features/applications/services/applicationService"
+import { getRoleByIdAction, deleteRoleAction } from "../actions"
+import { getApplicationsByRoleAction } from "@/features/applications/actions"
 import { ApplicationCard } from "@/features/applications/components/ApplicationCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import type { Application } from "@/features/applications/types"
@@ -42,11 +42,11 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
     try {
       setLoading(true)
       const [roleData, applicantsData] = await Promise.all([
-        roleService.getRoleById(roleId),
-        applicationService.getApplicationsByRole(roleId)
+        getRoleByIdAction(roleId),
+        getApplicationsByRoleAction(roleId)
       ])
-      setRole(roleData)
-      setApplications(applicantsData)
+      setRole(roleData as any)
+      setApplications(applicantsData as any)
     } catch (err) {
       console.error("Error loading role details:", err)
       setError(err instanceof Error ? err.message : "Failed to load role details")
@@ -68,7 +68,7 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
   const handleDeleteRole = async () => {
     setIsDeleting(true)
     try {
-      await roleService.deleteRole(roleId)
+      await deleteRoleAction(roleId)
       toast.success("Role deleted successfully")
       router.push("/dashboard/roles")
     } catch (err) {

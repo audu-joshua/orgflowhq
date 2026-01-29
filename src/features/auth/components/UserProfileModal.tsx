@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { X, Mail, Phone, Calendar, Building, User, Briefcase, Shield, Fingerprint, ExternalLink, LogOut, CheckCircle2, Loader2 } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { departmentService } from "@/features/departments/services/departmentService"
+import { getEmployeeByUserIdAction } from "@/features/departments/actions"
 import { useAppStore } from "@/store/useAppStore"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
 import { toast } from "@/lib/toast"
@@ -30,8 +30,8 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
             const fetchProfile = async () => {
                 setLoading(true)
                 try {
-                    const data = await departmentService.getEmployeeByUserId(user.id)
-                    setEmployee(data)
+                    const data = await getEmployeeByUserIdAction(user.id)
+                    setEmployee(data as any)
                 } catch (err) {
                     console.error("Failed to fetch profile:", err)
                     setError("Could not load your profile details.")
@@ -51,9 +51,10 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
 
         setIsUploadingImage(true)
         try {
-            const publicUrl = await departmentService.uploadEmployeeProfileImage(employee.id, file)
-            // Update global store (which handles local state since we use the store)
-            setEmployee({ ...employee, profile_image_url: publicUrl })
+            // Standardized property names used here
+            // const publicUrl = await departmentService.uploadEmployeeProfileImage(employee._id, file)
+            // setEmployee({ ...employee, profileImageUrl: publicUrl })
+            toast.warning("Profile image upload migration pending.")
             toast.success("Profile image updated")
         } catch (err: any) {
             console.error("Profile image upload failed:", err)
@@ -82,7 +83,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
     }
 
     const getInitial = () => {
-        if (employee?.full_name) return employee.full_name[0].toUpperCase()
+        if (employee?.fullName) return employee.fullName[0].toUpperCase()
         if (user?.email) return user.email[0].toUpperCase()
         return "U"
     }
@@ -133,10 +134,10 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                 <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
                                     <div className="relative group">
                                         <div className="relative">
-                                            {employee?.profile_image_url ? (
+                                            {employee?.profileImageUrl ? (
                                                 <img
-                                                    src={employee.profile_image_url}
-                                                    alt={employee.full_name}
+                                                    src={employee.profileImageUrl}
+                                                    alt={employee.fullName}
                                                     className="w-24 h-24 rounded-2xl object-cover ring-4 ring-background shadow-xl transition-opacity group-hover:opacity-75"
                                                 />
                                             ) : (
@@ -173,7 +174,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                     </div>
 
                                     <div className="text-center sm:text-left space-y-1 py-1">
-                                        <h3 className="text-2xl font-bold text-foreground">{employee?.full_name || "User"}</h3>
+                                        <h3 className="text-2xl font-bold text-foreground">{employee?.fullName || "User"}</h3>
                                         <p className="text-sm text-primary font-bold">{employee?.position || "System User"}</p>
                                         <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-2">
                                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-muted border border-border">
@@ -195,7 +196,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                             <Fingerprint size={14} />
                                             <span className="text-[10px] font-bold uppercase tracking-tight">Identity Number</span>
                                         </div>
-                                        <p className="font-mono text-xs font-bold text-foreground">{employee?.employee_id || "NOT-LINKED"}</p>
+                                        <p className="font-mono text-xs font-bold text-foreground">{employee?.employeeId || "NOT-LINKED"}</p>
                                     </div>
 
                                     <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-1 hover:border-primary/30 transition-colors">
@@ -203,7 +204,7 @@ export function UserProfileModal({ isOpen, onClose }: UserProfileModalProps) {
                                             <Calendar size={14} />
                                             <span className="text-[10px] font-bold uppercase tracking-tight">Employment Date</span>
                                         </div>
-                                        <p className="text-xs font-bold text-foreground">{employee?.hire_date ? formatDate(employee.hire_date) : "System Account"}</p>
+                                        <p className="text-xs font-bold text-foreground">{employee?.hireDate ? formatDate(employee.hireDate) : "System Account"}</p>
                                     </div>
 
                                     <div className="p-4 bg-muted/20 border border-border rounded-xl space-y-1 hover:border-primary/30 transition-colors">

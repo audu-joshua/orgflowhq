@@ -1,160 +1,76 @@
-import { NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { googleCalendarService } from '@/lib/google/calendar'
-import { mailService } from '@/lib/mail/mailService'
+import { NextResponse } from 'next/server';
+import { connectToDatabase } from '@/lib/mongodb';
+import { Interview, Application } from '@/models/Recruitment';
+import { User, Organization } from '@/models/User';
+import { mailService } from '@/lib/mail/mailService';
+import mongoose from 'mongoose';
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
-    const authHeader = request.headers.get('authorization')
+    const authHeader = request.headers.get('authorization');
     if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return new NextResponse('Unauthorized', { status: 401 })
+        return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const supabaseAdmin = getSupabaseAdmin()
-    const now = new Date()
-    const bufferMinutes = 15
-    const checkTime = new Date(now.getTime() - bufferMinutes * 60000)
-
     try {
-        // 1. Fetch all "Interview Scheduled" interviews that should have ended
-        const { data: interviews, error } = await supabaseAdmin
-            .from('interviews')
-            .select(`
-                *,
-                applications!inner(
-                    id, 
-                    applicant_name, 
-                    applicant_email, 
-                    roles(title),
-                    organization_id
-                )
-            `)
-            .eq('status', 'scheduled')
-            .lte('end_time', checkTime.toISOString())
+        await connectToDatabase();
+        const now = new Date();
+        const bufferMinutes = 15;
+        const checkTime = new Date(now.getTime() - bufferMinutes * 60000);
 
-        if (error) throw error
+        // 1. Fetch scheduled interviews that should have ended
+        // Note: Adding 1 hour default duration if end_time not present (based on previous schema)
+        // In the new model, it's just 'scheduledAt' and 'duration'
+
+        const interviews = await Interview.find({
+            status: 'scheduled',
+            scheduledAt: { $lte: checkTime }
+        }).populate("applicationId").populate("roleId");
+
         if (!interviews || interviews.length === 0) {
-            return NextResponse.json({ message: 'No interviews to update' })
+            return NextResponse.json({ message: 'No interviews to update' });
         }
 
-        const results = []
+        const results = [];
 
         for (const interview of interviews) {
             try {
-                // 2. Fetch Google Calendar Event to check status
-                let isCancelled = false
-                let isRescheduled = false
-                let newStartTime = null
-                let newEndTime = null
+                // Update Interview & Application status
+                interview.status = 'completed';
+                await interview.save();
 
-                if (interview.google_event_id && interview.organizer_id) {
-                    // Fetch tokens
-                    const { data: integration } = await supabaseAdmin
-                        .from('user_integrations')
-                        .select('*')
-                        .eq('user_id', interview.organizer_id)
-                        .eq('provider', 'google')
-                        .single()
-
-                    if (integration) {
-                        try {
-                            const event = await googleCalendarService.getEvent(
-                                interview.google_event_id,
-                                {
-                                    access_token: integration.access_token,
-                                    refresh_token: integration.refresh_token,
-                                    expiry_date: integration.expires_at ? new Date(integration.expires_at).getTime() : 0
-                                }
-                            )
-
-                            if (event.status === 'cancelled') {
-                                isCancelled = true
-                            } else {
-                                // Check if the time has changed significantly (Rescheduled)
-                                const eventStart = event.start?.dateTime || event.start?.date
-                                if (eventStart && new Date(eventStart).getTime() !== new Date(interview.start_time).getTime()) {
-                                    isRescheduled = true
-                                    newStartTime = eventStart
-                                    newEndTime = event.end?.dateTime || event.end?.date
-                                }
-                            }
-                        } catch (e: any) {
-                            console.error(`Failed to fetch Google event ${interview.google_event_id}:`, e)
-                            // If event not found (404), assume cancelled
-                            if (e.code === 404) isCancelled = true
-                        }
-                    }
+                const application = await Application.findById(interview.applicationId);
+                if (application) {
+                    application.currentStage = 'Interview Completed';
+                    application.status = 'interviewed';
+                    await application.save();
                 }
 
-                // 3. Handle based on status
-                if (isCancelled) {
-                    await supabaseAdmin
-                        .from('interviews')
-                        .update({ status: 'cancelled', updated_at: now.toISOString() })
-                        .eq('id', interview.id)
+                // Notify Interviewer (Organizer)
+                const organizer = await User.findById(interview.organizerId);
+                const org = await Organization.findById(interview.organizationId);
 
-                    results.push({ id: interview.id, action: 'cancelled' })
+                if (organizer && application) {
+                    await mailService.sendFeedbackRequestEmail(
+                        organizer.email,
+                        organizer.fullName || 'Interviewer',
+                        application.applicantName,
+                        (interview.roleId as any).title || 'Job Position',
+                        org?.name || 'OrgFlow'
+                    );
                 }
-                else if (isRescheduled && newStartTime) {
-                    await supabaseAdmin
-                        .from('interviews')
-                        .update({
-                            start_time: newStartTime,
-                            end_time: newEndTime,
-                            updated_at: now.toISOString()
-                        })
-                        .eq('id', interview.id)
 
-                    results.push({ id: interview.id, action: 'rescheduled' })
-                }
-                else {
-                    // Normal Completion
-                    // 4. Update Interview & Application status
-                    const { error: updateError } = await supabaseAdmin
-                        .from('interviews')
-                        .update({ status: 'completed', updated_at: now.toISOString() })
-                        .eq('id', interview.id)
-
-                    if (!updateError) {
-                        await supabaseAdmin
-                            .from('applications')
-                            .update({
-                                current_stage: 'Interview Completed',
-                                status: 'interviewed',
-                                updated_at: now.toISOString()
-                            })
-                            .eq('id', interview.applications.id)
-
-                        // 5. Notify Interviewer/Recruiter (Organizer)
-                        const { data: organizer } = await supabaseAdmin
-                            .from('users')
-                            .select('email, full_name, organizations(name)')
-                            .eq('id', interview.organizer_id)
-                            .single()
-
-                        if (organizer) {
-                            await mailService.sendFeedbackRequestEmail(
-                                organizer.email,
-                                organizer.full_name || 'Interviewer',
-                                interview.applications.applicant_name,
-                                interview.applications.roles.title,
-                                (organizer.organizations as any)?.name || 'OrgFlow'
-                            )
-                        }
-
-                        results.push({ id: interview.id, action: 'completed' })
-                    }
-                }
+                results.push({ id: interview._id, action: 'completed' });
             } catch (innerError: any) {
-                console.error(`Error processing interview ${interview.id}:`, innerError)
-                results.push({ id: interview.id, error: innerError.message })
+                console.error(`Error processing interview ${interview._id}:`, innerError);
+                results.push({ id: interview._id, error: innerError.message });
             }
         }
 
-        return NextResponse.json({ processed: results.length, details: results })
+        return NextResponse.json({ processed: results.length, details: results });
     } catch (error: any) {
-        console.error('Cron job failed:', error)
-        return new NextResponse(error.message, { status: 500 })
+        console.error('Cron job failed:', error);
+        return new NextResponse(error.message, { status: 500 });
     }
 }

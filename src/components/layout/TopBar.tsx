@@ -47,9 +47,9 @@ export function TopBar() {
     <>
       <header className="sticky top-0 right-0 left-0 h-16 bg-card/80 backdrop-blur-md border-b border-border px-6 flex items-center justify-between z-40 w-full shrink-0">
         <div className="flex items-center gap-3">
-          {organization?.logo_url ? (
+          {organization?.logoUrl ? (
             <img
-              src={organization.logo_url}
+              src={organization.logoUrl}
               alt={organization.name}
               className="w-8 h-8 rounded-lg object-cover bg-white border border-border"
             />
@@ -74,24 +74,24 @@ export function TopBar() {
                 <p className="text-sm font-bold text-foreground">
                   {user?.role === 'owner'
                     ? user?.email?.split('@')[0]
-                    : (user?.full_name || user?.email?.split('@')[0])
+                    : (user?.fullName || user?.email?.split('@')[0])
                   }
                 </p>
                 <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">{user?.role || "Staff"}</p>
               </div>
 
               <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center border border-primary/20 overflow-hidden">
-                {user?.role !== 'owner' && user?.profile_image_url ? (
+                {user?.role !== 'owner' && user?.profileImageUrl ? (
                   <img
-                    src={user.profile_image_url}
-                    alt={user?.full_name || "Profile"}
+                    src={user.profileImageUrl}
+                    alt={user?.fullName || "Profile"}
                     className="w-full h-full object-cover"
                   />
-                ) : (user?.role !== 'owner' && user?.full_name) || user?.email ? (
+                ) : (user?.role !== 'owner' && user?.fullName) || user?.email ? (
                   <span className="text-primary font-bold text-sm">
                     {user?.role === 'owner'
                       ? user?.email?.[0]?.toUpperCase()
-                      : (user?.full_name?.[0] || user?.email?.[0] || "").toUpperCase()
+                      : (user?.fullName?.[0] || user?.email?.[0] || "").toUpperCase()
                     }
                   </span>
                 ) : (
@@ -114,7 +114,7 @@ export function TopBar() {
                     <p className="text-sm font-bold text-foreground truncate">
                       {user?.role === 'owner'
                         ? user?.email?.split('@')[0]
-                        : (user?.full_name || user?.email?.split('@')[0])
+                        : (user?.fullName || user?.email?.split('@')[0])
                       }
                     </p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>

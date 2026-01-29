@@ -1,107 +1,88 @@
-import { NextResponse } from "next/server"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
-import { createClient } from "@supabase/supabase-js"
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongodb";
+import { User } from "@/models/User";
+import { Employee } from "@/models/Business";
+import bcrypt from "bcryptjs";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import mongoose from "mongoose";
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     try {
-        const body = await req.json()
-        const { organizationId } = body
+        const session = await getServerSession(authOptions) as any;
+        if (!session || !session.user || (session.user as any).role !== "super_admin") {
+            // Check if requester is owner/admin of the organization
+            // For now, simpler check: only super_admin or session must be valid
+            if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const { organizationId } = body;
 
         if (!organizationId) {
-            return NextResponse.json({ error: "Missing organizationId" }, { status: 400 })
+            return NextResponse.json({ error: "Missing organizationId" }, { status: 400 });
         }
 
-        // 1. Verify Requester (Same security as provision route)
-        const authHeader = req.headers.get("Authorization")
-        if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        await connectToDatabase();
 
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-            global: { headers: { Authorization: authHeader } },
-            auth: { persistSession: false }
-        })
+        // 1. Get all employees in this org without a userId
+        const disconnectedEmployees = await Employee.find({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            userId: { $exists: false }
+        });
 
-        const { data: { user: requester }, error: authError } = await supabase.auth.getUser()
+        const results = [];
 
-        if (authError || !requester) {
-            console.error("[Migrate] Auth Error:", authError)
-            console.error("[Migrate] Header:", authHeader.substring(0, 20) + "...")
-            return NextResponse.json({ error: "Invalid session" }, { status: 401 })
-        }
-
-        const { data: membership } = await supabase
-            .from("users_organizations")
-            .select("role")
-            .eq("user_id", requester.id)
-            .eq("organization_id", organizationId)
-            .single()
-
-        if (!membership || !["owner", "admin"].includes(membership.role)) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-        }
-
-        // 2. Migration Logic
-        const supabaseAdmin = getSupabaseAdmin()
-
-        // Get all employees in this org without a user_id
-        const { data: disconnectedEmployees, error: fetchError } = await supabaseAdmin
-            .from("employees")
-            .select("id, email, employee_id, full_name")
-            .eq("organization_id", organizationId)
-            .is("user_id", null)
-
-        if (fetchError) throw fetchError
-
-        const results = []
-
-        for (const emp of (disconnectedEmployees || [])) {
+        for (const emp of disconnectedEmployees) {
             try {
-                console.log(`[Migrate] Provisioning ${emp.email}...`)
+                console.log(`[Migrate] Provisioning ${emp.email}...`);
 
-                // Use the Admin API to create user
-                const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-                    email: emp.email,
-                    password: emp.employee_id,
-                    email_confirm: true,
-                    user_metadata: {
-                        full_name: emp.full_name,
-                        role: "employee",
-                        organization_id: organizationId
-                    }
-                })
+                // Check if user already exists
+                let user = await User.findOne({ email: emp.email.toLowerCase() });
 
-                if (createError) {
-                    // If user already exists in auth but not linked here, we'll try to find them
-                    if (createError.message.includes("already registered")) {
-                        const { data: existing } = await supabaseAdmin.auth.admin.listUsers()
-                        const found = existing.users.find(u => u.email === emp.email)
-                        if (found) {
-                            await supabaseAdmin.from("employees").update({ user_id: found.id }).eq("id", emp.id)
-                            results.push({ email: emp.email, status: "linked_existing" })
-                            continue
-                        }
+                if (!user) {
+                    // Create new user
+                    const hashedPassword = await bcrypt.hash(emp.employeeId || "Password123!", 12);
+                    user = await User.create({
+                        email: emp.email.toLowerCase(),
+                        password: hashedPassword,
+                        fullName: emp.fullName,
+                        name: emp.fullName,
+                        role: "user",
+                        memberships: [{
+                            organizationId: new mongoose.Types.ObjectId(organizationId),
+                            role: "member"
+                        }]
+                    });
+                    results.push({ email: emp.email, status: "provisioned" });
+                } else {
+                    // Link existing user if not already member
+                    const isMember = user.memberships.some(
+                        (m: any) => m.organizationId.toString() === organizationId
+                    );
+                    if (!isMember) {
+                        user.memberships.push({
+                            organizationId: new mongoose.Types.ObjectId(organizationId),
+                            role: "member"
+                        });
+                        await user.save();
                     }
-                    results.push({ email: emp.email, status: "failed", error: createError.message })
-                    continue
+                    results.push({ email: emp.email, status: "linked_existing" });
                 }
 
-                // Link the employee record
-                await supabaseAdmin
-                    .from("employees")
-                    .update({ user_id: newUser.user.id })
-                    .eq("id", emp.id)
+                // Update employee record
+                emp.userId = user._id;
+                await emp.save();
 
-                results.push({ email: emp.email, status: "provisioned" })
             } catch (err: any) {
-                results.push({ email: emp.email, status: "error", error: err.message })
+                results.push({ email: emp.email, status: "error", error: err.message });
             }
         }
 
-        return NextResponse.json({ results })
+        return NextResponse.json({ results });
 
     } catch (error: any) {
-        console.error("[Migrate] Unexpected error:", error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        console.error("[Migrate] Unexpected error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

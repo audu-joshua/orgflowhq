@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
-import { departmentService } from "../services/departmentService"
+import { createDepartmentAction } from "../actions"
 import { Modal } from "@/components/ui/modal"
 import type { Department } from "../types"
 
@@ -28,8 +28,9 @@ export function CreateDepartmentModal({ isOpen, onClose, onSuccess }: CreateDepa
 
     try {
       if (!organization) throw new Error("Organization not found")
-      const newDept = await departmentService.createDepartment(organization.id, { name, description })
-      onSuccess?.(newDept)
+      const result = await createDepartmentAction(organization._id, { name, description })
+      if (!result.success) throw new Error(result.error)
+      onSuccess?.(result.department as any)
       onClose()
       setName("")
       setDescription("")

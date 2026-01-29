@@ -1,65 +1,62 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { JobRole } from "@/models/Business";
+import { Application } from "@/models/Recruitment";
+import mongoose from "mongoose";
 
 export const dashboardService = {
   async getRoles(organizationId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
 
-    const { data, error } = await supabase
-      .from("roles")
-      .select("*, applications(count)")
-      .eq("organization_id", organizationId)
-      .order("created_at", { ascending: false })
+    const roles = await JobRole.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    }).sort({ createdAt: -1 });
 
-    if (error) throw error
+    const rolesWithCount = await Promise.all(roles.map(async (role) => {
+      const count = await Application.countDocuments({ roleId: role._id });
+      const obj = role.toObject();
+      return {
+        ...obj,
+        id: obj._id.toString(),
+        organization_id: obj.organizationId.toString(),
+        application_count: count
+      };
+    }));
 
-    // Map the returned count to application_count property
-    return (data || []).map((role: any) => ({
-      ...role,
-      application_count: role.applications?.[0]?.count || 0
-    }))
+    return rolesWithCount;
   },
 
   async getApplicationStats(organizationId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
 
-    const { data, error } = await supabase
-      .from("applications")
-      .select("status")
-      .eq("organization_id", organizationId)
-
-    if (error) throw error
+    const applications = await Application.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    });
 
     const stats = {
-      total: data?.length || 0,
-      new: data?.filter((a: any) => a.status === "new").length || 0,
-      shortlisted: data?.filter((a: any) => a.status === "shortlisted").length || 0,
-      interviewed: data?.filter((a: any) => a.status === "interviewed").length || 0,
-      hired: data?.filter((a: any) => a.status === "hired").length || 0,
-    }
+      total: applications.length,
+      new: applications.filter((a: any) => a.status === "new").length,
+      shortlisted: applications.filter((a: any) => a.status === "shortlisted").length,
+      interviewed: applications.filter((a: any) => a.status === "interviewed").length,
+      hired: applications.filter((a: any) => a.status === "hired").length,
+    };
 
-    return stats
+    return stats;
   },
 
   async getApplicationsOverTime(organizationId: string) {
-    const supabase = getSupabaseClient()
+    await connectToDatabase();
 
-    // Get applications from the last 6 months
-    const sixMonthsAgo = new Date()
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5)
-    sixMonthsAgo.setDate(1) // Start from beginning of month ensures clean comparison
-    sixMonthsAgo.setHours(0, 0, 0, 0)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
 
-    // Fetch critical fields: date and status
-    const { data, error } = await supabase
-      .from("applications")
-      .select("created_at, status")
-      .eq("organization_id", organizationId)
-      .gte("created_at", sixMonthsAgo.toISOString())
-      .order("created_at", { ascending: true })
+    const applications = await Application.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId),
+      createdAt: { $gte: sixMonthsAgo }
+    }).sort({ createdAt: 1 });
 
-    if (error) throw error
-
-    // Generate last 6 months keys
     const last6Months = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -67,16 +64,13 @@ export const dashboardService = {
       last6Months.push(d.toLocaleString('default', { month: 'short' }));
     }
 
-    // Initialize accumulators
     const groupedData = last6Months.reduce((acc: any, month) => {
       acc[month] = { applications: 0, hired: 0 };
       return acc;
     }, {});
 
-    // Populate data
-    (data || []).forEach((app: any) => {
-      const month = new Date(app.created_at).toLocaleString('default', { month: 'short' });
-      // Only count if it falls within our generated month buckets (safety check)
+    applications.forEach((app: any) => {
+      const month = new Date(app.createdAt).toLocaleString('default', { month: 'short' });
       if (groupedData[month]) {
         groupedData[month].applications += 1;
         if (app.status === 'hired') {

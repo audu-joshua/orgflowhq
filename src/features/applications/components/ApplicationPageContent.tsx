@@ -3,10 +3,10 @@
 import { useState, useRef } from "react"
 import { ChevronLeft, ChevronRight, Download, X } from "lucide-react"
 import { ApplicationForm } from "./ApplicationForm"
-import type { RoleWithImages } from "@/features/roles/services/roleService"
+import type { IRoleWithImages } from "@/models/types"
 
 interface ApplicationPageContentProps {
-  role: RoleWithImages
+  role: IRoleWithImages
   organizationName: string
   organizationLogo?: string
   organizationId: string
@@ -149,7 +149,7 @@ export function ApplicationPageContent({
             </div>
           )}
 
-          <ApplicationForm roleId={role.id} organizationId={organizationId} />
+          <ApplicationForm roleId={role._id} organizationId={organizationId} />
         </div>
       </div>
 

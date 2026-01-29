@@ -1,182 +1,124 @@
-import "server-only"
-import { Employee } from "../types"
-import { getSupabaseAdmin } from "@/lib/supabaseAdmin"
+import { connectToDatabase } from "@/lib/mongodb";
+import { Employee, Department } from "@/models/Business";
+import { Organization, User } from "@/models/User";
+import { departmentService } from "./departmentService";
+import { mailService } from "@/lib/mail/mailService";
+import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 export const onboardingService = {
     async onboardHiredCandidate(data: {
-        applicantName: string,
-        applicantEmail: string,
-        roleTitle: string,
-        organizationId: string,
-        departmentName?: string,
-        applicantPassport?: string | null
+        applicantName: string;
+        applicantEmail: string;
+        roleTitle: string;
+        organizationId: string;
+        departmentName?: string;
+        applicantPassport?: string | null;
     }) {
-        const { applicantName, applicantEmail, roleTitle, organizationId, departmentName, applicantPassport } = data
-        const supabaseAdmin = getSupabaseAdmin()
+        const { applicantName, applicantEmail, roleTitle, organizationId, departmentName, applicantPassport } = data;
+        await connectToDatabase();
 
         // 0. Check if already an employee in this organization
-        const { data: existingEmp } = await supabaseAdmin
-            .from("employees")
-            .select("id")
-            .eq("organization_id", organizationId)
-            .eq("email", applicantEmail)
-            .maybeSingle()
+        const existingEmp = await Employee.findOne({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            email: applicantEmail
+        });
 
         if (existingEmp) {
-            throw new Error("Employee already exists in this organization")
+            throw new Error("Employee already exists in this organization");
         }
 
         // 1. Resolve or Create Target department
-        const targetDeptName = departmentName || "Management"
-        let { data: dept } = await supabaseAdmin
-            .from("departments")
-            .select("id")
-            .eq("organization_id", organizationId)
-            .eq("name", targetDeptName)
-            .maybeSingle()
+        const targetDeptName = departmentName || "Management";
+        let dept = await Department.findOne({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            name: targetDeptName
+        });
 
         if (!dept) {
-            const { data: newDept, error: createDeptError } = await supabaseAdmin
-                .from("departments")
-                .insert([{
-                    organization_id: organizationId,
-                    name: targetDeptName,
-                    description: targetDeptName === "Management"
-                        ? "Default department for system users"
-                        : `Department for ${targetDeptName} roles`
-                }])
-                .select()
-                .single()
-
-            if (createDeptError) throw createDeptError
-            dept = newDept
+            dept = await Department.create({
+                organizationId: new mongoose.Types.ObjectId(organizationId),
+                name: targetDeptName,
+                description: targetDeptName === "Management"
+                    ? "Default department for system users"
+                    : `Department for ${targetDeptName} roles`
+            });
         }
 
-        // 2. Fetch Org Details for ID Generation & Links
-        const { data: org } = await supabaseAdmin
-            .from("organizations")
-            .select("name, slug")
-            .eq("id", organizationId)
-            .single()
+        // 2. Fetch Org Details for ID Generation
+        const org = await Organization.findById(organizationId);
+        if (!org) throw new Error("Organization not found");
 
-        const orgName = org?.name || "OrgFlow"
-        const orgSlug = org?.slug
+        const orgName = org.name;
+        const orgSlug = org.slug;
 
         // 3. Generate Employee ID
-        // We import the generator from departmentService to keep logic centralized but careful about browser-safe utils
-        // Wait, generateNextEmployeeId uses getSupabaseClient. On server, getSupabaseClient() works too.
-        const { departmentService } = await import("./departmentService")
-        const employeeId = await departmentService.generateNextEmployeeId(organizationId, orgName, supabaseAdmin)
+        const employeeId = await departmentService.generateNextEmployeeId(organizationId, orgName, targetDeptName);
 
-        // 4. Provision Supabase Auth Account
-        const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-            email: applicantEmail,
-            password: employeeId,
-            email_confirm: true,
-            user_metadata: {
-                full_name: applicantName,
-                role: "employee",
-                organization_id: organizationId,
-                employee_id: employeeId
+        // 4. Provision User Account
+        let user = await User.findOne({ email: applicantEmail });
+        let userId: string;
+        let isNewUser = false;
+
+        const hashedPassword = await bcrypt.hash(employeeId, 12);
+
+        if (user) {
+            console.log(`[onboardHiredCandidate] User exists (${user._id}), updating for organization`);
+            // Ensure organization membership is added
+            const hasMembership = user.memberships.some(
+                (m: any) => m.organizationId?.toString() === organizationId
+            );
+            if (!hasMembership) {
+                user.memberships.push({ organizationId, role: "member" });
             }
-        })
-
-        let userId = userData?.user?.id
-        if (createError) {
-            // Check specifically for email_exists error code or message
-            const isEmailExists = (createError as any).code === 'email_exists' ||
-                createError.status === 422 ||
-                createError.message.toLowerCase().includes("already registered") ||
-                createError.message.toLowerCase().includes("already exists")
-
-            if (isEmailExists) {
-                // Try to find the existing user to link them
-                const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers()
-                if (listError) throw listError
-
-                const existingUser = users.users.find(u => u.email?.toLowerCase() === applicantEmail.toLowerCase())
-                if (existingUser) {
-                    userId = existingUser.id
-                } else {
-                    throw createError
-                }
-            } else {
-                throw createError
-            }
-        }
-
-        if (!userId) throw new Error("Could not resolve User ID")
-
-        // 4.5 Ensure public user record exists (Satisfy FK for employees)
-        // This bridges the race condition with the handle_new_user trigger
-        const { error: profileError } = await supabaseAdmin
-            .from("users")
-            .upsert({
-                id: userId,
+            await user.save();
+            userId = user._id.toString();
+        } else {
+            console.log(`[onboardHiredCandidate] Creating new user for candidate: ${applicantEmail}`);
+            const newUser = await User.create({
                 email: applicantEmail,
-                organization_id: organizationId,
-                updated_at: new Date().toISOString()
-            }, { onConflict: 'id' })
-
-        if (profileError) {
-            console.error("[onboardHiredCandidate] Profile upsert failed:", profileError)
-        }
-
-        // 4.6 Link user to organization (Grant Access)
-        const { error: linkError } = await supabaseAdmin
-            .from("users_organizations")
-            .insert([{
-                user_id: userId,
-                organization_id: organizationId,
-                role: "employee"
-            }])
-
-        if (linkError) {
-            if (linkError.message.includes("already exists")) {
-                console.log("[onboardHiredCandidate] User already linked to organization")
-            } else {
-                console.error("[onboardHiredCandidate] Organization linking failed:", linkError)
-            }
+                password: hashedPassword,
+                fullName: applicantName,
+                name: applicantName,
+                role: "user",
+                memberships: [{ organizationId, role: "member" }]
+            });
+            userId = newUser._id.toString();
+            isNewUser = true;
         }
 
         // 5. Create Employee Record
-        const { data: employee, error: empError } = await supabaseAdmin
-            .from("employees")
-            .insert([{
-                organization_id: organizationId,
-                user_id: userId,
-                department_id: dept!.id,
-                full_name: applicantName,
-                email: applicantEmail,
-                employee_id: employeeId,
-                position: roleTitle,
-                profile_image_url: applicantPassport || null,
-                status: "invited",
-                hire_date: new Date().toISOString().split('T')[0]
-            }])
-            .select()
-            .single()
+        const employee = await Employee.create({
+            organizationId: new mongoose.Types.ObjectId(organizationId),
+            userId: new mongoose.Types.ObjectId(userId),
+            departmentId: dept._id,
+            fullName: applicantName,
+            email: applicantEmail,
+            employeeId: employeeId,
+            position: roleTitle,
+            profileImageUrl: applicantPassport || null,
+            status: "invited",
+            hireDate: new Date()
+        });
 
-        if (empError) throw empError
-
-        // 6. Send Invitation Email (Clock Portal)
-        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
-        const clockLink = orgSlug ? `${siteUrl}/org/${orgSlug}/clock` : `${siteUrl}/login`
+        // 6. Send Invitation Email
+        const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+        const clockLink = `${siteUrl}/org/${orgSlug}/clock`;
 
         try {
-            const { mailService } = await import("@/lib/mail/mailService")
             await mailService.sendEmployeeInviteEmail(
                 applicantEmail,
                 orgName,
                 applicantName,
                 clockLink,
-                true,
-                employeeId
-            )
+                isNewUser,
+                employeeId,
+                org.welcomeDocUrl
+            );
         } catch (mailErr) {
-            console.error("[onboardHiredCandidate] Invitation email failed:", mailErr)
+            console.error("[onboardHiredCandidate] Invitation email failed:", mailErr);
         }
 
-        return employee as Employee
+        return employee.toObject();
     }
-}
+};

@@ -2,13 +2,14 @@
 
 import { useState } from "react"
 import { useAppStore } from "@/store/useAppStore"
-import { getSupabaseClient } from "@/lib/supabaseClient"
 import { Button } from "@/components/ui/button"
 import { toast } from "@/lib/toast"
 import { Loader2, ShieldCheck, Users } from "lucide-react"
+import { useSession } from "next-auth/react"
 
 export function MigrationHelper() {
     const { organization } = useAppStore()
+    const { data: session } = useSession()
     const [migrating, setMigrating] = useState(false)
     const [results, setResults] = useState<any[] | null>(null)
 
@@ -18,9 +19,6 @@ export function MigrationHelper() {
         setResults(null)
 
         try {
-            const supabase = getSupabaseClient()
-            const { data: { session } } = await supabase.auth.getSession()
-
             if (!session) {
                 toast.error("You must be logged in")
                 return
@@ -30,7 +28,6 @@ export function MigrationHelper() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${session.access_token}`
                 },
                 body: JSON.stringify({ organizationId: organization.id })
             })

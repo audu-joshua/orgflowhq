@@ -4,8 +4,8 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Upload, Phone, User, Mail, FileText, Camera } from "lucide-react"
-import { applicationService } from "../services/applicationService"
 import { submitApplicationAction } from "../actions"
+import { uploadFileAction } from "../uploadActions"
 import { compressImage } from "@/lib/imageUtils"
 import type { Application } from "../types"
 
@@ -110,12 +110,35 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
     setLoading(true)
 
     try {
-      // Parallel uploads to save time
-      const [resumeUrl, coverLetterUrl, passportUrl] = await Promise.all([
-        applicationService.uploadResume("resumes", resume),
-        applicationService.uploadResume("cover-letters", coverLetter),
-        applicationService.uploadResume("passports", passportPhoto)
-      ])
+      // Parallel uploads using Server Actions
+      const uploadResults = await Promise.all([
+        (async () => {
+          const fd = new FormData();
+          fd.append("file", resume);
+          fd.append("folder", "resumes");
+          const res: any = await uploadFileAction(fd);
+          if (!res.success) throw new Error("Resume upload failed");
+          return res.url;
+        })(),
+        (async () => {
+          const fd = new FormData();
+          fd.append("file", coverLetter);
+          fd.append("folder", "cover-letters");
+          const res: any = await uploadFileAction(fd);
+          if (!res.success) throw new Error("Cover letter upload failed");
+          return res.url;
+        })(),
+        (async () => {
+          const fd = new FormData();
+          fd.append("file", passportPhoto!);
+          fd.append("folder", "passports");
+          const res: any = await uploadFileAction(fd);
+          if (!res.success) throw new Error("Photo upload failed");
+          return res.url;
+        })()
+      ]);
+
+      const [resumeUrl, coverLetterUrl, passportUrl] = uploadResults;
 
       const applicationData = {
         role_id: roleId,

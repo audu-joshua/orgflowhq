@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Loader2, X, Sparkles } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
-import { departmentService } from "../services/departmentService"
+import { getDepartmentsByOrganizationAction, updateEmployeeAction } from "../actions"
 import { toast } from "@/lib/toast"
 import { CustomSelect } from "@/components/ui/CustomSelect"
 import type { Employee, Department } from "../types"
@@ -18,35 +18,34 @@ interface EditEmployeeModalProps {
 export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: EditEmployeeModalProps) {
     const { organization } = useAppStore()
     const [formData, setFormData] = useState({
-        full_name: "",
+        fullName: "",
         email: "",
-        employee_id: "",
+        employeeId: "",
         position: "",
         phone: "",
-        department_id: "",
-        hire_date: "",
+        departmentId: "",
+        hireDate: "",
         status: "active",
     })
     const [departments, setDepartments] = useState<Department[]>([])
     const [profileImage, setProfileImage] = useState<File | null>(null)
     const [imagePreview, setImagePreview] = useState<string>("")
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
 
     // Initialize data
     useEffect(() => {
         if (employee && isOpen) {
             setFormData({
-                full_name: employee.full_name || "",
+                fullName: employee.fullName || "",
                 email: employee.email || "",
-                employee_id: employee.employee_id || "",
+                employeeId: employee.employeeId || employee.employee_id || "",
                 position: employee.position || "",
                 phone: employee.phone || "",
-                department_id: employee.department_id,
-                hire_date: employee.hire_date || "",
+                departmentId: employee.departmentId || employee.department_id || "",
+                hireDate: employee.hireDate || "",
                 status: employee.status || "active",
             })
-            setImagePreview(employee.profile_image_url || "")
+            setImagePreview(employee.profileImageUrl || "")
         }
     }, [employee, isOpen])
 
@@ -55,8 +54,8 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
         if (isOpen && organization) {
             const fetchDepts = async () => {
                 try {
-                    const depts = await departmentService.getDepartmentsByOrganization(organization.id)
-                    setDepartments(depts)
+                    const depts = await getDepartmentsByOrganizationAction(organization._id)
+                    setDepartments(depts as any)
                 } catch (err) {
                     console.error("Failed to fetch departments", err)
                 }
@@ -80,31 +79,44 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        setError("")
         setLoading(true)
 
         try {
             if (!organization) throw new Error("Organization not found")
 
-            await departmentService.updateEmployee(employee.id, {
-                department_id: formData.department_id,
-                full_name: formData.full_name,
+            const { uploadFileAction } = await import("@/features/applications/uploadActions")
+            let finalImageUrl = imagePreview
+
+            if (profileImage) {
+                const imgData = new FormData()
+                imgData.append("file", profileImage)
+                imgData.append("folder", "employee_profiles")
+                const uploadRes: any = await uploadFileAction(imgData)
+                if (uploadRes.success) {
+                    finalImageUrl = uploadRes.url
+                } else {
+                    toast.error("Failed to upload new profile image")
+                }
+            }
+
+            const result = await updateEmployeeAction(employee._id, {
+                departmentId: formData.departmentId,
+                fullName: formData.fullName,
                 email: formData.email,
                 position: formData.position || null,
                 phone: formData.phone || null,
-                hire_date: formData.hire_date || null,
+                hireDate: formData.hireDate || null,
                 status: formData.status as any,
-                profile_image_url: imagePreview || null, // In real app, we'd upload file to storage here first
+                profileImageUrl: finalImageUrl || null,
             })
 
-            // TODO: Handle image upload logic effectively if we had storage bucket ready
-            // For now we assume image preview string if base64 or url is enough or handles externally
+            if (!result.success) throw new Error(result.error)
 
             toast.success("Employee updated successfully")
             onSuccess()
             onClose()
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to update employee")
+            toast.error(err instanceof Error ? err.message : "Failed to update employee")
         } finally {
             setLoading(false)
         }
@@ -133,7 +145,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
 
                         <div className="p-3 bg-muted/30 rounded-xl border border-border">
                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight mb-1">Employee ID</p>
-                            <p className="font-mono font-bold text-foreground">{formData.employee_id}</p>
+                            <p className="font-mono font-bold text-foreground">{formData.employeeId}</p>
                         </div>
 
                         <div className="space-y-4">
@@ -201,23 +213,23 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                                 </label>
                                 <CustomSelect
                                     id="department"
-                                    value={formData.department_id}
-                                    onChange={(value) => setFormData({ ...formData, department_id: value })}
-                                    options={departments.map(d => ({ value: d.id, label: d.name }))}
+                                    value={formData.departmentId}
+                                    onChange={(value) => setFormData({ ...formData, departmentId: value })}
+                                    options={departments.map(d => ({ value: d._id || d.id, label: d.name }))}
                                     placeholder="Select Department"
                                     required
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="full_name" className="bloct text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                                <label htmlFor="fullName" className="bloct text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                                     Full Name <span className="text-destructive">*</span>
                                 </label>
                                 <input
-                                    id="full_name"
+                                    id="fullName"
                                     type="text"
-                                    value={formData.full_name}
-                                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                                    value={formData.fullName}
+                                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                     required
                                     className="w-full px-4 py-3 border border-border rounded-xl bg-background text-foreground text-sm focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-none"
                                 />
@@ -264,14 +276,14 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                                     />
                                 </div>
                                 <div>
-                                    <label htmlFor="hire_date" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                                    <label htmlFor="hireDate" className="block text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
                                         Hire Date
                                     </label>
                                     <input
-                                        id="hire_date"
+                                        id="hireDate"
                                         type="date"
-                                        value={formData.hire_date}
-                                        onChange={(e) => setFormData({ ...formData, hire_date: e.target.value })}
+                                        value={formData.hireDate}
+                                        onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })}
                                         className="w-full px-4 py-2.5 border border-border rounded-xl bg-background text-foreground text-sm focus:ring-2 focus:ring-primary outline-none"
                                     />
                                 </div>
@@ -287,7 +299,7 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                                     ) : (
                                         <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                                             <span className="text-primary font-bold">
-                                                {(formData.full_name || "E")[0].toUpperCase()}
+                                                {(formData.fullName || "E")[0].toUpperCase()}
                                             </span>
                                         </div>
                                     )}
@@ -305,12 +317,6 @@ export function EditEmployeeModal({ isOpen, onClose, employee, onSuccess }: Edit
                 </div>
 
                 <div className="p-6 border-t border-border bg-muted/10">
-                    {error && (
-                        <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-lg text-[11px] font-bold mb-4 animate-in fade-in slide-in-from-top-1">
-                            {error}
-                        </div>
-                    )}
-
                     <div className="flex gap-3">
                         <button
                             type="button"

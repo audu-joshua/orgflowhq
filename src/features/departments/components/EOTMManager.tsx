@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Trophy, Calendar, Zap, AlertTriangle, Loader2, Sparkles, Eye } from "lucide-react"
-import { eotmService } from "../services/eotmService"
+import { getActiveCompetitionAction, devForceStartVotingAction, devForceRevealAction } from "../eotmActions"
 import { useAppStore } from "@/store/useAppStore"
 import type { EOTMCompetition } from "../types/eotm"
 import { toast } from "@/lib/toast"
@@ -16,8 +16,8 @@ export function EOTMManager() {
     const loadStatus = async () => {
         if (!organization) return
         try {
-            const data = await eotmService.getActiveCompetition(organization.id)
-            setCompetition(data)
+            const data = await getActiveCompetitionAction(organization.id)
+            setCompetition(data as any)
         } catch (error) {
             console.error("Failed to load EOTM status:", error)
         } finally {
@@ -33,8 +33,9 @@ export function EOTMManager() {
         if (!organization) return
         setActionLoading(true)
         try {
-            const data = await eotmService.devForceStartVoting(organization.id)
-            setCompetition(data)
+            const res = await devForceStartVotingAction(organization.id)
+            if (!res.success) throw new Error(res.error)
+            setCompetition(res.competition as any)
             toast.success("EOTM Voting Window Forced Open!")
         } catch (error) {
             toast.error("Failed to force start voting")
@@ -47,7 +48,8 @@ export function EOTMManager() {
         if (!competition) return
         setActionLoading(true)
         try {
-            await eotmService.devForceReveal(competition.id)
+            const res = await devForceRevealAction(competition.id)
+            if (!res.success) throw new Error(res.error)
             await loadStatus()
             toast.success("EOTM Reveal Phase Forced!")
         } catch (error) {

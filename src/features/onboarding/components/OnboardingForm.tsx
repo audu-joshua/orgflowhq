@@ -1,32 +1,28 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { useAuth } from "@/features/auth/hooks/useAuth"
-import { Loader2 } from "lucide-react"
-import { useAppStore } from "@/store/useAppStore"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { Loader2 } from "lucide-react";
+import { useAppStore } from "@/store/useAppStore";
+import { useSession } from "next-auth/react";
 
 export function OnboardingForm() {
-    const router = useRouter()
-    const { refreshProfile, user: authUser } = useAuth()
-    const [organizationName, setOrganizationName] = useState("")
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState("")
+    const router = useRouter();
+    const { data: session } = useSession();
+    const { refreshProfile, user: authUser } = useAuth();
+    const [organizationName, setOrganizationName] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setError("")
-        setLoading(true)
+        e.preventDefault();
+        setError("");
+        setLoading(true);
 
         try {
-            // Get session
-            const { getSupabaseClient } = await import("@/lib/supabaseClient")
-            const supabase = getSupabaseClient()
-            const { data: { session } } = await supabase.auth.getSession()
-
-            if (!session) {
-                // Should not happen if protected properly
-                throw new Error("No active session found")
+            if (!session?.user) {
+                throw new Error("No active session found");
             }
 
             // Provision Organization
@@ -34,50 +30,49 @@ export function OnboardingForm() {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${session.access_token}`
                 },
                 body: JSON.stringify({
                     organizationName,
-                    fullName: authUser?.full_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name
+                    fullName: authUser?.full_name || (session.user as any).name
                 })
-            })
+            });
 
             if (!response.ok) {
-                const errorData = await response.json()
-                throw new Error(errorData.error || "Failed to create organization")
+                const errorData = await response.json();
+                throw new Error(errorData.error || "Failed to create organization");
             }
 
-            const provisionData = await response.json()
+            const provisionData = await response.json();
 
             // Update Store
-            const store = useAppStore.getState()
+            const store = useAppStore.getState();
             store.setOrganization({
                 id: provisionData.organizationId,
                 slug: provisionData.slug,
                 name: organizationName
-            })
+            });
 
             if (store.user) {
                 store.setUser({
                     ...store.user,
                     organization_id: provisionData.organizationId,
                     role: "owner",
-                })
+                });
             }
 
             // Force profile sync
-            await refreshProfile(session.user.id, provisionData.organizationId)
+            await refreshProfile((session.user as any).id, provisionData.organizationId);
 
             // Redirect to dashboard
-            router.push("/dashboard")
+            router.push("/dashboard");
 
         } catch (err) {
-            console.error(err)
-            setError(err instanceof Error ? err.message : "Something went wrong")
+            console.error(err);
+            setError(err instanceof Error ? err.message : "Something went wrong");
         } finally {
-            setLoading(false)
+            setLoading(false);
         }
-    }
+    };
 
     return (
         <div className="space-y-6">
@@ -117,5 +112,5 @@ export function OnboardingForm() {
                 </button>
             </form>
         </div>
-    )
+    );
 }

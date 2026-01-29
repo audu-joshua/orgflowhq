@@ -82,29 +82,29 @@ export default async function OrganizationsPage({
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                             {organizations?.map((org: any) => (
-                                <tr key={org.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <tr key={org._id} className="hover:bg-slate-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            {org.logo_url ? (
-                                                <img src={org.logo_url} alt={org.title} className="h-9 w-9 rounded-lg object-cover border border-slate-100" />
+                                            {org.logoUrl ? (
+                                                <img src={org.logoUrl} alt={org.name} className="h-9 w-9 rounded-lg object-cover border border-slate-100" />
                                             ) : (
                                                 <div className="h-9 w-9 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-semibold text-xs">
-                                                    {org.title?.substring(0, 2).toUpperCase() || "OR"}
+                                                    {org.name?.substring(0, 2).toUpperCase() || "OR"}
                                                 </div>
                                             )}
-                                            <p className="font-medium text-slate-900">{org.title}</p>
+                                            <p className="font-medium text-slate-900">{org.name}</p>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-slate-500">{org.slug}</td>
                                     <td className="px-6 py-4 text-slate-600">
-                                        {(org.users_organizations?.[0]?.count || 0) + (org.employees?.[0]?.count || 0)}
+                                        0
                                     </td>
                                     <td className="px-6 py-4 text-slate-500">
-                                        {new Date(org.created_at).toLocaleDateString(undefined, {
+                                        {org.createdAt ? new Date(org.createdAt).toLocaleDateString(undefined, {
                                             year: 'numeric',
                                             month: 'short',
                                             day: 'numeric'
-                                        })}
+                                        }) : 'N/A'}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2">

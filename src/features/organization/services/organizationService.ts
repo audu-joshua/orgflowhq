@@ -1,120 +1,89 @@
-import { getSupabaseClient } from "@/lib/supabaseClient"
-import { slugify } from "@/lib/utils"
-import type { Organization } from "../types"
+// server-only: Do not import this file on the client. Use server actions instead.
+import { connectToDatabase } from "@/lib/mongodb";
+import { Organization as OrganizationModel } from "@/models/User";
+import { User } from "@/models/User";
+import { slugify } from "@/lib/utils";
 
 export const organizationService = {
     async getOrganizationBySlug(slug: string) {
-        const supabase = getSupabaseClient()
-        // Use maybeSingle to avoid 406 error if not found
-        const { data, error } = await supabase
-            .from("organizations")
-            .select("*")
-            .eq("slug", slug)
-            .maybeSingle()
+        await connectToDatabase();
+        const data = await OrganizationModel.findOne({ slug });
 
-        if (error) throw error
-        if (!data) throw new Error("Organization not found")
+        if (!data) throw new Error("Organization not found");
 
-        return data as Organization
+        return data.toObject();
     },
 
     async getOrganizationById(id: string) {
-        const supabase = getSupabaseClient()
-        const { data, error } = await supabase
-            .from("organizations")
-            .select("*")
-            .eq("id", id)
-            .maybeSingle()
+        await connectToDatabase();
+        const data = await OrganizationModel.findById(id);
 
-        if (error) throw error
-        if (!data) throw new Error("Organization not found")
+        if (!data) throw new Error("Organization not found");
 
-        return data as Organization
+        return data.toObject();
     },
 
-    async updateOrganization(id: string, updates: Partial<Organization>) {
-        const supabase = getSupabaseClient()
+    async updateOrganization(id: string, updates: any) {
+        await connectToDatabase();
 
-        let finalUpdates = { ...updates }
+        let finalUpdates = { ...updates };
 
-        // If name changes, update slug too (user's request)
+        // If name changes, update slug too
         if (updates.name) {
-            let slug = slugify(updates.name)
+            let slug = slugify(updates.name);
 
             // Check for potential collisions
-            const { data: existingOrgs } = await supabase
-                .from("organizations")
-                .select("id, slug")
-                .ilike("slug", `${slug}%`)
-                .neq("id", id)
+            const existingOrgs = await OrganizationModel.find({
+                slug: new RegExp(`^${slug}`, "i"),
+                _id: { $ne: id }
+            });
 
             if (existingOrgs && existingOrgs.length > 0) {
-                const slugs = existingOrgs.map((o: { slug: string }) => o.slug)
+                const slugs = existingOrgs.map((o: any) => o.slug);
                 if (slugs.includes(slug)) {
-                    let counter = 1
+                    let counter = 1;
                     while (slugs.includes(`${slug}-${counter}`)) {
-                        counter++
+                        counter++;
                     }
-                    slug = `${slug}-${counter}`
+                    slug = `${slug}-${counter}`;
                 }
             }
-            finalUpdates.slug = slug
+            finalUpdates.slug = slug;
         }
 
-        const { data, error } = await supabase
-            .from("organizations")
-            .update(finalUpdates)
-            .eq("id", id)
-            .select()
-            .maybeSingle()
+        const data = await OrganizationModel.findByIdAndUpdate(
+            id,
+            { $set: finalUpdates },
+            { new: true }
+        );
 
-        if (error) throw error
-        return data as Organization
+        if (!data) throw new Error("Organization not found");
+        return data.toObject();
     },
 
     async getOrganizationStaff(organizationId: string) {
-        const supabase = getSupabaseClient()
+        await connectToDatabase();
 
-        // Fetch users linked to the organization via users_organizations
-        const { data, error } = await supabase
-            .from("users_organizations")
-            .select(`
-                user_id,
-                role,
-                users (
-                    id,
-                    email,
-                    full_name
-                )
-            `)
-            .eq("organization_id", organizationId)
+        // Fetch users linked to the organization via memberships array
+        const members = await User.find({
+            "memberships.organizationId": organizationId
+        });
 
-        if (error) throw error
-
-        // Transform into a cleaner list of staff members
-        return data.map((item: any) => ({
-            id: item.user_id,
-            email: item.users?.email,
-            name: item.users?.full_name || item.users?.email?.split('@')[0] || "Team Member",
-            role: item.role
-        }))
+        return members.map((user: any) => {
+            const membership = user.memberships.find(
+                (m: any) => m.organizationId?.toString() === organizationId
+            );
+            return {
+                id: user._id.toString(),
+                email: user.email,
+                name: user.fullName || user.name || user.email.split('@')[0],
+                role: membership?.role || "member"
+            };
+        });
     },
 
     async getOrganizationSubscription(organizationId: string) {
-        const supabase = getSupabaseClient()
-
-        const { data, error } = await supabase
-            .from("subscriptions")
-            .select(`
-                *,
-                plan:plans(*)
-            `)
-            .eq("organization_id", organizationId)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle()
-
-        if (error) throw error
-        return data
+        // Need to implement Billing/Subscription models later
+        return null;
     }
-}
+};
