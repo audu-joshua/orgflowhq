@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Plus, Users, FileText, CheckCircle, Clock, Briefcase, TrendingUp } from "lucide-react"
 import { useAppStore } from "@/store/useAppStore"
 import { useAuth } from "@/features/auth/hooks/useAuth"
-import { getDashboardRolesAction, getApplicationStatsAction, getApplicationsOverTimeAction } from "../actions"
+import { getDashboardRolesAction, getApplicationStatsAction, getApplicationsOverTimeAction, getEmployeeStatsAction, getTimesheetStatsAction } from "../actions"
 import { RoleCard } from "./RoleCard"
 import { StatCard } from "./StatCard"
 import { LoadingSpinner } from "@/components/shared/LoadingSpinner"
@@ -20,6 +20,8 @@ export function DashboardContent() {
   const { loading: authLoading } = useAuth()
   const [roles, setRoles] = useState<(Role & { application_count?: number })[]>([])
   const [stats, setStats] = useState({ total: 0, new: 0, shortlisted: 0, interviewed: 0, hired: 0 })
+  const [employeeStats, setEmployeeStats] = useState({ total: 0, active: 0, invited: 0, inactive: 0 })
+  const [timesheetStats, setTimesheetStats] = useState({ total: 0, pending: 0, approved: 0, rejected: 0 })
   const [chartData, setChartData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -43,14 +45,18 @@ export function DashboardContent() {
 
     const loadData = async () => {
       try {
-        const [rolesData, statsData, chartHistory] = await Promise.all([
+        const [rolesData, statsData, chartHistory, empStats, tsStats] = await Promise.all([
           getDashboardRolesAction(organization.id),
           getApplicationStatsAction(organization.id),
-          getApplicationsOverTimeAction(organization.id)
+          getApplicationsOverTimeAction(organization.id),
+          getEmployeeStatsAction(organization.id),
+          getTimesheetStatsAction(organization.id)
         ])
         setRoles(rolesData)
         setStats(statsData)
         setChartData(chartHistory)
+        setEmployeeStats(empStats)
+        setTimesheetStats(tsStats)
       } catch (error) {
         console.error("Failed to load dashboard data:", error)
       } finally {
@@ -94,38 +100,108 @@ export function DashboardContent() {
         </div>
       </div>
 
-      {/* Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          label="Total Applications"
-          value={stats.total}
-          icon={FileText}
-          variant="solid"
-          index={0}
-          trend={{ value: 12, positive: true }}
-        />
-        <StatCard
-          label="In Review"
-          value={stats.new + stats.shortlisted}
-          icon={Users}
-          variant="subtle"
-          index={1}
-        />
-        <StatCard
-          label="Interviews Scheduled"
-          value={stats.interviewed}
-          icon={Clock}
-          variant="subtle"
-          index={2}
-        />
-        <StatCard
-          label="Hired Candidates"
-          value={stats.hired}
-          icon={CheckCircle}
-          variant="subtle"
-          index={3}
-          trend={{ value: 5, positive: true }}
-        />
+      {/* Recruitment Metrics */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <FileText className="text-primary" size={20} />
+          <h2 className="text-lg font-semibold text-foreground">Recruitment Summary</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard
+            label="Total Applications"
+            value={stats.total}
+            icon={FileText}
+            variant="solid"
+            index={0}
+            trend={{ value: 12, positive: true }}
+          />
+          <StatCard
+            label="In Review"
+            value={stats.new + stats.shortlisted}
+            icon={Users}
+            variant="subtle"
+            index={1}
+          />
+          <StatCard
+            label="Interviews Scheduled"
+            value={stats.interviewed}
+            icon={Clock}
+            variant="subtle"
+            index={2}
+          />
+          <StatCard
+            label="Hired Candidates"
+            value={stats.hired}
+            icon={CheckCircle}
+            variant="subtle"
+            index={3}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Employee Summary */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Users className="text-primary" size={20} />
+            <h2 className="text-lg font-semibold text-foreground">Employee Summary</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard
+              label="Employees"
+              value={employeeStats.total}
+              icon={Users}
+              variant="outline"
+              index={0}
+            />
+            <StatCard
+              label="Active"
+              value={employeeStats.active}
+              icon={CheckCircle}
+              variant="subtle"
+              index={1}
+            />
+            <StatCard
+              label="Invited"
+              value={employeeStats.invited}
+              icon={Clock}
+              variant="subtle"
+              index={2}
+            />
+          </div>
+        </div>
+
+        {/* Timesheet Summary */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="text-primary" size={20} />
+            <h2 className="text-lg font-semibold text-foreground">Timesheet Summary</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StatCard
+              label="Total Logs"
+              value={timesheetStats.total}
+              icon={FileText}
+              variant="outline"
+              index={0}
+            />
+            <StatCard
+              label="Pending"
+              value={timesheetStats.pending}
+              icon={Clock}
+              variant="subtle"
+              index={1}
+              trend={timesheetStats.pending > 0 ? { value: timesheetStats.pending, positive: false } : undefined}
+            />
+            <StatCard
+              label="Approved"
+              value={timesheetStats.approved}
+              icon={CheckCircle}
+              variant="subtle"
+              index={2}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Charts Section */}

@@ -84,5 +84,37 @@ export const dashboardService = {
       applications: groupedData[month].applications,
       hired: groupedData[month].hired
     }));
+  },
+
+  async getEmployeeStats(organizationId: string) {
+    const { Employee } = await import("@/models/Business");
+    await connectToDatabase();
+
+    const employees = await Employee.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    });
+
+    return {
+      total: employees.length,
+      active: employees.filter((e: any) => e.status === "active").length,
+      invited: employees.filter((e: any) => e.status === "invited").length,
+      inactive: employees.filter((e: any) => e.status === "inactive").length,
+    };
+  },
+
+  async getTimesheetStats(organizationId: string) {
+    const { Timesheet } = await import("@/models/Business");
+    await connectToDatabase();
+
+    const timesheets = await Timesheet.find({
+      organizationId: new mongoose.Types.ObjectId(organizationId)
+    });
+
+    return {
+      total: timesheets.length,
+      pending: timesheets.filter((t: any) => t.status === "pending").length,
+      approved: timesheets.filter((t: any) => t.status === "approved").length,
+      rejected: timesheets.filter((t: any) => t.status === "rejected").length,
+    };
   }
 }

@@ -28,3 +28,21 @@ export async function getApplicationsOverTimeAction(organizationId: string) {
         return [];
     }
 }
+
+export async function getEmployeeStatsAction(organizationId: string) {
+    try {
+        return await dashboardService.getEmployeeStats(organizationId);
+    } catch (error) {
+        console.error("Failed to fetch employee stats:", error);
+        return { total: 0, active: 0, invited: 0, inactive: 0 };
+    }
+}
+
+export async function getTimesheetStatsAction(organizationId: string) {
+    try {
+        return await dashboardService.getTimesheetStats(organizationId);
+    } catch (error) {
+        console.error("Failed to fetch timesheet stats:", error);
+        return { total: 0, pending: 0, approved: 0, rejected: 0 };
+    }
+}
