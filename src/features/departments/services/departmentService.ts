@@ -15,9 +15,13 @@ export const departmentService = {
     });
     const obj = data.toObject();
     return {
-      ...obj,
       id: obj._id.toString(),
-      _id: obj._id.toString()
+      _id: obj._id.toString(),
+      organization_id: obj.organizationId.toString(),
+      name: obj.name,
+      description: obj.description,
+      created_at: obj.createdAt?.toISOString(),
+      updated_at: obj.updatedAt?.toISOString()
     };
   },
 
@@ -31,9 +35,13 @@ export const departmentService = {
     if (!data) throw new Error("Department not found");
     const obj = data.toObject();
     return {
-      ...obj,
       id: obj._id.toString(),
-      _id: obj._id.toString()
+      _id: obj._id.toString(),
+      organization_id: obj.organizationId.toString(),
+      name: obj.name,
+      description: obj.description,
+      created_at: obj.createdAt?.toISOString(),
+      updated_at: obj.updatedAt?.toISOString()
     };
   },
 
@@ -51,9 +59,13 @@ export const departmentService = {
     const obj = dept.toObject();
 
     return {
-      ...obj,
       id: obj._id.toString(),
       _id: obj._id.toString(),
+      organization_id: obj.organizationId.toString(),
+      name: obj.name,
+      description: obj.description,
+      created_at: obj.createdAt?.toISOString(),
+      updated_at: obj.updatedAt?.toISOString(),
       employees: [{ count: employeeCount }] // Maintain structure for UI compatibility
     };
   },
@@ -68,9 +80,13 @@ export const departmentService = {
       const count = await Employee.countDocuments({ departmentId: dept._id });
       const obj = dept.toObject();
       return {
-        ...obj,
         id: obj._id.toString(),
         _id: obj._id.toString(),
+        organization_id: obj.organizationId.toString(),
+        name: obj.name,
+        description: obj.description,
+        created_at: obj.createdAt?.toISOString(),
+        updated_at: obj.updatedAt?.toISOString(),
         employees: [{ count }]
       };
     }));
@@ -232,12 +248,18 @@ export const departmentService = {
     return employees.map(emp => {
       const obj = emp.toObject();
       return {
-        ...obj,
         id: obj._id.toString(),
         _id: obj._id.toString(),
         fullName: obj.fullName,
+        email: obj.email,
+        employeeId: obj.employeeId,
+        position: obj.position,
+        phone: obj.phone,
         profileImageUrl: obj.profileImageUrl,
-        hireDate: obj.hireDate?.toISOString()
+        hireDate: obj.hireDate?.toISOString(),
+        status: obj.status,
+        organization_id: obj.organizationId?.toString(),
+        department_id: obj.departmentId?.toString(),
       };
     });
   },
@@ -262,12 +284,18 @@ export const departmentService = {
       }
       const obj = emp.toObject();
       return {
-        ...obj,
         id: obj._id.toString(),
         _id: obj._id.toString(),
         fullName: obj.fullName,
+        email: obj.email,
+        employeeId: obj.employeeId,
+        position: obj.position,
+        phone: obj.phone,
         profileImageUrl: obj.profileImageUrl,
         hireDate: obj.hireDate?.toISOString(),
+        status: obj.status,
+        organization_id: obj.organizationId?.toString(),
+        department_id: obj.departmentId?.toString(),
         system_role: systemRole,
         systemRole: systemRole
       };
@@ -287,14 +315,25 @@ export const departmentService = {
     // Map to expected structure (mirroring Supabase)
     const obj = data.toObject();
     return {
-      ...obj,
       id: obj._id.toString(),
       _id: obj._id.toString(),
       fullName: obj.fullName,
+      email: obj.email,
+      employeeId: obj.employeeId,
+      position: obj.position,
+      phone: obj.phone,
       profileImageUrl: obj.profileImageUrl,
       hireDate: obj.hireDate?.toISOString(),
-      organizations: obj.organizationId,
-      departments: obj.departmentId ? { name: obj.departmentId.name } : null
+      status: obj.status,
+      organizations: obj.organizationId ? {
+        id: obj.organizationId._id.toString(),
+        name: obj.organizationId.name,
+        slug: obj.organizationId.slug
+      } : null,
+      departments: obj.departmentId ? {
+        id: obj.departmentId._id.toString(),
+        name: obj.departmentId.name
+      } : null
     };
   },
 
@@ -330,12 +369,16 @@ export const departmentService = {
 
     const obj = employee.toObject();
     return {
-      ...obj,
       id: obj._id.toString(),
       _id: obj._id.toString(),
       fullName: obj.fullName,
-      profileImageUrl: obj.profileImageUrl,
-      hireDate: obj.hireDate?.toISOString()
+      email: obj.email,
+      employeeId: obj.employeeId,
+      position: obj.position,
+      status: obj.status,
+      hireDate: obj.hireDate?.toISOString(),
+      organization_id: obj.organizationId?.toString(),
+      department_id: obj.departmentId?.toString()
     };
   },
 

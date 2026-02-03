@@ -259,7 +259,6 @@ const PaymentSchema = new Schema<IPayment>(
 );
 
 PaymentSchema.index({ organizationId: 1 });
-PaymentSchema.index({ organizationId: 1 });
 // Reference already unique via field definition
 
 export const Payment = models.Payment || model<IPayment>("Payment", PaymentSchema);

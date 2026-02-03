@@ -110,7 +110,6 @@ export function RoleDetail({ roleId }: RoleDetailProps) {
   if (loading) return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
       <LoadingSpinner />
-      <p className="text-muted-foreground animate-pulse">Loading role details...</p>
     </div>
   )
 

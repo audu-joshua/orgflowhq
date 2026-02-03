@@ -26,14 +26,23 @@ export function DocumentViewerModal({ url, title, isOpen, onClose, applicantEmai
 
     if (!isOpen || !url) return null
 
-    const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(url)
-    const isPdf = /\.pdf$/i.test(url)
-    const isDoc = /\.(doc|docx)$/i.test(url)
+    // Improved detection to handle Cloudinary URLs which might not end exactly in .extension
+    const isImage = /\.(jpg|jpeg|png|webp|gif|avif)(\?.*)?$/i.test(url) || url.includes('image/upload')
+    const isPdf = /\.pdf(\?.*)?$/i.test(url) || url.includes('/pdf/')
+    const isDoc = /\.(doc|docx|rtf)(\?.*)?$/i.test(url) || url.includes('/raw/')
 
+    // Check if URL is publicly accessible (to avoid "File not found" for localhost)
+    const isPublicUrl = !url.includes('localhost') && !url.includes('127.0.0.1') && !url.includes('::1')
+
+    // Google Docs Viewer for PDFs (more reliable for public storage)
     // Office apps viewer for .doc/.docx
-    const viewerUrl = isDoc
-        ? `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`
-        : url
+    // For localhost, we MUST use direct links or native iframes
+    let viewerUrl = url
+    if (isPdf && isPublicUrl) {
+        viewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`
+    } else if (isDoc && isPublicUrl) {
+        viewerUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`
+    }
 
     const handleShare = async () => {
         try {
@@ -160,7 +169,7 @@ export function DocumentViewerModal({ url, title, isOpen, onClose, applicantEmai
                                         onLoad={() => setLoading(false)}
                                         onError={() => { setLoading(false); setError(true); }}
                                     />
-                                ) : isPdf || isDoc ? (
+                                ) : isPdf || (isDoc && isPublicUrl) ? (
                                     <iframe
                                         src={viewerUrl}
                                         className="w-full h-full border-none rounded-lg bg-white dark:bg-slate-900"
@@ -168,13 +177,19 @@ export function DocumentViewerModal({ url, title, isOpen, onClose, applicantEmai
                                         onError={() => { setLoading(false); setError(true); }}
                                     />
                                 ) : (
-                                    <div className="p-12 text-center text-muted-foreground">
-                                        <p>Preview not available for this file type.</p>
+                                    <div className="p-12 text-center text-muted-foreground bg-card/30 rounded-2xl border-2 border-dashed border-border max-w-md mx-auto">
+                                        <FileText size={48} className="mx-auto mb-4 text-primary/40" />
+                                        <h3 className="text-lg font-bold text-foreground mb-2">Preview Not Available</h3>
+                                        <p className="text-sm mb-6">
+                                            {isDoc && !isPublicUrl
+                                                ? "Word documents on a local server (localhost) cannot be previewed in-app. Please download the file to view it."
+                                                : "This file type or location doesn't support in-app preview."}
+                                        </p>
                                         <button
-                                            onClick={() => window.open(url, "_blank")}
-                                            className="mt-4 px-6 py-3 bg-primary rounded-xl text-primary-foreground font-bold"
+                                            onClick={handleDownload}
+                                            className="flex items-center gap-2 mx-auto px-6 py-3 bg-primary rounded-xl text-primary-foreground font-bold hover:scale-[1.02] active:scale-[0.98] transition-all"
                                         >
-                                            Download to View
+                                            <Download size={18} /> Download to View
                                         </button>
                                     </div>
                                 )}

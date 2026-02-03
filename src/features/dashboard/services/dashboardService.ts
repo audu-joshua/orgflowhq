@@ -16,9 +16,20 @@ export const dashboardService = {
       const count = await Application.countDocuments({ roleId: role._id });
       const obj = role.toObject();
       return {
-        ...obj,
         id: obj._id.toString(),
+        title: obj.title,
+        description: obj.description,
+        department: obj.department,
+        location: obj.location,
+        employment_type: obj.employmentType,
+        slug: obj.slug || "",
+        status: obj.status,
+        stages: obj.stages || [],
+        hiring_manager: obj.hiringManager,
+        created_by: obj.createdBy?.toString() || null,
         organization_id: obj.organizationId.toString(),
+        created_at: obj.createdAt ? obj.createdAt.toISOString() : new Date().toISOString(),
+        updated_at: obj.updatedAt ? obj.updatedAt.toISOString() : new Date().toISOString(),
         application_count: count
       };
     }));

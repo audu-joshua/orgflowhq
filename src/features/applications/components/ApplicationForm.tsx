@@ -40,8 +40,8 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
   const handleResumeUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Resume must be less than 10MB")
+      if (file.size > 1 * 1024 * 1024) {
+        setError("Resume must be less than 1MB")
         return
       }
       setResume(file)
@@ -52,8 +52,8 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
   const handleCoverLetterUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        setError("Cover letter must be less than 10MB")
+      if (file.size > 1 * 1024 * 1024) {
+        setError("Cover letter must be less than 1MB")
         return
       }
       setCoverLetter(file)
@@ -108,38 +108,37 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
     }
 
     setLoading(true)
+    const setStatus = (msg: string) => setError(msg); // Use error state area for status or a new state
 
     try {
-      // Parallel uploads using Server Actions
-      const uploadResults = await Promise.all([
-        (async () => {
-          const fd = new FormData();
-          fd.append("file", resume);
-          fd.append("folder", "resumes");
-          const res: any = await uploadFileAction(fd);
-          if (!res.success) throw new Error("Resume upload failed");
-          return res.url;
-        })(),
-        (async () => {
-          const fd = new FormData();
-          fd.append("file", coverLetter);
-          fd.append("folder", "cover-letters");
-          const res: any = await uploadFileAction(fd);
-          if (!res.success) throw new Error("Cover letter upload failed");
-          return res.url;
-        })(),
-        (async () => {
-          const fd = new FormData();
-          fd.append("file", passportPhoto!);
-          fd.append("folder", "passports");
-          const res: any = await uploadFileAction(fd);
-          if (!res.success) throw new Error("Photo upload failed");
-          return res.url;
-        })()
-      ]);
+      // 1. Upload Resume
+      setError("Uploading resume...")
+      const resumeFd = new FormData();
+      resumeFd.append("file", resume);
+      resumeFd.append("folder", "resumes");
+      const resumeRes: any = await uploadFileAction(resumeFd);
+      if (!resumeRes.success) throw new Error(resumeRes.error || "Resume upload failed");
+      const resumeUrl = resumeRes.url;
 
-      const [resumeUrl, coverLetterUrl, passportUrl] = uploadResults;
+      // 2. Upload Cover Letter
+      setError("Uploading cover letter...")
+      const clFd = new FormData();
+      clFd.append("file", coverLetter);
+      clFd.append("folder", "cover-letters");
+      const clRes: any = await uploadFileAction(clFd);
+      if (!clRes.success) throw new Error(clRes.error || "Cover letter upload failed");
+      const coverLetterUrl = clRes.url;
 
+      // 3. Upload Passport
+      setError("Uploading passport photo...")
+      const pFd = new FormData();
+      pFd.append("file", passportPhoto!);
+      pFd.append("folder", "passports");
+      const pRes: any = await uploadFileAction(pFd);
+      if (!pRes.success) throw new Error(pRes.error || "Photo upload failed");
+      const passportUrl = pRes.url;
+
+      setError("Submitting application...")
       const applicationData = {
         role_id: roleId,
         applicant_name: applicantName,
@@ -163,13 +162,9 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
       setCoverLetter(null)
       setResume(null)
       setPassportPhoto(null)
-    } catch (err) {
+    } catch (err: any) {
       console.error("Submission error:", err)
-      if (err instanceof Error && err.message.includes("RLS policy")) {
-        setError("Database access denied. Please contact support to fix table permissions.")
-      } else {
-        setError(err instanceof Error ? err.message : "Failed to submit application")
-      }
+      setError(err.message || "Failed to submit application")
     } finally {
       setLoading(false)
     }
@@ -293,7 +288,7 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
                 >
                   {passportPhoto ? passportPhoto.name : "Upload Photo"}
                 </label>
-                <p className="text-[10px] text-muted-foreground">JPG, PNG (Max 5MB)</p>
+                <p className="text-[10px] text-muted-foreground">JPG, PNG (Max 1MB)</p>
               </>
             )}
           </div>
@@ -319,7 +314,7 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
             <p className="text-xs font-medium text-foreground mb-1 truncate px-2 w-full">
               {coverLetter ? coverLetter.name : "Upload Cover Letter"}
             </p>
-            <p className="text-[10px] text-muted-foreground">PDF, DOC, DOCX, or Image (Max 5MB)</p>
+            <p className="text-[10px] text-muted-foreground">PDF, DOC, DOCX, or Image (Max 1MB)</p>
           </div>
         </div>
       </div>
@@ -344,7 +339,7 @@ export function ApplicationForm({ roleId, organizationId }: ApplicationFormProps
           <p className="text-sm font-medium text-foreground mb-1">
             {resume ? resume.name : "Click to upload resume"}
           </p>
-          <p className="text-xs text-muted-foreground">PDF, DOC, or DOCX (Max 5MB)</p>
+          <p className="text-xs text-muted-foreground">PDF, DOC, or DOCX (Max 1MB)</p>
           {resume && (
             <div className="mt-2 text-xs text-green-600 font-semibold flex items-center justify-center gap-1">
               <span className="w-1.5 h-1.5 bg-green-600 rounded-full" />

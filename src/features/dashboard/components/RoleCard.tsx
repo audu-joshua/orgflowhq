@@ -164,7 +164,7 @@ export function RoleCard({ role: initialRole, onDeleted }: RoleCardProps) {
               className="bg-destructive hover:bg-destructive/90 rounded-xl cursor-pointer"
               disabled={isDeleting}
             >
-              {isDeleting ? "Deleting..." : "Yes, Delete Role"}
+              {isDeleting ? <Loader2 size={18} className="animate-spin" /> : "Yes, Delete Role"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

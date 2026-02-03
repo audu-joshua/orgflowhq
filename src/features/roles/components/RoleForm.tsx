@@ -14,7 +14,8 @@ import { CreateDepartmentModal } from "@/features/departments/components/CreateD
 import type { Department } from "@/features/departments/types"
 import type { Role, RoleImage } from "../types"
 import { toast } from "@/lib/toast"
-import { Plus } from "lucide-react"
+import { Plus, Sparkles } from "lucide-react"
+import { LoadingOverlay } from "@/components/shared/LoadingOverlay"
 
 interface RoleFormProps {
     mode: "create" | "edit"
@@ -42,6 +43,7 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
 
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
     const [loading, setLoading] = useState(false)
+    const [generatingDescription, setGeneratingDescription] = useState(false)
     const [compressing, setCompressing] = useState(false)
     const [error, setError] = useState("")
     const [viewingImageIndex, setViewingImageIndex] = useState<number | null>(null)
@@ -216,6 +218,8 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
         setLoading(true)
 
         try {
+            const { uploadRoleImageAction } = await import("../actions")
+
             let role: any
             if (mode === "create") {
                 const res = await createRoleAction(organization.id, {
@@ -233,32 +237,48 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
                 role = res.role
             } else {
                 if (!initialData) throw new Error("Missing initial data for edit")
+
+                // For edit, we update role data AND pass the current state of existing images
                 const res = await updateRoleAction(initialData.id, {
                     title,
                     department,
                     description: description || null,
                     location: location || null,
                     employment_type: employmentType,
+                    images: existingImages.map((img, idx) => ({
+                        imageUrl: img.image_url,
+                        displayOrder: idx
+                    }))
                 })
                 if (!res.success) throw new Error(res.error)
                 role = res.role
             }
 
-            // Upload all new images
+            // 2. Upload and attach any new images
             if (images.length > 0) {
-                // In a real app we'd use a server action that handles file uploads or gives a signed URL
-                // For this refactor we skip the client-side binary upload to server-side service
-                toast.warning("Image storage migration pending - images will NOT be saved to cloud.")
+                await Promise.all(images.map(async (file, index) => {
+                    const formData = new FormData()
+                    formData.append("roleId", role.id)
+                    formData.append("file", file)
+                    formData.append("displayOrder", (existingImages.length + index).toString())
+
+                    const res = await uploadRoleImageAction(formData)
+                    if (!res.success) {
+                        console.error(`Failed to upload image ${index}:`, res.error)
+                    }
+                }))
             }
 
             toast.success(`Role ${mode === "create" ? "created" : "updated"} successfully`)
 
             if (onSuccess) {
                 onSuccess(role)
-            } else if (mode === "create") {
+            } else {
                 router.push(`/dashboard/roles/${role.id}`)
+                router.refresh()
             }
         } catch (err) {
+            console.error("Submit error:", err)
             setError(err instanceof Error ? err.message : `Failed to ${mode} role`)
         } finally {
             setLoading(false)
@@ -282,7 +302,7 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
     ]
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 relative">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="title" className="block text-sm font-medium text-foreground mb-1">
@@ -360,9 +380,44 @@ export function RoleForm({ mode, initialData, onSuccess, onCancel }: RoleFormPro
             </div>
 
             <div>
-                <label htmlFor="description" className="block text-sm font-medium text-foreground mb-1">
-                    Description
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                    <label htmlFor="description" className="block text-sm font-medium text-foreground">
+                        Description
+                    </label>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            if (!title) {
+                                toast.error("Please enter a role title first")
+                                return
+                            }
+                            setGeneratingDescription(true)
+                            try {
+                                const { generateRoleDescriptionAction } = await import("../actions")
+                                const res = await generateRoleDescriptionAction(title, department)
+                                if (res.success) {
+                                    setDescription(res.description)
+                                    toast.success("Description generated!")
+                                } else {
+                                    throw new Error(res.error)
+                                }
+                            } catch (err: any) {
+                                toast.error("Failed to generate description: " + err.message)
+                            } finally {
+                                setGeneratingDescription(false)
+                            }
+                        }}
+                        disabled={generatingDescription || !title}
+                        className="flex items-center gap-1.5 text-xs font-bold text-primary hover:text-primary/80 transition-all bg-primary/10 px-3 py-1.5 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+                    >
+                        {generatingDescription ? (
+                            <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                            <Sparkles size={14} className="group-hover:scale-125 transition-transform" />
+                        )}
+                        {generatingDescription ? "Generating..." : "Generate with AI"}
+                    </button>
+                </div>
                 <textarea
                     id="description"
                     value={description}

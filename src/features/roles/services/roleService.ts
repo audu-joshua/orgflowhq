@@ -38,26 +38,26 @@ export interface RoleWithImages extends Role {
 const mapModelToType = (doc: any): RoleWithImages => {
   const obj = doc.toObject ? doc.toObject() : doc;
   return {
-    id: obj._id.toString(),
-    organization_id: obj.organizationId.toString(),
-    title: obj.title,
+    id: obj._id?.toString() || "",
+    organization_id: obj.organizationId?.toString() || "",
+    title: obj.title || "",
     description: obj.description || null,
     department: obj.department || null,
     location: obj.location || null,
     employment_type: obj.employmentType || null,
-    slug: obj.slug,
-    status: obj.status,
-    stages: obj.stages,
+    slug: obj.slug || "",
+    status: obj.status || "draft",
+    stages: obj.stages || [],
     hiring_manager: obj.hiringManager,
     created_by: obj.createdBy?.toString() || null,
-    created_at: obj.createdAt.toISOString(),
-    updated_at: obj.updatedAt.toISOString(),
+    created_at: obj.createdAt ? obj.createdAt.toISOString() : new Date().toISOString(),
+    updated_at: obj.updatedAt ? obj.updatedAt.toISOString() : new Date().toISOString(),
     role_images: (obj.images || []).map((img: any) => ({
       id: img._id?.toString() || "",
-      role_id: obj._id.toString(),
+      role_id: obj._id?.toString() || "",
       image_url: img.imageUrl,
-      display_order: img.displayOrder,
-      created_at: img.createdAt?.toISOString() || new Date().toISOString()
+      display_order: img.displayOrder || 0,
+      created_at: img.createdAt ? img.createdAt.toISOString() : new Date().toISOString()
     }))
   };
 };
@@ -156,8 +156,50 @@ export const roleService = {
     return mapped;
   },
 
-  async uploadRoleImage(roleId: string, file: File, displayOrder: number = 0) {
-    throw new Error("File storage migration required (Cloudinary/S3).");
+  async uploadRoleImage(roleId: string, buffer: Buffer, displayOrder: number = 0) {
+    const cloudinary = (await import("@/lib/cloudinary")).default;
+    await connectToDatabase();
+
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        {
+          folder: `orgflow/roles/${roleId}`,
+          resource_type: "image",
+        },
+        async (error: any, result: any) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(new Error("Failed to upload image to Cloudinary"));
+            return;
+          }
+
+          try {
+            const updatedRole = await JobRole.findByIdAndUpdate(
+              roleId,
+              {
+                $push: {
+                  images: {
+                    imageUrl: result.secure_url,
+                    displayOrder
+                  }
+                }
+              },
+              { new: true }
+            );
+
+            if (!updatedRole) {
+              reject(new Error("Role not found after upload"));
+              return;
+            }
+
+            resolve(mapModelToType(updatedRole));
+          } catch (dbError) {
+            console.error("DB Update error:", dbError);
+            reject(new Error("Failed to update role with image URL"));
+          }
+        }
+      ).end(buffer);
+    });
   },
 
   async deleteRoleImage(roleId: string, imageId: string) {
