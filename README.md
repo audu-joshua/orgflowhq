@@ -1,4 +1,4 @@
-# HR - Application Management Solution
+# Orgflowhq - HR Application Management Solution
 
 A production-grade MVP for managing job openings and applications with image uploads, sorting, and tracking. Built with modern web technologies and designed for scalability.
 
